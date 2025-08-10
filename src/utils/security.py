@@ -3,6 +3,7 @@ from fastapi.security import OAuth2PasswordBearer
 from dotenv import load_dotenv
 from datetime import datetime,timezone,timedelta
 from typing import cast
+from typing import Dict, Any
 import jwt
 from jwt import PyJWTError, ExpiredSignatureError, InvalidTokenError
 from DataBase.ConnectDB import db
@@ -57,27 +58,56 @@ def generate_refresh_JWT(id: int )-> str:
     }
     return jwt.encode(playload,SECRET_KEY,algorithm=ALGORITHM)
 
-def refresh_JWT(token: str = Depends(auth_token))-> str:
-    user_id = token.get("sub") # type: ignore
-    
-    if user_id is None:
-        raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token invalido",
-                headers={"WWW-Authenticate": "Bearer"}
-            )
-    return generate_JWT(user_id)
+def refresh_JWT(token: dict = Depends(auth_token))-> str:
+    try: 
+        user_id = token.get("sub")
+        
+        if not user_id:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Token inválido: no contiene ID de usuario"
+                )
+        if user_id is None:
+            raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Token invalido",
+                    headers={"WWW-Authenticate": "Bearer"}
+                )
+        return generate_JWT(user_id)
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail="Error interno del servidor")
 
 def hash_password(password: str) -> str:
     hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
     return hashed.decode()
 
-async def isAdmin(id: int)-> bool:
+async def isAdmin(token: Dict = Depends(auth_token)) -> bool:
     try:
-        query ="select rol from usuarios where id = :id"
-        result = await db.fetch_one(query,{"id":"id"})
-        if result and not result["rol"] == "admin": 
-            return False
-        return True
-    except Exception:
+        user_id = token.get("sub")
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token inválido: no contiene ID de usuario"
+            )
+
+        query = "SELECT rol FROM usuarios WHERE id = :id"
+        result = await db.fetch_one(query, {"id": user_id})
+
+        if not result:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Usuario no encontrado"
+            )
+
+        return result["rol"].lower() == "admin"
+
+    except HTTPException:
         raise
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error interno del servidor"
+        )
