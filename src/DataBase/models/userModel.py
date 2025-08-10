@@ -6,5 +6,7 @@ class Usuarios(BaseModel):
     apellido: str
     usuario: str
     contrasena: str
-    rol: str
-    activo: bool  
+
+class Usuarios_admin(Usuarios):
+    rol : str
+    activo: bool
