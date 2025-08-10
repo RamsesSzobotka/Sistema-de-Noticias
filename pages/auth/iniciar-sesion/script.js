@@ -7,49 +7,46 @@ document
         const password = document.getElementById("password").value;
 
         if (usuario && password) {
-            fetch("../../../api/controllerLogin.php", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include", // ✅ Esto permite enviar cookies de sesión
-                body: JSON.stringify({ usuario, password }),
-            })
-                .then((response) => response.json())
-                .then((data) => {
-                    if (data.success) {
-                        // Puedes usar sessionStorage para uso en frontend, pero ya la sesión está guardada en el backend
-                        sessionStorage.setItem("usuario", usuario);
-                        console.log("Usuario:", usuario);
-                        sessionStorage.setItem("usuario_id", data.usuario_id);
-                        console.log("Usuario ID:", data.usuario_id);
-                        sessionStorage.setItem("rol", data.rol);
+            // Construimos los datos en formato application/x-www-form-urlencoded
+            const formData = new URLSearchParams();
+            formData.append("username", usuario);
+            formData.append("password", password);
 
-                        Swal.fire({
-                            icon: "success",
-                            title: "¡Bienvenido!",
-                            text: "Has iniciado sesión correctamente.",
-                            timer: 2000,
-                            timerProgressBar: true,
-                            showConfirmButton: false,
-                        }).then(() => {
-                            window.location.href = "../../index.php";
-                        });
-                    } else {
-                        Swal.fire({
-                            icon: "error",
-                            title: "Error",
-                            text:
-                                data.message ||
-                                "Usuario o contraseña incorrectos.",
-                            confirmButtonText: "Intentar de nuevo",
+            fetch("http://localhost:8000/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: formData.toString(),
+            })
+                .then((response) => {
+                    if (!response.ok) {
+                        return response.json().then((err) => {
+                            throw new Error(err.detail || "Error en el login");
                         });
                     }
+                    return response.json();
+                })
+                .then((data) => {
+                    // Guardar los tokens en sessionStorage (o localStorage)
+                    sessionStorage.setItem("access_token", data.access_token);
+                    sessionStorage.setItem("refresh_token", data.refresh_token);
+
+                    Swal.fire({
+                        icon: "success",
+                        title: "¡Bienvenido!",
+                        text: "Has iniciado sesión correctamente.",
+                        timer: 2000,
+                        timerProgressBar: true,
+                        showConfirmButton: false,
+                    }).then(() => {
+                        window.location.href = "../../index.php";
+                    });
                 })
                 .catch((error) => {
-                    console.error("Error en la solicitud:", error);
                     Swal.fire({
                         icon: "error",
                         title: "Error",
-                        text: "Error en la conexión. Intenta de nuevo.",
+                        text: error.message,
+                        confirmButtonText: "Intentar de nuevo",
                     });
                 });
         } else {
