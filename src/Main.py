@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from routers import authController
+from routers import authController,noticiaController
 
 from fastapi.middleware.cors import CORSMiddleware
 from DataBase.ConnectDB import connect, disconnect
@@ -15,6 +15,7 @@ app = FastAPI(lifespan=lifespan)
 
 # Registrar rutas de login
 app.include_router(authController.router)
+app.include_router(noticiaController.router)
 
 app.add_middleware(
     CORSMiddleware,

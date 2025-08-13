@@ -13,7 +13,7 @@ crypt = CryptContext(schemes=["bcrypt"])
 @router.post("/login",status_code=status.HTTP_200_OK)
 async def login(form : OAuth2PasswordRequestForm = Depends()):
     try:  
-        result = await search_user(form.username)
+        result = await search_user(form.username,2)
     
         if not result or not crypt.verify(form.password,result["contrasena"]):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
@@ -28,7 +28,7 @@ async def login(form : OAuth2PasswordRequestForm = Depends()):
         }
     except HTTPException:
         raise
-    except Exception:
+    except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail="Error interno en el servidor")  
         

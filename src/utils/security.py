@@ -24,27 +24,28 @@ except ValueError:
 
 def auth_token(token: str = Depends(oauth2)):
     try:
-        token_data = jwt.decode(token,SECRET_KEY,[ALGORITHM])
+        token_data = jwt.decode(token,SECRET_KEY,algorithms=[ALGORITHM])
+        token_data["sub"] = int(token_data["sub"])
         return token_data
     except ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token Expirado")
-    except InvalidTokenError:
+    except InvalidTokenError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token invalido")
+            detail=f"Token invalido {e}")
     except PyJWTError:
          raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token invalido",
-            headers={"WWW-Authenticate": "Bearer"}  # Informa al cliente que debe autenticarse con Bearer
+            headers={"WWW-Authenticate": "Bearer"}  
         )
 
     
 def generate_JWT(id : int ) -> str :
     playload = {
-        "sub": id,
+        "sub": str(id),
         "type": "access",
         "exp": datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRED_MINUTES)
     }
@@ -52,7 +53,7 @@ def generate_JWT(id : int ) -> str :
 
 def generate_refresh_JWT(id: int )-> str:
     playload = {
-        "sub": id,
+        "sub": str(id),
         "type": "refresh",
         "exp": datetime.now(timezone.utc) + timedelta(minutes=REFRESH_TOKEN_EXPIRED_MINUTES)
     }
@@ -92,16 +93,7 @@ async def isAdmin(token: Dict = Depends(auth_token)) -> bool:
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token inválido: no contiene ID de usuario"
             )
-
-        query = "SELECT rol FROM usuarios WHERE id = :id"
-        result = await db.fetch_one(query, {"id": user_id})
-
-        if not result:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Usuario no encontrado"
-            )
-
+        result = await get_rol(user_id)
         return result["rol"].lower() == "admin"
 
     except HTTPException:
@@ -111,3 +103,44 @@ async def isAdmin(token: Dict = Depends(auth_token)) -> bool:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error interno del servidor"
         )
+async def isEditorOrHigher(token: Dict = Depends(auth_token)) -> bool:
+    try:
+        user_id = token.get("sub")
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token inválido: no contiene ID de usuario")
+            
+        result = await get_rol(user_id)
+        return result["rol"].lower() in ["admin","supervisor","editor"]
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail="Error interno del servidor")            
+         
+async def get_rol(id: int):
+    try:
+        query = "SELECT rol FROM usuarios WHERE id = :id"
+        result = await db.fetch_one(query, {"id": id})
+
+        if not result:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Usuario no encontrado"
+            )
+        return result
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail="Error interno del servidor")            
+
+def get_token_id(token:Dict = Depends(auth_token)):
+    user_id = token.get("sub")
+    if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token inválido: no contiene ID de usuario"
+            )
+    return user_id

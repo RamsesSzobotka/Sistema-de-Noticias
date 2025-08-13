@@ -1,10 +1,24 @@
 from pydantic import BaseModel
+from fastapi import Form
 
-class noticias(BaseModel):
+class Noticias(BaseModel):
     id: int | None
+    titulo:str
     contenido: str
-    activo: bool 
     categoria_id: int
-    usuario_id: int
     autor: str
-    imagen: str
+
+    @staticmethod
+    def from_form(
+        titulo: str = Form(...),
+        contenido: str = Form(...),
+        categoria_id: int = Form(...),
+        autor: str = Form(...)
+    ):
+        return Noticias(
+            id=None,
+            titulo=titulo,
+            contenido=contenido,
+            categoria_id=categoria_id,
+            autor=autor
+        )
