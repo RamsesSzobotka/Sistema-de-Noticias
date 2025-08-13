@@ -57,14 +57,11 @@ async def crear_noticia(noticia:Noticias = Depends(Noticias.from_form),imagenes:
         VALUES (:titulo,:contenido,:activo,:categoria_id,:usuario_id,:autor)
         RETURNING id"""
         
-        values = {
-            "titulo":noticia.titulo,
-            "contenido":noticia.contenido,
-            "activo":False,
-            "categoria_id":noticia.categoria_id,
-            "usuario_id":token_id,
-            "autor":noticia.autor
-        }
+        values = noticia.model_dump()
+        del values["id"]
+        values["usuario_id"] = token_id
+        values["activo"] = False
+
         
         noticia_id = await db.fetch_val(query,values)
         if noticia_id is None:

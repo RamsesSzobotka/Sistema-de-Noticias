@@ -94,8 +94,10 @@ async def isAdmin(token: Dict = Depends(auth_token)) -> bool:
                 detail="Token inválido: no contiene ID de usuario"
             )
         result = await get_rol(user_id)
-        return result["rol"].lower() == "admin"
-
+        if not result["rol"].lower() == "admin":
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                                detail="No tienes permisos para realizar esta acción")
+        return True
     except HTTPException:
         raise
     except Exception:
@@ -112,7 +114,10 @@ async def isEditorOrHigher(token: Dict = Depends(auth_token)) -> bool:
                 detail="Token inválido: no contiene ID de usuario")
             
         result = await get_rol(user_id)
-        return result["rol"].lower() in ["admin","supervisor","editor"]
+        if not result["rol"].lower() in ["admin","supervisor","editor"]:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                                detail="No tienes permisos para realizar esta acción")
+        return True
     except HTTPException:
         raise
     except Exception:

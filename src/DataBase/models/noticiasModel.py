@@ -10,13 +10,14 @@ class Noticias(BaseModel):
 
     @staticmethod
     def from_form(
+        id: int = Form(...),
         titulo: str = Form(...),
         contenido: str = Form(...),
         categoria_id: int = Form(...),
         autor: str = Form(...)
     ):
         return Noticias(
-            id=None,
+            id=id,
             titulo=titulo,
             contenido=contenido,
             categoria_id=categoria_id,
