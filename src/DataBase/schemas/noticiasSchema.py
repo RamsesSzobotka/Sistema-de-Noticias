@@ -1,5 +1,3 @@
-from datetime import datetime
-from pydantic import BaseModel
 
 def noticia_schema(data)->list:
     
