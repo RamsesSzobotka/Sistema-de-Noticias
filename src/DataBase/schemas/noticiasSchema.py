@@ -1,23 +1,20 @@
 
-def noticia_schema(data)->list:
+def noticia_schema(data)->dict:
     
-    noticias = []
-    for row in data:
-            noticia = {
-                "id": row["id"],
-                "titulo": row["titulo"],
-                "contenido": row["contenido"],
-                "activo": row["activo"],
-                "fecha_creacion": row["fecha_creacion"],
-                "autor": row["autor"],
+    noticia = {
+                "id": data["id"],
+                "titulo": data["titulo"],
+                "contenido": data["contenido"],
+                "activo": data["activo"],
+                "fecha_creacion": data["fecha_creacion"],
+                "autor": data["autor"],
                 "categoria": {
-                    "id": row["categoria_id"],
-                    "nombre": row["categoria_nombre"],
+                    "id": data["categoria_id"],
+                    "nombre": data["categoria_nombre"],
                 },
                 "usuario": {
-                    "id": row["usuario_id"],
-                    "usuario": row["usuario_nombre"],
+                    "id": data["usuario_id"],
+                    "usuario": data["usuario_nombre"],
                 }
             }
-            noticias.append(noticia)
-    return noticias
+    return noticia        
