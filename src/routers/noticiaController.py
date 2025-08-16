@@ -1,10 +1,11 @@
 from fastapi import APIRouter, HTTPException, status, Depends, UploadFile, File
 from DataBase.ConnectDB import db
 import os
+import uuid
 from typing import List
 from DataBase.models.noticiasModel import Noticias
 from DataBase.schemas.noticiasSchema import noticia_schema
-from utils.security import isEditorOrHigher,get_token_id
+from utils.security import isEditorOrHigher,get_rol,isPublicadorOrHigher,get_token_id
 from utils.infoVerify import valid_imagenes,valid_categoria,search_user
 
 router = APIRouter(prefix="/noticia",tags=["Noticias"])
@@ -34,15 +35,15 @@ async def get_noticias():
         resultados = await db.fetch_all(query)
 
         if not resultados:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                                detail="No hay noticias")
+            raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
+        
         noticias = []
         for row in resultados:
             noticias.append(noticia_schema(row))
         return noticias
     except Exception:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail=f"Error interno de lservidor")
+                            detail=f"Error interno del servidor")
 
 @router.post("/")
 async def crear_noticia(noticia:Noticias = Depends(Noticias.from_form),imagenes: List[UploadFile] = File(...),token_id: int = Depends(get_token_id),_:bool = Depends(isEditorOrHigher)):
@@ -73,23 +74,26 @@ async def crear_noticia(noticia:Noticias = Depends(Noticias.from_form),imagenes:
         os.makedirs(UPLOAD_DIR,exist_ok=True)
         await insert_img(imagenes,noticia_id)
      
-        return {"detail":"Noticia creada exitosamente en estado de espera a se aprovada para su publicacion"}
+        return {"detail":"Noticia creada exitosamente en estado de espera a se aprobada para su publicacion"}
     except HTTPException:
         raise
     except Exception: 
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail=f"Error interno del servidor")
         
-@router.put("/update", status_code=status.HTTP_200_OK)
-async def update_noticia(
-    noticia: Noticias = Depends(Noticias.from_form),
-    imagenes: List[UploadFile] = File(...),
-    _: bool = Depends(isEditorOrHigher)
-):
+@router.put("/", status_code=status.HTTP_200_OK)
+async def update_noticia(noticia: Noticias = Depends(Noticias.from_form),imagenes: List[UploadFile] = File(...),rol: str = Depends(isEditorOrHigher),token_id :int = Depends(get_token_id)):
     try:
         valid_categoria(noticia.categoria_id)
-
-        # Actualizar noticia
+        user_id = await db.fetch_val("SELECT usuario_id FROM noticias WHERE id =:id",{"id":noticia.id})
+        if user_id is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail="No existe la noticia que desea editar") 
+            
+        if rol == "editor" and token_id != user_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                detail="Sin autorizacion para editar esta noticia")
+            
         query_update = """UPDATE noticias SET titulo = :titulo, contenido = :contenido, activo = :activo, categoria_id = :categoria_id, autor = :autor
         WHERE id = :id RETURNING id"""
         
@@ -128,9 +132,27 @@ async def update_noticia(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error interno del servidor: {str(e)}"
+            detail="Error interno del servidor"
         )
 
+@router.patch("/activo/{id}",status_code=status.HTTP_200_OK)
+async def update_activo(id:int ,_:bool = Depends(isPublicadorOrHigher)):
+    try:
+        
+        result = await db.fetch_val("UPDATE noticias SET activo = NOT activo where id = :id RETURNING  id",{"id":id})
+
+        if not result :
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail="Noticia inexistente")
+        
+        return {"detail": " Estado de noticia actualizado correctamente"}
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error interno del servidor"
+        )
 
 async def insert_img(imagenes, noticia_id: int):
     query_insert = """
@@ -138,8 +160,12 @@ async def insert_img(imagenes, noticia_id: int):
     VALUES(:noticia_id, :imagen, :tipo_imagen)
     RETURNING id
     """
+    os.makedirs(UPLOAD_DIR, exist_ok=True)  # Aquí para evitar duplicación de mkdir
+
     for img in imagenes:
-        safe_filename = img.filename or f"unnamed_{noticia_id}.jpg"
+        # Nombre único y seguro
+        original_name = os.path.basename(img.filename or f"unnamed_{noticia_id}.jpg")
+        safe_filename = f"{uuid.uuid4().hex}_{original_name}"
         file_path = os.path.join(UPLOAD_DIR, safe_filename)
 
         with open(file_path, "wb") as f:

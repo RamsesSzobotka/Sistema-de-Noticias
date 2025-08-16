@@ -117,13 +117,32 @@ async def isEditorOrHigher(token: Dict = Depends(auth_token)) -> bool:
         if not result["rol"].lower() in ["admin","supervisor","editor"]:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                                 detail="No tienes permisos para realizar esta acción")
+        return result["rol"]
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail="Error interno del servidor")  
+                  
+async def isPublicadorOrHigher(token: Dict = Depends(auth_token))-> bool :
+    try:
+        user_id = token.get("sub")
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token inválido: no contiene ID de usuario")
+            
+        result = await get_rol(user_id)
+        if not result["rol"].lower() in ["admin","supervisor"]:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                                detail="No tienes permisos para realizar esta acción")
         return True
     except HTTPException:
         raise
     except Exception:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail="Error interno del servidor")            
-         
+                            detail="Error interno del servidor")
+        
 async def get_rol(id: int):
     try:
         query = "SELECT rol FROM usuarios WHERE id = :id"
