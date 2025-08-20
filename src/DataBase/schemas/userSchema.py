@@ -1,12 +1,12 @@
-from pydantic import BaseModel
-
-class Usuarios(BaseModel):
-    nombre: str
-    apellido: str
-    usuario: str
-    contrasena: str
-
-class Usuarios_admin(Usuarios):
-    id:int
-    rol : str
-    activo: bool
+def user_schema(data)->dict:
+    
+    usuario ={
+        "id":data["id"],
+        "nombre":data["nombre"],
+        "apellido":data["apellido"],
+        "usuario": data["usuario"],
+        "contrasena": data["contrasena"],
+        "rol" : data["rol"]
+    }
+    
+    return usuario
