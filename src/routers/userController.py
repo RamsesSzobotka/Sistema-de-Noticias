@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Query,HTTPException, status, Depends, UploadFile, File
 from DataBase.ConnectDB import db
 from typing import List
-from DataBase.schemas.userSchema import user_schema
+from DataBase.schemas.userSchema import admin_user_schema,global_user_schema
 from utils.security import isEditorOrHigher,get_rol,isPublicadorOrHigher,get_token_id,isAdmin
 from utils.infoVerify import valid_imagenes,valid_categoria,search_user
 from utils.DbHelper import paginar,total_pages
@@ -32,7 +32,7 @@ async def get_users(
             "size": size,
             "total": total,
             "total_pages": total_pages(total,size),
-            "usuarios": [user_schema(row) for row in usuarios]
+            "usuarios": [admin_user_schema(row) for row in usuarios]
         }
     except HTTPException:
         raise
@@ -42,3 +42,19 @@ async def get_users(
             detail="Error interno del servidor"
         )
 
+@router.get("/me",status_code=status.HTTP_200_OK)
+async def get_me(user_id: int = Depends(get_token_id)):
+    try:
+        user_data = await search_user(user_id,1)
+        
+        if user_data is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail="Usuario inexistente")
+        return global_user_schema(user_data)
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Error interno del servidor"
+            )

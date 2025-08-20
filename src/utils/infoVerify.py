@@ -41,7 +41,7 @@ async def search_user(data: str | int, option: int):
                                     detail="Opción de búsqueda inválida")
         
         query = f"""
-            SELECT id, contrasena, activo 
+            SELECT id,nombre,apellido,usuario,contrasena, activo 
             FROM usuarios 
             WHERE {condicion} = :{condicion}
         """
