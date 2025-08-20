@@ -37,9 +37,8 @@ async def get_noticias():
         if not resultados:
             raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
         
-        noticias = []
-        for row in resultados:
-            noticias.append(noticia_schema(row))
+        noticias = [noticia_schema(row) for row in resultados]
+        
         return noticias
     except Exception:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
