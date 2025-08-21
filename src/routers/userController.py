@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Query,HTTPException, status, Depends, UploadFile, File
 from DataBase.ConnectDB import db
-from typing import List
+from passlib.context import CryptContext
 from DataBase.schemas.userSchema import admin_user_schema,global_user_schema
 from utils.security import isEditorOrHigher,get_rol,isPublicadorOrHigher,get_token_id,isAdmin
-from utils.infoVerify import valid_imagenes,valid_categoria,search_user
+from utils.infoVerify import valid_imagenes,valid_categoria,search_user,valid_contrasena
 from utils.DbHelper import paginar,total_pages
 
 router = APIRouter(prefix="/usuarios",tags=["Usuarios"])
 
+crypt = CryptContext(schemes=["bcrypt"])
 
 @router.get("/", status_code=status.HTTP_200_OK)
 async def get_users(
@@ -51,6 +52,40 @@ async def get_me(user_id: int = Depends(get_token_id)):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                                 detail="Usuario inexistente")
         return global_user_schema(user_data)
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Error interno del servidor"
+            )
+
+@router.patch("/pass",status_code = status.HTTP_200_OK)
+async def update_password(password: str,new_password:str,user_id:str = Depends(get_token_id)):
+    try:
+        if not valid_contrasena(new_password):
+            raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                                detail="Contraseña invalida,introduzca una contraseña que contenga 8 caracteres minimo y que incluya una letra mayuscula,una minuscula,un numero y un caracter especial(@$!%*?&),ejemplo: Hola123!")
+        
+        user = await search_user(user_id,1)
+        if user is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail="Usuario inexistente")
+            
+        if not crypt.verify(password,user["contrasena"]):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                                detail="La contraseña actual no coincide")
+            
+        query = "UPDATE usuarios SET contrasena = :contrasena WHERE id=:id RETURNING id"
+        
+        result = await db.execute(query,{"contrasena":crypt.hash(new_password),"id":user_id})
+        if not result:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No se pudo actualizar la contraseña"
+            )
+            
+        return {"detail": "Contraseña actualizada correctamente"}
     except HTTPException:
         raise
     except Exception:
