@@ -60,6 +60,25 @@ async def get_me(user_id: int = Depends(get_token_id)):
                 detail="Error interno del servidor"
             )
 
+@router.patch("/activo/{id}",status_code=status.HTTP_200_OK)
+async def update_activo(id:int ,_:bool = Depends(isAdmin)):
+    try:
+        
+        result = await db.fetch_val("UPDATE usuarios SET activo = NOT activo where id = :id RETURNING  id",{"id":id})
+
+        if not result :
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail="Usuario inexistente")
+        
+        return {"detail": " Estado del usuario a sido actualizado correctamente"}
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error interno del servidor"
+        )
+        
 @router.patch("/pass",status_code = status.HTTP_200_OK)
 async def update_password(password: str,new_password:str,user_id:str = Depends(get_token_id)):
     try:
@@ -93,3 +112,4 @@ async def update_password(password: str,new_password:str,user_id:str = Depends(g
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Error interno del servidor"
             )
+        
