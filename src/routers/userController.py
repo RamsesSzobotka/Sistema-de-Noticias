@@ -2,6 +2,7 @@ from fastapi import APIRouter, Query,HTTPException, status, Depends, UploadFile,
 from DataBase.ConnectDB import db
 from passlib.context import CryptContext
 from DataBase.schemas.userSchema import admin_user_schema,global_user_schema
+from DataBase.models.userModel import Usuarios
 from utils.security import isEditorOrHigher,get_rol,isPublicadorOrHigher,get_token_id,isAdmin
 from utils.infoVerify import valid_imagenes,valid_categoria,search_user,valid_contrasena
 from utils.DbHelper import paginar,total_pages
@@ -59,7 +60,38 @@ async def get_me(user_id: int = Depends(get_token_id)):
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Error interno del servidor"
             )
+@router.put("/me",status_code=status.HTTP_200_OK)
+async def update_user(user: Usuarios,user_id :int = Depends(get_token_id)):
+    try:
+        result = await search_user(user_id,1)
+        if result is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail="Usuario inexistente")
+            
+        existing_user = await search_user(user.usuario, 2)
+        if existing_user and existing_user["id"] != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="El nombre de usuario ya está en uso")
 
+        query = "UPDATE usuarios SET nombre =:nombre, apellido=:apellido,usuario=:usuario WHERE id = :id RETURNING id"
+        values = {
+            "id":user_id,
+            "nombre":user.nombre,
+            "apellido":user.apellido,
+            "usuario":user.usuario
+            }
+
+        result = await db.execute(query,values)
+        
+        if result is None:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                                detail="Error interno del servidor")
+        return {"detail: Usuario actualizado exitosamente"}
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail="Error interno del servidor")
+        
 @router.patch("/activo/{id}",status_code=status.HTTP_200_OK)
 async def update_activo(id:int ,_:bool = Depends(isAdmin)):
     try:
@@ -79,7 +111,7 @@ async def update_activo(id:int ,_:bool = Depends(isAdmin)):
             detail="Error interno del servidor"
         )
         
-@router.patch("/pass",status_code = status.HTTP_200_OK)
+@router.patch("/me/pass",status_code = status.HTTP_200_OK)
 async def update_password(password: str,new_password:str,user_id:str = Depends(get_token_id)):
     try:
         if not valid_contrasena(new_password):
