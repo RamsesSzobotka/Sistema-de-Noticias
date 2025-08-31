@@ -78,3 +78,14 @@ def valid_categoria(categoria: int):
     if not categoria or not categoria < 1 and categoria > 5:
         raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
                             detail="Categoría inválida")
+
+async def search_noticia(id:int):
+    try:
+        query = "Select * FROM noticias Where id = :id"
+        
+      
+        
+        return await db.fetch_one(query,{"id":id})
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail="Error interno del servidor")
