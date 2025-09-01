@@ -6,6 +6,7 @@ from DataBase.models.userModel import Usuarios
 from utils.security import get_token_id, isAdmin
 from utils.infoVerify import search_user, valid_contrasena
 from utils.DbHelper import paginar, total_pages
+from utils.HttpError import error_interno  # 🔹 Import de tu helper
 
 # Router
 router = APIRouter(prefix="/usuarios", tags=["Usuarios"])
@@ -42,10 +43,7 @@ async def get_users(
     except HTTPException:
         raise
     except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error interno del servidor"
-        )
+        raise error_interno()
 
 
 # Obtener datos del usuario logueado
@@ -64,10 +62,7 @@ async def get_me(user_id: int = Depends(get_token_id)):
     except HTTPException:
         raise
     except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error interno del servidor"
-        )
+        raise error_interno()
 
 
 # Actualizar usuario logueado
@@ -104,17 +99,13 @@ async def update_user(user: Usuarios, user_id: int = Depends(get_token_id)):
         result = await db.execute(query, values)
 
         if result is None:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Error interno del servidor"
-            )
+            raise error_interno()
 
-        return {"detail: Usuario actualizado exitosamente"}
+        return {"detail": "Usuario actualizado exitosamente"}
+    except HTTPException:
+        raise
     except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error interno del servidor"
-        )
+        raise error_interno()
 
 
 # Activar/Desactivar usuario (admin)
@@ -136,10 +127,7 @@ async def update_activo(id: int, _: bool = Depends(isAdmin)):
     except HTTPException:
         raise
     except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error interno del servidor"
-        )
+        raise error_interno()
 
 
 # Actualizar contraseña del usuario logueado
@@ -190,7 +178,4 @@ async def update_password(password: str, new_password: str, user_id: str = Depen
     except HTTPException:
         raise
     except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error interno del servidor"
-        )
+        raise error_interno()

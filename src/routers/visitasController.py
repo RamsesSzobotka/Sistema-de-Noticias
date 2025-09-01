@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
 from DataBase.ConnectDB import db
+from utils.HttpError import error_interno
 
 router = APIRouter(prefix="/vistas", tags=["Vistas"])
 
@@ -10,10 +11,7 @@ async def get_visitas():
         visitas = await obtain_visitas()
         return {"cantidad": visitas}
     except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error interno del servidor"
-        )
+        raise error_interno()
 
 
 @router.put("/update", status_code=status.HTTP_200_OK)
@@ -24,10 +22,7 @@ async def update_visitas():
         query = "UPDATE visitas SET cantidad = :cantidad WHERE id = '1'"
         await db.execute(query, {"cantidad": nueva_cantidad})
     except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error interno del servidor"
-        )
+        raise error_interno()
 
 
 async def obtain_visitas():
@@ -38,7 +33,4 @@ async def obtain_visitas():
             return 0
         return visitas["cantidad"]
     except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error interno del servidor"
-        )
+        raise error_interno()

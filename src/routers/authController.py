@@ -6,7 +6,7 @@ from DataBase.models.userModel import Usuarios,Usuarios_admin
 from utils.security import generate_JWT,generate_refresh_JWT,isAdmin
 from utils.infoVerify import search_user,valid_username,valid_rol,valid_contrasena
 
-router = APIRouter(prefix ="/auth",tags=["Authentication"])
+router = APIRouter(prefix ="/auth",tags=["Autenticacion"])
 
 crypt = CryptContext(schemes=["bcrypt"])
 

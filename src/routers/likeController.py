@@ -1,34 +1,29 @@
 from fastapi import APIRouter,HTTPException,status,Depends
 from DataBase.ConnectDB import db
-from utils.infoVerify import search_noticia
+from utils.infoVerify import validar_noticia
 from utils.security import get_token_id
+from utils.HttpError import error_interno
 router = APIRouter(prefix="/like",tags=["Likes"])
 
-@router.get("/{id}",status_code=status.HTTP_200_OK)
-async def get_likes(id:int):
+@router.get("/{noticia_id}",status_code=status.HTTP_200_OK)
+async def get_likes(noticia_id:int):
     try:
-        if await search_noticia(id) is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                                detail="Noticia inexistente")
+        await validar_noticia(noticia_id)
             
         query = "SELECT COUNT(*) AS total_likes FROM likes WHERE noticia_id = :noticia_id"
         
-        total_likes = await db.fetch_val(query,{"noticia_id":id})
+        total_likes = await db.fetch_val(query,{"noticia_id":noticia_id})
 
         return {"total_likes":total_likes or 0}
     except HTTPException:
         raise
     except Exception:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail="Error interno del servidor")
-
+        error_interno()
 
 @router.post("/",status_code=status.HTTP_201_CREATED)
 async def post_like(noticia_id:int,token_id: int = Depends(get_token_id)):
     try:
-        if await search_noticia(noticia_id) is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                                detail="Noticia inexistente")
+        await validar_noticia(noticia_id)
         query = "SELECT id FROM likes WHERE usuario_id =:usuario_id and noticia_id =:noticia_id"
         
         values = {
@@ -45,11 +40,34 @@ async def post_like(noticia_id:int,token_id: int = Depends(get_token_id)):
         
         result = await db.execute(query,{"usuario_id":token_id,"noticia_id":noticia_id})
         if not result:
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                                detail="Error interno del servidor")
-        return {"detail": "Le diste like a esta noticia"}
+            error_interno()
+        
+        return {"detail": "Like agregado"}
     except HTTPException:
         raise
     except Exception:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                                detail="Error interno del servidor")
+        error_interno()
+
+@router.delete("/", status_code=status.HTTP_200_OK)
+async def delete_like(noticia_id:int, token_id: int = Depends(get_token_id)):
+    try:
+        await validar_noticia(noticia_id)
+        values = {"usuario_id": token_id, "noticia_id": noticia_id}
+
+        query = "DELETE FROM likes WHERE usuario_id = :usuario_id AND noticia_id = :noticia_id RETURNING id"
+        result = await db.fetch_val(query, values)
+
+        if not result:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No le has dado like a esta noticia"
+            )
+
+        return {"detail": "Like eliminado"}
+    except HTTPException:
+        raise
+    except Exception:
+        raise error_interno()
+
+
+

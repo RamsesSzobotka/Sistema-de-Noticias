@@ -83,9 +83,14 @@ async def search_noticia(id:int):
     try:
         query = "Select * FROM noticias Where id = :id"
         
-      
-        
         return await db.fetch_one(query,{"id":id})
     except Exception:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail="Error interno del servidor")
+
+async def validar_noticia(noticia_id: int):
+    if await search_noticia(noticia_id) is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Noticia inexistente"
+        )
