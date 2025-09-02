@@ -1,8 +1,8 @@
 from pydantic import BaseModel
+from typing import Optional
 
-class comentarios(BaseModel):
-    id : int | None
-    noticia_id = int
-    usuario_id = int
-    contenido = str 
-    comentario_padre_id = int
+class Comentario(BaseModel):
+    id: Optional[int] = None
+    noticia_id : int
+    contenido : str 
+    comentario_padre_id :Optional[int] | None

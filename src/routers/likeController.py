@@ -1,6 +1,6 @@
 from fastapi import APIRouter,HTTPException,status,Depends
 from DataBase.ConnectDB import db
-from utils.infoVerify import validar_noticia
+from utils.infoVerify import valid_noticia
 from utils.security import get_token_id
 from utils.HttpError import error_interno
 router = APIRouter(prefix="/like",tags=["Likes"])
@@ -8,7 +8,7 @@ router = APIRouter(prefix="/like",tags=["Likes"])
 @router.get("/{noticia_id}",status_code=status.HTTP_200_OK)
 async def get_likes(noticia_id:int):
     try:
-        await validar_noticia(noticia_id)
+        await valid_noticia(noticia_id)
             
         query = "SELECT COUNT(*) AS total_likes FROM likes WHERE noticia_id = :noticia_id"
         
@@ -20,10 +20,22 @@ async def get_likes(noticia_id:int):
     except Exception:
         error_interno()
 
+@router.get("/me", status_code=status.HTTP_200_OK)
+async def like_verify(noticia_id: int, token_id: int = Depends(get_token_id)):
+    try:
+        query = "SELECT id FROM likes WHERE usuario_id = :usuario_id AND noticia_id = :noticia_id"
+        result = await db.fetch_one(query, {"usuario_id": token_id, "noticia_id": noticia_id})
+        
+        return {"liked": result is not None}
+        
+    except Exception:
+        raise error_interno()
+
+    
 @router.post("/",status_code=status.HTTP_201_CREATED)
 async def post_like(noticia_id:int,token_id: int = Depends(get_token_id)):
     try:
-        await validar_noticia(noticia_id)
+        await valid_noticia(noticia_id)
         query = "SELECT id FROM likes WHERE usuario_id =:usuario_id and noticia_id =:noticia_id"
         
         values = {
@@ -51,7 +63,7 @@ async def post_like(noticia_id:int,token_id: int = Depends(get_token_id)):
 @router.delete("/", status_code=status.HTTP_200_OK)
 async def delete_like(noticia_id:int, token_id: int = Depends(get_token_id)):
     try:
-        await validar_noticia(noticia_id)
+        await valid_noticia(noticia_id)
         values = {"usuario_id": token_id, "noticia_id": noticia_id}
 
         query = "DELETE FROM likes WHERE usuario_id = :usuario_id AND noticia_id = :noticia_id RETURNING id"

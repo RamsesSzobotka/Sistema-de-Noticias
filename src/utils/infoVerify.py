@@ -41,7 +41,7 @@ async def search_user(data: str | int, option: int):
                                     detail="Opción de búsqueda inválida")
         
         query = f"""
-            SELECT id,nombre,apellido,usuario,contrasena, activo 
+            SELECT *
             FROM usuarios 
             WHERE {condicion} = :{condicion}
         """
@@ -87,10 +87,49 @@ async def search_noticia(id:int):
     except Exception:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail="Error interno del servidor")
-
-async def validar_noticia(noticia_id: int):
-    if await search_noticia(noticia_id) is None:
+        
+async def valid_user(id:int,option:int):
+    user = await search_user(id,option)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario inexistente"
+            )
+    if not user["activo"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+                detail="Usuario desactivado por un administrador"
+            )   
+    return user
+    
+async def valid_noticia(noticia_id: int):
+    noticia = await search_noticia(noticia_id)
+    if noticia is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Noticia inexistente"
+            )
+    if not noticia["activo"]:
+        raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Noticia desactivada por un administrador"
+            )
+    return noticia
+
+async def valid_comentario_padre(id: int | None):
+    if id is None:
+        return None  
+
+    comentario_padre = await db.fetch_one(
+        "SELECT id FROM comentarios WHERE id = :id",
+        {"id": id}
+    )
+
+    if comentario_padre is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Comentario padre inexistente"
         )
+
+    return comentario_padre
+    
