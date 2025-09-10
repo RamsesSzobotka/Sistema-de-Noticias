@@ -1,13 +1,14 @@
-from fastapi import APIRouter, HTTPException, status, Depends, UploadFile, File
+from fastapi import APIRouter,Query , HTTPException, status, Depends, UploadFile, File
 from DataBase.ConnectDB import db
 import os
 import uuid
 from typing import List
 from DataBase.models.noticiasModel import Noticias
 from DataBase.schemas.noticiasSchema import noticia_schema
-from utils.security import isEditorOrHigher, isPublicadorOrHigher, get_token_id
-from utils.infoVerify import valid_imagenes, valid_categoria, search_user
+from utils.security import isAdmin, isEditorOrHigher, isPublicadorOrHigher, get_token_id, get_rol
+from utils.infoVerify import valid_imagenes, valid_categoria, valid_user
 from utils.HttpError import error_interno
+from utils.DbHelper import paginar,total_pages
 
 router = APIRouter(prefix="/noticia", tags=["Noticias"])
 
@@ -15,8 +16,13 @@ UPLOAD_DIR = "ImagenesDB"
 
 
 @router.get("/", status_code=status.HTTP_200_OK)
-async def get_noticias():
+async def get_noticias(
+    page: int = Query(1, ge=1,description="Número de página"),
+    size: int = Query(10, ge=1, le=100),
+):
     try:
+        offset = paginar(page,size)
+        
         query = """
         SELECT 
             n.id,
@@ -32,39 +38,100 @@ async def get_noticias():
         FROM noticias n
         JOIN categorias c ON n.categoria_id = c.id
         JOIN usuarios u ON n.usuario_id = u.id
+        WHERE activo = TRUE
+        LIMIT :size OFFSET :offset
         """
+        
+        result = await db.fetch_all(query,{"size":size,"offset":offset})
 
-        resultados = await db.fetch_all(query)
+        if not result:
+            return {
+            "page": page,
+            "size": size,
+            "total":0,
+            "total_pages": 0,
+            "usuarios": [noticia_schema(row) for row in result]
+        }
 
-        if not resultados:
-            raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
-
-        noticias = [noticia_schema(row) for row in resultados]
-        return noticias
+        total = await db.fetch_val("SELECT COUNT(*) FROM noticias")
+        return {
+            "page": page,
+            "size": size,
+            "total":total,
+            "total_pages": total_pages(total, size),
+            "usuarios": [noticia_schema(row) for row in result]
+        }
 
     except HTTPException:
         raise
     except Exception:
         raise error_interno()
 
+@router.get("/all", status_code=status.HTTP_200_OK)
+async def get_noticias_admin(
+    page: int = Query(1, ge=1, description="Número de página"),
+    size: int = Query(10, ge=1, le=100),
+    _: bool = Depends(isPublicadorOrHigher)
+):
+    try:
+        offset = paginar(page, size)
+
+        query = """
+        SELECT 
+            n.id,
+            n.titulo,
+            n.contenido,
+            n.activo,
+            n.fecha_creacion,
+            c.id AS categoria_id,
+            c.nombre AS categoria_nombre,
+            u.id AS usuario_id,
+            u.usuario as usuario_nombre,
+            n.autor
+        FROM noticias n
+        JOIN categorias c ON n.categoria_id = c.id
+        JOIN usuarios u ON n.usuario_id = u.id
+        ORDER BY n.fecha_creacion DESC
+        LIMIT :size OFFSET :offset
+        """
+
+        result = await db.fetch_all(query, {"size": size, "offset": offset})
+
+        if not result:
+            return {
+                "page": page,
+                "size": size,
+                "total": 0,
+                "total_pages": 0,
+                "noticias": []
+            }
+
+        total = await db.fetch_val("SELECT COUNT(*) FROM noticias")
+
+        return {
+            "page": page,
+            "size": size,
+            "total": total,
+            "total_pages": total_pages(total, size),
+            "noticias": [noticia_schema(row) for row in result]
+        }
+
+    except HTTPException:
+        raise
+    except Exception:
+        raise error_interno()
 
 @router.post("/")
 async def crear_noticia(
     noticia: Noticias = Depends(Noticias.from_form),
     imagenes: List[UploadFile] = File(...),
-    token_id: int = Depends(get_token_id),
+    user_id: int = Depends(get_token_id),
     _: bool = Depends(isEditorOrHigher)
 ):
     try:
         valid_imagenes(imagenes)
         valid_categoria(noticia.categoria_id)
-        result = await search_user(token_id, 1)
-
-        if result is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Usuario inexistente"
-            )
+        await valid_user(user_id,1)
 
         query = """
         INSERT INTO noticias(titulo,contenido,activo,categoria_id,usuario_id,autor)
@@ -74,11 +141,11 @@ async def crear_noticia(
 
         values = noticia.model_dump()
         del values["id"]
-        values["usuario_id"] = token_id
+        values["usuario_id"] = user_id
         values["activo"] = False
 
         noticia_id = await db.fetch_val(query, values)
-        if noticia_id is None:
+        if not noticia_id :
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Error al crear la noticia"

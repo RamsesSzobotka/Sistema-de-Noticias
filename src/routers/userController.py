@@ -4,9 +4,9 @@ from passlib.context import CryptContext
 from DataBase.schemas.userSchema import admin_user_schema, global_user_schema
 from DataBase.models.userModel import Usuarios
 from utils.security import get_token_id, isAdmin
-from utils.infoVerify import search_user, valid_contrasena
+from utils.infoVerify import search_user, valid_contrasena, valid_user
 from utils.DbHelper import paginar, total_pages
-from utils.HttpError import error_interno  # 🔹 Import de tu helper
+from utils.HttpError import error_interno  
 
 # Router
 router = APIRouter(prefix="/usuarios", tags=["Usuarios"])
@@ -27,16 +27,20 @@ async def get_users(
 
         query = "SELECT * FROM usuarios ORDER BY id LIMIT :size OFFSET :offset"
         usuarios = await db.fetch_all(query, {"size": size, "offset": offset})
-
+        
+        
         if not usuarios:
-            return {"usuarios": []}
-
+            return {"page": page,
+                    "size": size,
+                    "total": 0,
+                    "total_pages": 0,
+                    "usuarios": []}
+            
         total = await db.fetch_val("SELECT COUNT(*) FROM usuarios")
-
         return {
             "page": page,
             "size": size,
-            "total": total,
+            "total":total,
             "total_pages": total_pages(total, size),
             "usuarios": [admin_user_schema(row) for row in usuarios]
         }
@@ -50,13 +54,7 @@ async def get_users(
 @router.get("/me", status_code=status.HTTP_200_OK)
 async def get_me(user_id: int = Depends(get_token_id)):
     try:
-        user_data = await search_user(user_id, 1)
-
-        if user_data is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Usuario inexistente"
-            )
+        user_data = await valid_user(user_id,1)
 
         return global_user_schema(user_data)
     except HTTPException:
@@ -69,12 +67,7 @@ async def get_me(user_id: int = Depends(get_token_id)):
 @router.put("/me", status_code=status.HTTP_200_OK)
 async def update_user(user: Usuarios, user_id: int = Depends(get_token_id)):
     try:
-        result = await search_user(user_id, 1)
-        if result is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Usuario inexistente"
-            )
+        await valid_user(user_id,1)
 
         existing_user = await search_user(user.usuario, 2)
         if existing_user and existing_user["id"] != user_id:
@@ -96,9 +89,9 @@ async def update_user(user: Usuarios, user_id: int = Depends(get_token_id)):
             "usuario": user.usuario
         }
 
-        result = await db.execute(query, values)
+        result = await db.fetch_val(query, values)
 
-        if result is None:
+        if not result:
             raise error_interno()
 
         return {"detail": "Usuario actualizado exitosamente"}
@@ -132,7 +125,7 @@ async def update_activo(id: int, _: bool = Depends(isAdmin)):
 
 # Actualizar contraseña del usuario logueado
 @router.patch("/me/pass", status_code=status.HTTP_200_OK)
-async def update_password(password: str, new_password: str, user_id: str = Depends(get_token_id)):
+async def update_password(password: str, new_password: str, user_id: int = Depends(get_token_id)):
     try:
         if not valid_contrasena(new_password):
             raise HTTPException(
@@ -145,12 +138,7 @@ async def update_password(password: str, new_password: str, user_id: str = Depen
                 )
             )
 
-        user = await search_user(user_id, 1)
-        if user is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Usuario inexistente"
-            )
+        user = await valid_user(user_id,1)
 
         if not crypt.verify(password, user["contrasena"]):
             raise HTTPException(
@@ -164,7 +152,7 @@ async def update_password(password: str, new_password: str, user_id: str = Depen
             WHERE id = :id 
             RETURNING id
         """
-        result = await db.execute(
+        result = await db.fetch_val(
             query, {"contrasena": crypt.hash(new_password), "id": user_id}
         )
 
