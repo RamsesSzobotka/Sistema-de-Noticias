@@ -22,7 +22,7 @@ except ValueError:
     raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                         detail="Error interno en el servidor")
 
-def auth_token(token: str = Depends(oauth2)):
+def authToken(token: str = Depends(oauth2)):
     try:
         token_data = jwt.decode(token,SECRET_KEY,algorithms=[ALGORITHM])
         token_data["sub"] = int(token_data["sub"])
@@ -43,7 +43,7 @@ def auth_token(token: str = Depends(oauth2)):
         )
 
     
-def generate_JWT(id : int ) -> str :
+def generateJWT(id : int ) -> str :
     playload = {
         "sub": str(id),
         "type": "access",
@@ -51,7 +51,7 @@ def generate_JWT(id : int ) -> str :
     }
     return jwt.encode(playload,SECRET_KEY,algorithm=ALGORITHM)
 
-def generate_refresh_JWT(id: int )-> str:
+def generateRefreshJWT(id: int )-> str:
     playload = {
         "sub": str(id),
         "type": "refresh",
@@ -59,7 +59,7 @@ def generate_refresh_JWT(id: int )-> str:
     }
     return jwt.encode(playload,SECRET_KEY,algorithm=ALGORITHM)
 
-def refresh_JWT(token: dict = Depends(auth_token))-> str:
+def refreshJWT(token: dict = Depends(authToken))-> str:
     try: 
         user_id = token.get("sub")
         
@@ -74,18 +74,18 @@ def refresh_JWT(token: dict = Depends(auth_token))-> str:
                     detail="Token invalido",
                     headers={"WWW-Authenticate": "Bearer"}
                 )
-        return generate_JWT(user_id)
+        return generateJWT(user_id)
     except HTTPException:
         raise
     except Exception:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail="Error interno del servidor")
 
-def hash_password(password: str) -> str:
+def hashPassword(password: str) -> str:
     hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
     return hashed.decode()
 
-async def isAdmin(token: Dict = Depends(auth_token)) -> bool:
+async def isAdmin(token: Dict = Depends(authToken)) -> bool:
     try:
         user_id = token.get("sub")
         if not user_id:
@@ -93,7 +93,7 @@ async def isAdmin(token: Dict = Depends(auth_token)) -> bool:
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token inválido: no contiene ID de usuario"
             )
-        result = await get_rol(user_id)
+        result = await getRol(user_id)
         if not result["rol"].lower() == "admin":
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                                 detail="No tienes permisos para realizar esta acción")
@@ -105,7 +105,7 @@ async def isAdmin(token: Dict = Depends(auth_token)) -> bool:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error interno del servidor"
         )
-async def isEditorOrHigher(token: Dict = Depends(auth_token)) -> bool:
+async def isEditorOrHigher(token: Dict = Depends(authToken)) -> bool:
     try:
         user_id = token.get("sub")
         if not user_id:
@@ -113,7 +113,7 @@ async def isEditorOrHigher(token: Dict = Depends(auth_token)) -> bool:
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token inválido: no contiene ID de usuario")
             
-        result = await get_rol(user_id)
+        result = await getRol(user_id)
         if not result["rol"].lower() in ["admin","supervisor","editor"]:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                                 detail="No tienes permisos para realizar esta acción")
@@ -124,7 +124,7 @@ async def isEditorOrHigher(token: Dict = Depends(auth_token)) -> bool:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail="Error interno del servidor")  
                   
-async def isPublicadorOrHigher(token: Dict = Depends(auth_token))-> bool :
+async def isPublicadorOrHigher(token: Dict = Depends(authToken))-> bool :
     try:
         user_id = token.get("sub")
         if not user_id:
@@ -132,7 +132,7 @@ async def isPublicadorOrHigher(token: Dict = Depends(auth_token))-> bool :
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token inválido: no contiene ID de usuario")
             
-        result = await get_rol(user_id)
+        result = await getRol(user_id)
         if not result["rol"].lower() in ["admin","supervisor"]:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                                 detail="No tienes permisos para realizar esta acción")
@@ -143,7 +143,7 @@ async def isPublicadorOrHigher(token: Dict = Depends(auth_token))-> bool :
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail="Error interno del servidor")
         
-async def get_rol(id: int):
+async def getRol(id: int):
     try:
         query = "SELECT rol FROM usuarios WHERE id = :id"
         result = await db.fetch_one(query, {"id": id})
@@ -160,7 +160,7 @@ async def get_rol(id: int):
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail="Error interno del servidor")            
 
-def get_token_id(token:Dict = Depends(auth_token)):
+def getTokenId(token:Dict = Depends(authToken)):
     user_id = token.get("sub")
     if not user_id:
             raise HTTPException(

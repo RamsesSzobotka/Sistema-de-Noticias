@@ -3,10 +3,10 @@ from DataBase.ConnectDB import db
 from passlib.context import CryptContext
 from DataBase.schemas.userSchema import admin_user_schema, global_user_schema
 from DataBase.models.userModel import Usuarios
-from utils.security import get_token_id, isAdmin
-from utils.infoVerify import search_user, valid_contrasena, valid_user
-from utils.DbHelper import paginar, total_pages
-from utils.HttpError import error_interno  
+from utils.security import getTokenId, isAdmin
+from utils.infoVerify import searchUser, validContrasena, validUser
+from utils.DbHelper import paginar, totalPages
+from utils.HttpError import errorInterno  
 
 # Router
 router = APIRouter(prefix="/usuarios", tags=["Usuarios"])
@@ -17,7 +17,7 @@ crypt = CryptContext(schemes=["bcrypt"])
 
 # Obtener todos los usuarios (solo admin)
 @router.get("/", status_code=status.HTTP_200_OK)
-async def get_users(
+async def getUsers(
     page: int = Query(1, ge=1, description="Número de página"),
     size: int = Query(10, ge=1, le=100),
     _: bool = Depends(isAdmin)
@@ -41,36 +41,36 @@ async def get_users(
             "page": page,
             "size": size,
             "total":total,
-            "total_pages": total_pages(total, size),
+            "total_pages": totalPages(total, size),
             "usuarios": [admin_user_schema(row) for row in usuarios]
         }
     except HTTPException:
         raise
     except Exception:
-        raise error_interno()
+        raise errorInterno()
 
 
 # Obtener datos del usuario logueado
 @router.get("/me", status_code=status.HTTP_200_OK)
-async def get_me(user_id: int = Depends(get_token_id)):
+async def get_me(userId: int = Depends(getTokenId)):
     try:
-        user_data = await valid_user(user_id,1)
+        userData = await validUser(userId,1)
 
-        return global_user_schema(user_data)
+        return global_user_schema(userData)
     except HTTPException:
         raise
     except Exception:
-        raise error_interno()
+        raise errorInterno()
 
 
 # Actualizar usuario logueado
 @router.put("/me", status_code=status.HTTP_200_OK)
-async def update_user(user: Usuarios, user_id: int = Depends(get_token_id)):
+async def updateUser(user: Usuarios, userId: int = Depends(getTokenId)):
     try:
-        await valid_user(user_id,1)
+        await validUser(userId,1)
 
-        existing_user = await search_user(user.usuario, 2)
-        if existing_user and existing_user["id"] != user_id:
+        existingUser = await searchUser(user.usuario, 2)
+        if existingUser and existingUser["id"] != userId:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="El nombre de usuario ya está en uso"
@@ -83,7 +83,7 @@ async def update_user(user: Usuarios, user_id: int = Depends(get_token_id)):
             RETURNING id
         """
         values = {
-            "id": user_id,
+            "id": userId,
             "nombre": user.nombre,
             "apellido": user.apellido,
             "usuario": user.usuario
@@ -92,18 +92,18 @@ async def update_user(user: Usuarios, user_id: int = Depends(get_token_id)):
         result = await db.fetch_val(query, values)
 
         if not result:
-            raise error_interno()
+            raise errorInterno()
 
         return {"detail": "Usuario actualizado exitosamente"}
     except HTTPException:
         raise
     except Exception:
-        raise error_interno()
+        raise errorInterno()
 
 
 # Activar/Desactivar usuario (admin)
 @router.patch("/activo/{id}", status_code=status.HTTP_200_OK)
-async def update_activo(id: int, _: bool = Depends(isAdmin)):
+async def updateActivo(id: int, _: bool = Depends(isAdmin)):
     try:
         result = await db.fetch_val(
             "UPDATE usuarios SET activo = NOT activo WHERE id = :id RETURNING id",
@@ -120,14 +120,14 @@ async def update_activo(id: int, _: bool = Depends(isAdmin)):
     except HTTPException:
         raise
     except Exception:
-        raise error_interno()
+        raise errorInterno()
 
 
 # Actualizar contraseña del usuario logueado
 @router.patch("/me/pass", status_code=status.HTTP_200_OK)
-async def update_password(password: str, new_password: str, user_id: int = Depends(get_token_id)):
+async def updatePassword(password: str, newPassword: str, userId: int = Depends(getTokenId)):
     try:
-        if not valid_contrasena(new_password):
+        if not validContrasena(newPassword):
             raise HTTPException(
                 status_code=status.HTTP_406_NOT_ACCEPTABLE,
                 detail=(
@@ -138,7 +138,7 @@ async def update_password(password: str, new_password: str, user_id: int = Depen
                 )
             )
 
-        user = await valid_user(user_id,1)
+        user = await validUser(userId,1)
 
         if not crypt.verify(password, user["contrasena"]):
             raise HTTPException(
@@ -153,7 +153,7 @@ async def update_password(password: str, new_password: str, user_id: int = Depen
             RETURNING id
         """
         result = await db.fetch_val(
-            query, {"contrasena": crypt.hash(new_password), "id": user_id}
+            query, {"contrasena": crypt.hash(newPassword), "id": userId}
         )
 
         if not result:
@@ -166,4 +166,4 @@ async def update_password(password: str, new_password: str, user_id: int = Depen
     except HTTPException:
         raise
     except Exception:
-        raise error_interno()
+        raise errorInterno()

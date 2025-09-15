@@ -1,5 +1,4 @@
 from fastapi import HTTPException,status
-from DataBase.models.userModel import Usuarios
 from DataBase.ConnectDB import db
 import os
 import re
@@ -9,21 +8,21 @@ load_dotenv()
 
 VALID_ROL= os.getenv("VALID_ROL","").strip().split(",")
 
-async def valid_username(username: str):
+async def validUsername(username: str):
     if len(username) > 12 :
         raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
                             detail="El usuario debe tener menos de 12 caracteres")
-    result = await search_user(username,2)
+    result = await searchUser(username,2)
     if result:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT,
                             detail="Usuario ya en uso")
 
-def valid_rol(rol:str):
+def validRol(rol:str):
     if not rol in VALID_ROL:
         raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
                             detail="Rol invalido")
 
-async def search_user(data: str | int, option: int):
+async def searchUser(data: str | int, option: int):
     try:
         match option:
             case 1:
@@ -57,13 +56,13 @@ async def search_user(data: str | int, option: int):
         )
 
 
-def valid_contrasena(password: str) -> bool:
+def validContrasena(password: str) -> bool:
     pattern = re.compile(
         r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$'
     )
     return bool(pattern.match(password))
 
-def valid_imagenes(imagenes):
+def validImagenes(imagenes):
     if not imagenes or len(imagenes) == 0:
         raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
                             detail="Debes subir al menos una imagen")
@@ -74,12 +73,12 @@ def valid_imagenes(imagenes):
             raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
                                 detail=f"Tipo de imagen no permitido: {img.content_type}")
 
-def valid_categoria(categoria: int):
+def validCategoria(categoria: int):
     if not categoria or not categoria < 1 and categoria > 5:
         raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
                             detail="Categoría inválida")
 
-async def search_noticia(id:int):
+async def searchNoticia(id:int):
     try:
         query = "Select * FROM noticias Where id = :id"
         
@@ -88,8 +87,8 @@ async def search_noticia(id:int):
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail="Error interno del servidor")
         
-async def valid_user(id:int,option:int):
-    user = await search_user(id,option)
+async def validUser(id:int,option:int):
+    user = await searchUser(id,option)
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -102,8 +101,8 @@ async def valid_user(id:int,option:int):
             )   
     return user
     
-async def valid_noticia(noticia_id: int):
-    noticia = await search_noticia(noticia_id)
+async def validNoticia(noticia_id: int):
+    noticia = await searchNoticia(noticia_id)
     if noticia is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -116,7 +115,7 @@ async def valid_noticia(noticia_id: int):
             )
     return noticia
 
-async def valid_comentario_padre(id: int | None):
+async def validComentarioPadre(id: int | None):
     if id is None:
         return None  
 

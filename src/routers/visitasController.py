@@ -1,31 +1,31 @@
 from fastapi import APIRouter, HTTPException, status
 from DataBase.ConnectDB import db
-from utils.HttpError import error_interno
+from utils.HttpError import errorInterno
 
 router = APIRouter(prefix="/vistas", tags=["Vistas"])
 
 
 @router.get("/", status_code=status.HTTP_200_OK)
-async def get_visitas():
+async def getVisitas():
     try:
-        visitas = await obtain_visitas()
+        visitas = await obtainVisitas()
         return {"cantidad": visitas}
     except Exception:
-        raise error_interno()
+        raise errorInterno()
 
 
 @router.put("/update", status_code=status.HTTP_200_OK)
-async def update_visitas():
+async def updateVisitas():
     try:
-        visitas = await obtain_visitas()
+        visitas = await obtainVisitas()
         nueva_cantidad = visitas + 1
         query = "UPDATE visitas SET cantidad = :cantidad WHERE id = '1'"
         await db.execute(query, {"cantidad": nueva_cantidad})
     except Exception:
-        raise error_interno()
+        raise errorInterno()
 
 
-async def obtain_visitas():
+async def obtainVisitas():
     try:
         query = "SELECT cantidad FROM visitas"
         visitas = await db.fetch_one(query)
@@ -33,4 +33,4 @@ async def obtain_visitas():
             return 0
         return visitas["cantidad"]
     except Exception:
-        raise error_interno()
+        raise errorInterno()

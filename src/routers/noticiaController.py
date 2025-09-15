@@ -5,10 +5,10 @@ import uuid
 from typing import List
 from DataBase.models.noticiasModel import Noticias
 from DataBase.schemas.noticiasSchema import noticia_schema
-from utils.security import isAdmin, isEditorOrHigher, isPublicadorOrHigher, get_token_id, get_rol
-from utils.infoVerify import valid_imagenes, valid_categoria, valid_user
-from utils.HttpError import error_interno
-from utils.DbHelper import paginar,total_pages
+from utils.security import isEditorOrHigher, isPublicadorOrHigher, getTokenId
+from utils.infoVerify import validImagenes, validCategoria, validUser
+from utils.HttpError import errorInterno
+from utils.DbHelper import paginar,totalPages
 
 router = APIRouter(prefix="/noticia", tags=["Noticias"])
 
@@ -16,7 +16,7 @@ UPLOAD_DIR = "ImagenesDB"
 
 
 @router.get("/", status_code=status.HTTP_200_OK)
-async def get_noticias(
+async def getNoticias(
     page: int = Query(1, ge=1,description="Número de página"),
     size: int = Query(10, ge=1, le=100),
 ):
@@ -58,14 +58,14 @@ async def get_noticias(
             "page": page,
             "size": size,
             "total":total,
-            "total_pages": total_pages(total, size),
+            "total_pages": totalPages(total, size),
             "usuarios": [noticia_schema(row) for row in result]
         }
 
     except HTTPException:
         raise
     except Exception:
-        raise error_interno()
+        raise errorInterno()
 
 @router.get("/all", status_code=status.HTTP_200_OK)
 async def get_noticias_admin(
@@ -112,26 +112,26 @@ async def get_noticias_admin(
             "page": page,
             "size": size,
             "total": total,
-            "total_pages": total_pages(total, size),
+            "total_pages": totalPages(total, size),
             "noticias": [noticia_schema(row) for row in result]
         }
 
     except HTTPException:
         raise
     except Exception:
-        raise error_interno()
+        raise errorInterno()
 
 @router.post("/")
 async def crear_noticia(
     noticia: Noticias = Depends(Noticias.from_form),
     imagenes: List[UploadFile] = File(...),
-    user_id: int = Depends(get_token_id),
+    userId: int = Depends(getTokenId),
     _: bool = Depends(isEditorOrHigher)
 ):
     try:
-        valid_imagenes(imagenes)
-        valid_categoria(noticia.categoria_id)
-        await valid_user(user_id,1)
+        validImagenes(imagenes)
+        validCategoria(noticia.categoria_id)
+        await validUser(userId,1)
 
         query = """
         INSERT INTO noticias(titulo,contenido,activo,categoria_id,usuario_id,autor)
@@ -141,7 +141,7 @@ async def crear_noticia(
 
         values = noticia.model_dump()
         del values["id"]
-        values["usuario_id"] = user_id
+        values["usuario_id"] = userId
         values["activo"] = False
 
         noticia_id = await db.fetch_val(query, values)
@@ -161,7 +161,7 @@ async def crear_noticia(
     except HTTPException:
         raise
     except Exception:
-        raise error_interno()
+        raise errorInterno()
 
 
 @router.put("/", status_code=status.HTTP_200_OK)
@@ -169,21 +169,21 @@ async def update_noticia(
     noticia: Noticias = Depends(Noticias.from_form),
     imagenes: List[UploadFile] = File(...),
     rol: str = Depends(isEditorOrHigher),
-    token_id: int = Depends(get_token_id)
+    token_id: int = Depends(getTokenId)
 ):
     try:
-        valid_categoria(noticia.categoria_id)
+        validCategoria(noticia.categoria_id)
 
-        user_id = await db.fetch_val(
+        userId = await db.fetch_val(
             "SELECT usuario_id FROM noticias WHERE id = :id", {"id": noticia.id}
         )
-        if user_id is None:
+        if userId is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="No existe la noticia que desea editar"
             )
 
-        if rol == "editor" and token_id != user_id:
+        if rol == "editor" and token_id != userId:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Sin autorizacion para editar esta noticia"
@@ -239,7 +239,7 @@ async def update_noticia(
     except HTTPException:
         raise
     except Exception:
-        raise error_interno()
+        raise errorInterno()
 
 
 @router.patch("/activo/{id}", status_code=status.HTTP_200_OK)
@@ -261,10 +261,10 @@ async def update_activo(id: int, _: bool = Depends(isPublicadorOrHigher)):
     except HTTPException:
         raise
     except Exception:
-        raise error_interno()
+        raise errorInterno()
 
 
-async def insert_img(imagenes, noticia_id: int):
+async def insert_img(imagenes, noticiaId: int):
     query_insert = """
     INSERT INTO imagenes(noticia_id, imagen, tipo_imagen)
     VALUES(:noticia_id, :imagen, :tipo_imagen)
@@ -274,7 +274,7 @@ async def insert_img(imagenes, noticia_id: int):
 
     for img in imagenes:
         # Nombre único y seguro
-        original_name = os.path.basename(img.filename or f"unnamed_{noticia_id}.jpg")
+        original_name = os.path.basename(img.filename or f"unnamed_{noticiaId}.jpg")
         safe_filename = f"{uuid.uuid4().hex}_{original_name}"
         file_path = os.path.join(UPLOAD_DIR, safe_filename)
 
@@ -282,7 +282,7 @@ async def insert_img(imagenes, noticia_id: int):
             f.write(await img.read())
 
         values = {
-            "noticia_id": noticia_id,
+            "noticia_id": noticiaId,
             "imagen": file_path,
             "tipo_imagen": img.content_type
         }

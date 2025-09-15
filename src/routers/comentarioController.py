@@ -2,22 +2,22 @@ from fastapi import APIRouter,HTTPException,status,Depends,Query
 from DataBase.models.comentarioModel import Comentario
 from DataBase.schemas.comentarioSchema import comentario_schema
 from DataBase.ConnectDB import db
-from utils.infoVerify import valid_user,valid_noticia,valid_comentario_padre
-from utils.security import get_token_id,get_rol
-from utils.HttpError import error_interno
-from utils.DbHelper import paginar,total_pages
+from utils.infoVerify import validUser,validNoticia,validComentarioPadre
+from utils.security import getTokenId,getRol
+from utils.HttpError import errorInterno
+from utils.DbHelper import paginar,totalPages
 
 router = APIRouter(prefix="/comentarios",tags=["Comentarios"])
 
 @router.get("/{noticia_id}",status_code=status.HTTP_200_OK)
-async def get_comentarios(
+async def getComentarios(
     noticia_id:int,
     page: int = Query(1, ge=1,description="Número de página"),
     size: int = Query(10, ge=1, le=100),
 ):
     try:
    
-        await valid_noticia(noticia_id)
+        await validNoticia(noticia_id)
         offset= paginar(page,size)
         
         query = """
@@ -48,20 +48,20 @@ async def get_comentarios(
             "page": page,
             "size": size,
             "total":total,
-            "total_pages": total_pages(total, size),
+            "total_pages": totalPages(total, size),
             "usuarios": [comentario_schema(row) for row in comentarios]
         }
     except HTTPException:
         raise
     except Exception:
-        raise error_interno()
+        raise errorInterno()
 
 @router.post("/",status_code=status.HTTP_201_CREATED)
-async def post_comentario(comentario:Comentario,token_id:int = Depends(get_token_id)):
+async def post_comentario(comentario:Comentario,userId:int = Depends(getTokenId)):
     try:
-        await valid_noticia(comentario.noticia_id)
-        await valid_user(token_id,1)
-        await valid_comentario_padre(comentario.comentario_padre_id)
+        await validNoticia(comentario.noticia_id)
+        await validUser(userId,1)
+        await validComentarioPadre(comentario.comentario_padre_id)
         
         if not comentario.contenido or not comentario.contenido.strip():
             raise HTTPException(
@@ -75,7 +75,7 @@ async def post_comentario(comentario:Comentario,token_id:int = Depends(get_token
         
         values ={
             "noticia_id":comentario.noticia_id,
-            "usuario_id":token_id,
+            "usuario_id":userId,
             "contenido":comentario.contenido,
             "comentario_padre_id":comentario.comentario_padre_id
         }
@@ -83,20 +83,20 @@ async def post_comentario(comentario:Comentario,token_id:int = Depends(get_token
         result = await db.fetch_val(query,values)
         
         if not result:
-            raise error_interno()
+            raise errorInterno()
 
         return {"detail":"Comentario publicado exitosamente",
                 "comentario_id":result}
     except HTTPException:
         raise
     except Exception:
-        raise error_interno()
+        raise errorInterno()
 
 @router.delete("/", status_code=status.HTTP_200_OK)
-async def delete_comentario(id: int, token_id: int = Depends(get_token_id)):
+async def delete_comentario(id: int, userId: int = Depends(getTokenId)):
     try:
         # Validar usuario
-        await valid_user(token_id, 1)
+        await validUser(userId, 1)
 
         # Verificar si el comentario existe
         query = "SELECT usuario_id FROM comentarios WHERE id = :id"
@@ -106,13 +106,13 @@ async def delete_comentario(id: int, token_id: int = Depends(get_token_id)):
                                 detail="Comentario no encontrado")
 
         # Validar permisos
-        if not (token_id == comentario_usuario["usuario_id"] or get_rol(token_id) == "admin"):
+        if not (userId == comentario_usuario["usuario_id"] or getRol(userId) == "admin"):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                                 detail="No tienes acceso a esta acción")
 
         # Armar query para borrar comentario (y sus hijos si aplica)
         query = "DELETE FROM comentarios WHERE id = :id"
-        if await valid_comentario_padre(id) is None:
+        if await validComentarioPadre(id) is None:
             query += " OR comentario_padre_id = :id"
 
         # Usar RETURNING con fetch_one
@@ -120,11 +120,11 @@ async def delete_comentario(id: int, token_id: int = Depends(get_token_id)):
         result = await db.fetch_one(query, {"id": id})
 
         if result is None:
-            raise error_interno()
+            raise errorInterno()
 
         return {"detail": f"Comentario {result['id']} eliminado correctamente"}
 
     except HTTPException:
         raise
     except Exception:
-        raise error_interno()
+        raise errorInterno()
