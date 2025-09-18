@@ -2,8 +2,8 @@ from fastapi import HTTPException,status,Depends
 from fastapi.security import OAuth2PasswordBearer
 from dotenv import load_dotenv
 from datetime import datetime,timezone,timedelta
-from typing import cast
-from typing import Dict, Any
+from utils.infoVerify import searchUser
+from typing import cast,Dict
 import jwt
 from jwt import PyJWTError, ExpiredSignatureError, InvalidTokenError
 from DataBase.ConnectDB import db
@@ -22,27 +22,46 @@ except ValueError:
     raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                         detail="Error interno en el servidor")
 
-def authToken(token: str = Depends(oauth2)):
+async def authToken(token: str = Depends(oauth2)):
     try:
-        token_data = jwt.decode(token,SECRET_KEY,algorithms=[ALGORITHM])
-        token_data["sub"] = int(token_data["sub"])
-        return token_data
+        tokenData = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        
+        userId = int(tokenData.get("sub", 0))
+        if not userId:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token sin 'sub' válido",
+                headers={"WWW-Authenticate": "Bearer"}
+            )
+
+        if await searchUser(userId, 1) is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Usuario del token no existe",
+                headers={"WWW-Authenticate": "Bearer"}
+            )
+
+        return tokenData
+
     except ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token Expirado")
+            detail="Token expirado",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
     except InvalidTokenError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Token invalido {e}")
+            detail=f"Token inválido: {e}",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
     except PyJWTError:
-         raise HTTPException(
+        raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token invalido",
-            headers={"WWW-Authenticate": "Bearer"}  
+            detail="Token inválido",
+            headers={"WWW-Authenticate": "Bearer"}
         )
 
-    
 def generateJWT(id : int ) -> str :
     playload = {
         "sub": str(id),

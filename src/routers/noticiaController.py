@@ -169,7 +169,7 @@ async def update_noticia(
     noticia: Noticias = Depends(Noticias.from_form),
     imagenes: List[UploadFile] = File(...),
     rol: str = Depends(isEditorOrHigher),
-    token_id: int = Depends(getTokenId)
+    tokenId: int = Depends(getTokenId)
 ):
     try:
         validCategoria(noticia.categoria_id)
@@ -183,7 +183,7 @@ async def update_noticia(
                 detail="No existe la noticia que desea editar"
             )
 
-        if rol == "editor" and token_id != userId:
+        if rol == "editor" and tokenId != userId:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Sin autorizacion para editar esta noticia"
