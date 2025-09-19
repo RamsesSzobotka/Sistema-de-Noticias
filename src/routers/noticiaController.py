@@ -38,7 +38,7 @@ async def getNoticias(
         FROM noticias n
         JOIN categorias c ON n.categoria_id = c.id
         JOIN usuarios u ON n.usuario_id = u.id
-        WHERE activo = TRUE
+        WHERE n.activo = TRUE
         LIMIT :size OFFSET :offset
         """
         
@@ -53,19 +53,20 @@ async def getNoticias(
             "usuarios": [noticia_schema(row) for row in result]
         }
 
-        total = await db.fetch_val("SELECT COUNT(*) FROM noticias")
+        total = await db.fetch_val("SELECT COUNT(*) FROM noticias WHERE activo = TRUE")
         return {
             "page": page,
             "size": size,
             "total":total,
             "total_pages": totalPages(total, size),
-            "usuarios": [noticia_schema(row) for row in result]
+            "noticias": [noticia_schema(row) for row in result]
         }
 
     except HTTPException:
         raise
-    except Exception:
-        raise errorInterno()
+    except Exception as e:
+        raise HTTPException(status_code=500,
+                            detail=f"error: {e}")
 
 @router.get("/all", status_code=status.HTTP_200_OK)
 async def get_noticias_admin(

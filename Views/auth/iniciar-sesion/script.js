@@ -38,7 +38,7 @@ document
                         timerProgressBar: true,
                         showConfirmButton: false,
                     }).then(() => {
-                        window.location.href = "../../index.php";
+                        window.location.href = "../../index.html";
                     });
                 })
                 .catch((error) => {

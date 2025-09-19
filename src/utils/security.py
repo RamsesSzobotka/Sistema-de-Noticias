@@ -49,10 +49,10 @@ async def authToken(token: str = Depends(oauth2)):
             detail="Token expirado",
             headers={"WWW-Authenticate": "Bearer"}
         )
-    except InvalidTokenError as e:
+    except InvalidTokenError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Token inválido: {e}",
+            detail="Token inválido",
             headers={"WWW-Authenticate": "Bearer"}
         )
     except PyJWTError:

@@ -22,7 +22,7 @@ async function verificarSesionYObtenerId() {
       text: "Debes iniciar sesión para acceder.",
       confirmButtonText: "Ir al inicio"
     }).then(() => {
-      window.location.href = "../index.php";
+      window.location.href = "../index.html";
     });
     return false;
   }
