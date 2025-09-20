@@ -3,6 +3,7 @@ from fastapi.security import OAuth2PasswordBearer
 from dotenv import load_dotenv
 from datetime import datetime,timezone,timedelta
 from utils.infoVerify import searchUser
+from utils.HttpError import errorInterno
 from typing import cast,Dict
 import jwt
 from jwt import PyJWTError, ExpiredSignatureError, InvalidTokenError
@@ -26,15 +27,15 @@ async def authToken(token: str = Depends(oauth2)):
     try:
         tokenData = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         
-        userId = int(tokenData.get("sub", 0))
-        if not userId:
+        tokenData["sub"] = int(tokenData.get("sub", 0))
+        if not  tokenData["sub"]:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token sin 'sub' válido",
                 headers={"WWW-Authenticate": "Bearer"}
             )
 
-        if await searchUser(userId, 1) is None:
+        if await searchUser( tokenData["sub"], 1) is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Usuario del token no existe",
@@ -139,9 +140,9 @@ async def isEditorOrHigher(token: Dict = Depends(authToken)) -> bool:
         return result["rol"]
     except HTTPException:
         raise
-    except Exception:
+    except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail="Error interno del servidor")  
+                            detail=f"Error interno del servidor{e}")  
                   
 async def isPublicadorOrHigher(token: Dict = Depends(authToken))-> bool :
     try:
@@ -175,9 +176,8 @@ async def getRol(id: int):
         return result
     except HTTPException:
         raise
-    except Exception:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail="Error interno del servidor")            
+    except Exception as e:
+        raise errorInterno(e)           
 
 def getTokenId(token:Dict = Depends(authToken)):
     user_id = token.get("sub")

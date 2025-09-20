@@ -12,7 +12,7 @@ from utils.DbHelper import paginar,totalPages
 
 router = APIRouter(prefix="/noticia", tags=["Noticias"])
 
-UPLOAD_DIR = "ImagenesDB"
+UPLOAD_DIR = "imagenesDB"
 
 
 @router.get("/", status_code=status.HTTP_200_OK)
@@ -24,22 +24,34 @@ async def getNoticias(
         offset = paginar(page,size)
         
         query = """
-        SELECT 
-            n.id,
-            n.titulo,
-            n.contenido,
-            n.activo,
-            n.fecha_creacion,
-            c.id AS categoria_id,
-            c.nombre AS categoria_nombre,
-            u.id AS usuario_id,
-            u.usuario as usuario_nombre,
-            n.autor
-        FROM noticias n
-        JOIN categorias c ON n.categoria_id = c.id
-        JOIN usuarios u ON n.usuario_id = u.id
-        WHERE n.activo = TRUE
-        LIMIT :size OFFSET :offset
+            SELECT 
+                n.id,
+                n.titulo,
+                n.contenido,
+                n.activo,
+                n.fecha_creacion,
+                c.id AS categoria_id,
+                c.nombre AS categoria_nombre,
+                u.id AS usuario_id,
+                u.usuario AS usuario_nombre,
+                n.autor,
+                COALESCE(
+                    json_agg(
+                        json_build_object(
+                            'id', i.id,
+                            'imagen', i.imagen,
+                            'tipo_imagen', i.tipo_imagen
+                        )
+                    ) FILTER (WHERE i.id IS NOT NULL), '[]'::json
+                ) AS imagenes
+            FROM noticias n
+            JOIN categorias c ON n.categoria_id = c.id
+            JOIN usuarios u ON n.usuario_id = u.id
+            LEFT JOIN imagenes i ON i.noticia_id = n.id
+            WHERE n.activo = TRUE  -- quitar o modificar según GET /all
+            GROUP BY n.id, c.id, u.id
+            ORDER BY n.fecha_creacion DESC
+            LIMIT :size OFFSET :offset;
         """
         
         result = await db.fetch_all(query,{"size":size,"offset":offset})
@@ -78,22 +90,34 @@ async def get_noticias_admin(
         offset = paginar(page, size)
 
         query = """
-        SELECT 
-            n.id,
-            n.titulo,
-            n.contenido,
-            n.activo,
-            n.fecha_creacion,
-            c.id AS categoria_id,
-            c.nombre AS categoria_nombre,
-            u.id AS usuario_id,
-            u.usuario as usuario_nombre,
-            n.autor
-        FROM noticias n
-        JOIN categorias c ON n.categoria_id = c.id
-        JOIN usuarios u ON n.usuario_id = u.id
-        ORDER BY n.fecha_creacion DESC
-        LIMIT :size OFFSET :offset
+            SELECT 
+                n.id,
+                n.titulo,
+                n.contenido,
+                n.activo,
+                n.fecha_creacion,
+                c.id AS categoria_id,
+                c.nombre AS categoria_nombre,
+                u.id AS usuario_id,
+                u.usuario AS usuario_nombre,
+                n.autor,
+                COALESCE(
+                    json_agg(
+                        json_build_object(
+                            'id', i.id,
+                            'imagen', i.imagen,
+                            'tipo_imagen', i.tipo_imagen
+                        )
+                    ) FILTER (WHERE i.id IS NOT NULL), '[]'::json
+                ) AS imagenes
+            FROM noticias n
+            JOIN categorias c ON n.categoria_id = c.id
+            JOIN usuarios u ON n.usuario_id = u.id
+            LEFT JOIN imagenes i ON i.noticia_id = n.id
+            WHERE n.activo = TRUE  -- quitar o modificar según GET /all
+            GROUP BY n.id, c.id, u.id
+            ORDER BY n.fecha_creacion DESC
+            LIMIT :size OFFSET :offset;
         """
 
         result = await db.fetch_all(query, {"size": size, "offset": offset})
@@ -119,8 +143,8 @@ async def get_noticias_admin(
 
     except HTTPException:
         raise
-    except Exception:
-        raise errorInterno()
+    except Exception as e:
+        raise errorInterno(e)
 
 @router.post("/")
 async def crear_noticia(
@@ -161,8 +185,9 @@ async def crear_noticia(
 
     except HTTPException:
         raise
-    except Exception:
-        raise errorInterno()
+    except Exception as e:
+        raise HTTPException(status_code=500,
+                            detail=f": {e}")
 
 
 @router.put("/", status_code=status.HTTP_200_OK)
@@ -239,8 +264,8 @@ async def update_noticia(
 
     except HTTPException:
         raise
-    except Exception:
-        raise errorInterno()
+    except Exception as e:
+        raise errorInterno(e)
 
 
 @router.patch("/activo/{id}", status_code=status.HTTP_200_OK)
@@ -261,8 +286,8 @@ async def update_activo(id: int, _: bool = Depends(isPublicadorOrHigher)):
 
     except HTTPException:
         raise
-    except Exception:
-        raise errorInterno()
+    except Exception as e:
+        raise errorInterno(e)
 
 
 async def insert_img(imagenes, noticiaId: int):
@@ -271,20 +296,23 @@ async def insert_img(imagenes, noticiaId: int):
     VALUES(:noticia_id, :imagen, :tipo_imagen)
     RETURNING id
     """
-    os.makedirs(UPLOAD_DIR, exist_ok=True)  # evitar duplicación de mkdir
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
 
     for img in imagenes:
-        # Nombre único y seguro
         original_name = os.path.basename(img.filename or f"unnamed_{noticiaId}.jpg")
         safe_filename = f"{uuid.uuid4().hex}_{original_name}"
         file_path = os.path.join(UPLOAD_DIR, safe_filename)
 
+        # Guardar el archivo físico
         with open(file_path, "wb") as f:
             f.write(await img.read())
 
+        # Normalizar la ruta (minúsculas + barras /)
+        normalized_path = file_path.replace("\\", "/").lower()
+
         values = {
             "noticia_id": noticiaId,
-            "imagen": file_path,
+            "imagen": normalized_path,
             "tipo_imagen": img.content_type
         }
         imagen_id = await db.fetch_val(query_insert, values)

@@ -40,7 +40,6 @@ async function verificarSesion() {
         });
 
         if (!res.ok) {
-            // Si el token expira o no es válido
             sessionStorage.clear();
             document.querySelector(".user-info").style.display = "none";
             document.querySelector(".nav-auth").style.display = "flex";
@@ -48,13 +47,10 @@ async function verificarSesion() {
         }
 
         const data = await res.json();
-
-        // Guardamos datos relevantes del usuario
         sessionStorage.setItem("usuario_id", data.id);
         sessionStorage.setItem("rol", data.rol);
         sessionStorage.setItem("usuario", data.usuario);
 
-        // Mostrar nombre de usuario en el navbar
         const usernameDisplay = document.getElementById("usernameDisplay");
         if (usernameDisplay) usernameDisplay.textContent = `Hola, ${data.usuario}`;
 
@@ -62,7 +58,6 @@ async function verificarSesion() {
         document.querySelector(".nav-auth").style.display = "none";
         document.getElementById("logoutBtn").style.display = "block";
 
-        // Mostrar botones según rol
         mostrarBotonesPorRol(data.rol);
 
     } catch (error) {
@@ -71,7 +66,17 @@ async function verificarSesion() {
 }
 
 function mostrarBotonesPorRol(rol) {
-    // Botón de perfil (siempre disponible si hay sesión)
+    // Limpiar listeners existentes
+    const botones = ["btn-editar", "adminBtn", "supervisorPanelBtn", "publicarBtn"];
+    botones.forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) {
+            btn.style.display = "none";
+            btn.replaceWith(btn.cloneNode(true)); // limpia event listeners previos
+        }
+    });
+
+    // Botón de perfil
     const perfilBtn = document.getElementById("btn-editar");
     if (perfilBtn) {
         perfilBtn.style.display = "inline-block";
@@ -134,7 +139,7 @@ function logout() {
                 timer: 2000,
                 showConfirmButton: false,
             }).then(() => {
-                window.location.href = "../index.html";
+                window.location.href = "index.html";
             });
         }
     });
@@ -143,29 +148,24 @@ function logout() {
 // Actualizar visitas
 async function actualizarVisitas() {
     try {
-        // Incrementar visitas usando PUT
         await fetch("http://127.0.0.1:8000/vistas/update", { method: "PUT" });
-
-        // Obtener total de visitas
         const res = await fetch("http://127.0.0.1:8000/vistas/", { method: "GET" });
         const data = await res.json();
         const visitorCountEl = document.getElementById("visitorCount");
-        if (visitorCountEl) {
-            visitorCountEl.textContent = `${data.cantidad} visitas`;
-        }
+        if (visitorCountEl) visitorCountEl.textContent = `${data.cantidad} visitas`;
     } catch (error) {
         console.error("Error al actualizar visitas:", error);
     }
 }
 
-// Cargar noticias desde backend (paginadas)
+// Cargar noticias
 async function cargarNoticias() {
     try {
         const res = await fetch(`http://127.0.0.1:8000/noticia/?page=${currentPage}&size=10`);
         const data = await res.json();
 
         totalPages = data.total_pages;
-        const noticias = data.noticias || []; // backend devuelve "usuarios"
+        const noticias = data.noticias || [];
 
         if (noticias.length === 0 && currentPage === 1) {
             document.getElementById("wrapper").style.minHeight = "100vh";
@@ -176,7 +176,6 @@ async function cargarNoticias() {
         }
 
         renderNews(noticias);
-
         document.getElementById("loadMore").style.display =
             currentPage < totalPages ? "block" : "none";
     } catch (error) {
@@ -184,7 +183,7 @@ async function cargarNoticias() {
     }
 }
 
-// Cargar más (siguiente página)
+// Cargar más noticias
 async function loadMoreNews() {
     if (currentPage < totalPages) {
         currentPage++;
@@ -199,7 +198,6 @@ function renderNews(noticias) {
     noticias.forEach((article, index) => {
         const card = createFeaturedNewsCard(article, "secondary-news-card");
         if (currentPage === 1 && index === 0 && newsGrid.querySelectorAll(".news-card").length === 0) {
-            // primera noticia destacada
             newsGrid.appendChild(createFeaturedNewsCard(article, "main-news"));
         } else {
             let container = newsGrid.lastElementChild;
@@ -220,19 +218,19 @@ function createFeaturedNewsCard(article, className) {
     card.href = "#";
     card.addEventListener("click", () => {
         localStorage.setItem("noticia", JSON.stringify(article));
-        window.location.href = "../app/detalle-noticia/";
+        window.location.href = "detalle-noticia/index.html";
     });
 
-    let imageUrl = "../imagenDB/DEFAULT.PNG";
+    let imageUrl = "../src/imagenesDB/DEFAULT.png";
     if (article.imagenes && article.imagenes.length > 0 && article.imagenes[0].imagen) {
         imageUrl = article.imagenes[0].imagen;
     }
 
     card.innerHTML = `
-        <img src="${imageUrl}" 
+        <img src="../src/${imageUrl}" 
              alt="${article.titulo}" 
              class="news-image"
-             onerror="this.onerror=null; this.src='../imagenDB/DEFAULT.PNG'">
+             onerror="this.onerror=null; this.src='../src/imagenesDB/DEFAULT.png';">
         <div class="news-content">
             <h3 class="news-title">${article.titulo}</h3>
             <p class="news-excerpt">${article.contenido.substring(0, className === "main-news" ? 500 : 100)}...</p>

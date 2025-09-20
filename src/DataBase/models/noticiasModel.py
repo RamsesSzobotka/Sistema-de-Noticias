@@ -1,16 +1,17 @@
 from pydantic import BaseModel
 from fastapi import Form
+from typing import Optional
 
 class Noticias(BaseModel):
-    id: int | None
-    titulo:str
+    id: Optional[int] = None
+    titulo: str
     contenido: str
     categoria_id: int
     autor: str
 
     @staticmethod
     def from_form(
-        id: int = Form(...),
+        id: Optional[int] = Form(None),  # <--- aquí está el cambio
         titulo: str = Form(...),
         contenido: str = Form(...),
         categoria_id: int = Form(...),
