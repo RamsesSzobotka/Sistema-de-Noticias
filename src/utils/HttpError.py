@@ -1,7 +1,9 @@
-from fastapi import HTTPException,status
+from fastapi import HTTPException
 
-def errorInterno(e):
-    return HTTPException(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        detail=f"Error interno del servidor: {e}"
-    )
+def errorInterno(e = None):
+    """
+    Lanza un HTTPException con código 500 y detalle del error.
+    Si no se pasa ningún error, usa un mensaje genérico.
+    """
+    detalle = str(e) if e else "Error interno del servidor"
+    raise HTTPException(status_code=500, detail=detalle)

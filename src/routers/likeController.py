@@ -36,25 +36,26 @@ async def likeVerify(noticiaId: int, userId: int = Depends(getTokenId)):
 async def postLike(noticiaId:int,userId: int = Depends(getTokenId)):
     try:
         await validNoticia(noticiaId)
-        query = "SELECT id FROM likes WHERE usuario_id =:usuario_id and noticia_id =:noticia_id"
-        
-        values = {
-            "usuario_id":userId,
-            "noticia_id":noticiaId
-            }
-        
-        result = await db.fetch_val(query,values)
-        if result:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT,
-                                detail="Ya le as dado like a esta noticia")
+        async with db.transaction():
+            query = "SELECT id FROM likes WHERE usuario_id =:usuario_id and noticia_id =:noticia_id"
             
-        query = "INSERT INTO likes(usuario_id,noticia_id) VALUES(:usuario_id,:noticia_id) RETURNING id"
-        
-        result = await db.execute(query,{"usuario_id":userId,"noticia_id":noticiaId})
-        if not result:
-            errorInterno()
-        
-        return {"detail": "Like agregado"}
+            values = {
+                "usuario_id":userId,
+                "noticia_id":noticiaId
+                }
+            
+            result = await db.fetch_val(query,values)
+            if result:
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+                                    detail="Ya le as dado like a esta noticia")
+                
+            query = "INSERT INTO likes(usuario_id,noticia_id) VALUES(:usuario_id,:noticia_id) RETURNING id"
+            
+            result = await db.execute(query,{"usuario_id":userId,"noticia_id":noticiaId})
+            if not result:
+                errorInterno()
+            
+            return {"detail": "Like agregado"}
     except HTTPException:
         raise
     except Exception:

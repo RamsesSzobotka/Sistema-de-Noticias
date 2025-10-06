@@ -75,26 +75,26 @@ async def updateUser(user: Usuarios, userId: int = Depends(getTokenId)):
                 status_code=status.HTTP_409_CONFLICT,
                 detail="El nombre de usuario ya está en uso"
             )
+        async with db.transaction():
+            query = """
+                UPDATE usuarios 
+                SET nombre = :nombre, apellido = :apellido, usuario = :usuario 
+                WHERE id = :id 
+                RETURNING id
+            """
+            values = {
+                "id": userId,
+                "nombre": user.nombre,
+                "apellido": user.apellido,
+                "usuario": user.usuario
+            }
 
-        query = """
-            UPDATE usuarios 
-            SET nombre = :nombre, apellido = :apellido, usuario = :usuario 
-            WHERE id = :id 
-            RETURNING id
-        """
-        values = {
-            "id": userId,
-            "nombre": user.nombre,
-            "apellido": user.apellido,
-            "usuario": user.usuario
-        }
+            result = await db.fetch_val(query, values)
 
-        result = await db.fetch_val(query, values)
+            if not result:
+                raise errorInterno()
 
-        if not result:
-            raise errorInterno()
-
-        return {"detail": "Usuario actualizado exitosamente"}
+            return {"detail": "Usuario actualizado exitosamente"}
     except HTTPException:
         raise
     except Exception:
@@ -105,18 +105,19 @@ async def updateUser(user: Usuarios, userId: int = Depends(getTokenId)):
 @router.patch("/activo/{id}", status_code=status.HTTP_200_OK)
 async def updateActivo(id: int, _: bool = Depends(isAdmin)):
     try:
-        result = await db.fetch_val(
-            "UPDATE usuarios SET activo = NOT activo WHERE id = :id RETURNING id",
-            {"id": id}
-        )
-
-        if not result:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Usuario inexistente"
+        async with db.transaction():
+            result = await db.fetch_val(
+                "UPDATE usuarios SET activo = NOT activo WHERE id = :id RETURNING id",
+                {"id": id}
             )
 
-        return {"detail": "Estado del usuario ha sido actualizado correctamente"}
+            if not result:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Usuario inexistente"
+                )
+
+            return {"detail": "Estado del usuario ha sido actualizado correctamente"}
     except HTTPException:
         raise
     except Exception:
@@ -145,24 +146,24 @@ async def updatePassword(password: str, newPassword: str, userId: int = Depends(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="La contraseña actual no coincide"
             )
-
-        query = """
-            UPDATE usuarios 
-            SET contrasena = :contrasena 
-            WHERE id = :id 
-            RETURNING id
-        """
-        result = await db.fetch_val(
-            query, {"contrasena": crypt.hash(newPassword), "id": userId}
-        )
-
-        if not result:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No se pudo actualizar la contraseña"
+        async with db.transaction():
+            query = """
+                UPDATE usuarios 
+                SET contrasena = :contrasena 
+                WHERE id = :id 
+                RETURNING id
+            """
+            result = await db.fetch_val(
+                query, {"contrasena": crypt.hash(newPassword), "id": userId}
             )
 
-        return {"detail": "Contraseña actualizada correctamente"}
+            if not result:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="No se pudo actualizar la contraseña"
+                )
+
+            return {"detail": "Contraseña actualizada correctamente"}
     except HTTPException:
         raise
     except Exception:

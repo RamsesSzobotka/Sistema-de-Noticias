@@ -68,25 +68,25 @@ async def post_comentario(comentario:Comentario,userId:int = Depends(getTokenId)
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="El comentario no puede estar vacío"
             )
+        async with db.transaction():
+            query = """
+            INSERT INTO comentarios(noticia_id,usuario_id,contenido,comentario_padre_id)
+            VALUES(:noticia_id,:usuario_id,:contenido,:comentario_padre_id) RETURNING id"""
+            
+            values ={
+                "noticia_id":comentario.noticia_id,
+                "usuario_id":userId,
+                "contenido":comentario.contenido,
+                "comentario_padre_id":comentario.comentario_padre_id
+            }
+            
+            result = await db.fetch_val(query,values)
+            
+            if not result:
+                raise errorInterno()
 
-        query = """
-        INSERT INTO comentarios(noticia_id,usuario_id,contenido,comentario_padre_id)
-        VALUES(:noticia_id,:usuario_id,:contenido,:comentario_padre_id) RETURNING id"""
-        
-        values ={
-            "noticia_id":comentario.noticia_id,
-            "usuario_id":userId,
-            "contenido":comentario.contenido,
-            "comentario_padre_id":comentario.comentario_padre_id
-        }
-        
-        result = await db.fetch_val(query,values)
-        
-        if not result:
-            raise errorInterno()
-
-        return {"detail":"Comentario publicado exitosamente",
-                "comentario_id":result}
+            return {"detail":"Comentario publicado exitosamente",
+                    "comentario_id":result}
     except HTTPException:
         raise
     except Exception:
@@ -99,30 +99,31 @@ async def delete_comentario(id: int, userId: int = Depends(getTokenId)):
         await validUser(userId, 1)
 
         # Verificar si el comentario existe
-        query = "SELECT usuario_id FROM comentarios WHERE id = :id"
-        comentario_usuario = await db.fetch_one(query, {"id": id})
-        if comentario_usuario is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                                detail="Comentario no encontrado")
+        async with db.transaction():
+            query = "SELECT usuario_id FROM comentarios WHERE id = :id"
+            comentario_usuario = await db.fetch_one(query, {"id": id})
+            if comentario_usuario is None:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                    detail="Comentario no encontrado")
 
-        # Validar permisos
-        if not (userId == comentario_usuario["usuario_id"] or getRol(userId) == "admin"):
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
-                                detail="No tienes acceso a esta acción")
+            # Validar permisos
+            if not (userId == comentario_usuario["usuario_id"] or getRol(userId) == "admin"):
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                                    detail="No tienes acceso a esta acción")
 
-        # Armar query para borrar comentario (y sus hijos si aplica)
-        query = "DELETE FROM comentarios WHERE id = :id"
-        if await validComentarioPadre(id) is None:
-            query += " OR comentario_padre_id = :id"
+            # Armar query para borrar comentario (y sus hijos si aplica)
+            query = "DELETE FROM comentarios WHERE id = :id"
+            if await validComentarioPadre(id) is None:
+                query += " OR comentario_padre_id = :id"
 
-        # Usar RETURNING con fetch_one
-        query += " RETURNING id"
-        result = await db.fetch_one(query, {"id": id})
+            # Usar RETURNING con fetch_one
+            query += " RETURNING id"
+            result = await db.fetch_one(query, {"id": id})
 
-        if result is None:
-            raise errorInterno()
+            if result is None:
+                raise errorInterno("Error al eliminar el like")
 
-        return {"detail": f"Comentario {result['id']} eliminado correctamente"}
+            return {"detail": f"Comentario {result['id']} eliminado correctamente"}
 
     except HTTPException:
         raise
