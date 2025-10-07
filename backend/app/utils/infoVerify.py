@@ -1,5 +1,5 @@
 from fastapi import HTTPException, status
-from DataBase.ConnectDB import db
+from core.ConnectDB import db
 import os
 import re
 from dotenv import load_dotenv

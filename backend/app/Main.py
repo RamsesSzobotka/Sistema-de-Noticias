@@ -1,7 +1,8 @@
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from routers import authController,noticiaController,visitasController,userController,likeController,comentarioController
 from fastapi.middleware.cors import CORSMiddleware
-from DataBase.ConnectDB import connect, disconnect
+from core.ConnectDB import connect, disconnect
 from contextlib import asynccontextmanager
 
 @asynccontextmanager
@@ -19,6 +20,8 @@ app.include_router(visitasController.router)
 app.include_router(userController.router)
 app.include_router(likeController.router)
 app.include_router(comentarioController.router)
+#cargar front
+app.mount("/frontend", StaticFiles(directory="../../frontend/views"), name="frontend")
 
 app.add_middleware(
     CORSMiddleware,

@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 from passlib.context import CryptContext
-from DataBase.ConnectDB import db
-from DataBase.models.userModel import Usuarios,Usuarios_admin
-from utils.security import generateJWT,generateRefreshJWT,isAdmin
+from core.ConnectDB import db
+from models.userModel import Usuarios,Usuarios_admin
+from core.security import generateJWT,generateRefreshJWT,isAdmin
 from utils.infoVerify import searchUser,validUsername,validRol,validContrasena
 
 router = APIRouter(prefix ="/auth",tags=["Autenticacion"])
@@ -36,30 +36,30 @@ async def login(form : OAuth2PasswordRequestForm = Depends()):
 async def register(user: Usuarios): 
     try:
         await validUsername(user.usuario)
-        
-        if not validContrasena(user.contrasena) :
-            raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
-                                detail="Contraseña invalida,introduzca una contraseña que contenga 8 caracteres minimo y que incluya una letra mayuscula,una minuscula,un numero y un caracter especial(@$!%*?&),ejemplo: Hola123!")
-        
-        query ="""INSERT INTO usuarios(nombre,apellido,usuario,contrasena,rol,activo) 
-                VALUES(:nombre,:apellido,:usuario,:contrasena,:rol,:activo)
-                RETURNING id"""
-        values ={
-            "nombre":user.nombre,
-            "apellido":user.apellido,
-            "usuario":user.usuario,
-            "contrasena":crypt.hash(user.contrasena),
-            "rol": "global",
-            "activo": True
-        }
-        
-        result = await db.fetch_one(query,values)
-        
-        if result is None:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                               detail="Error al registrar usuario") 
+        async with db.transaction():
+            if not validContrasena(user.contrasena) :
+                raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                                    detail="Contraseña invalida,introduzca una contraseña que contenga 8 caracteres minimo y que incluya una letra mayuscula,una minuscula,un numero y un caracter especial(@$!%*?&),ejemplo: Hola123!")
             
-        return {"detail":"Usuario registrado exitosamente"}    
+            query ="""INSERT INTO usuarios(nombre,apellido,usuario,contrasena,rol,activo) 
+                    VALUES(:nombre,:apellido,:usuario,:contrasena,:rol,:activo)
+                    RETURNING id"""
+            values ={
+                "nombre":user.nombre,
+                "apellido":user.apellido,
+                "usuario":user.usuario,
+                "contrasena":crypt.hash(user.contrasena),
+                "rol": "global",
+                "activo": True
+            }
+            
+            result = await db.fetch_one(query,values)
+            
+            if result is None:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                                detail="Error al registrar usuario") 
+                
+            return {"detail":"Usuario registrado exitosamente"}    
     except HTTPException:
         raise
     except Exception:

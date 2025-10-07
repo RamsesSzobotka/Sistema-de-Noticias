@@ -1,9 +1,9 @@
 from fastapi import APIRouter,HTTPException,status,Depends,Query
-from DataBase.models.comentarioModel import Comentario
-from DataBase.schemas.comentarioSchema import comentario_schema
-from DataBase.ConnectDB import db
+from models.comentarioModel import Comentario
+from schemas.comentarioSchema import comentario_schema
+from core.ConnectDB import db
 from utils.infoVerify import validUser,validNoticia,validComentarioPadre
-from utils.security import getTokenId,getRol
+from core.security import getTokenId,getRol
 from utils.HttpError import errorInterno
 from utils.DbHelper import paginar,totalPages
 

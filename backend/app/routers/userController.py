@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Query, HTTPException, status, Depends
-from DataBase.ConnectDB import db
+from core.ConnectDB import db
 from passlib.context import CryptContext
-from DataBase.schemas.userSchema import admin_user_schema, global_user_schema
-from DataBase.models.userModel import Usuarios
-from utils.security import getTokenId, isAdmin
+from schemas.userSchema import admin_user_schema, global_user_schema
+from models.userModel import Usuarios
+from core.security import getTokenId, isAdmin
 from utils.infoVerify import searchUser, validContrasena, validUser
 from utils.DbHelper import paginar, totalPages
 from utils.HttpError import errorInterno  

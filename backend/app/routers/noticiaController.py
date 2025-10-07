@@ -1,11 +1,11 @@
 from fastapi import APIRouter,Query , HTTPException, status, Depends, UploadFile, File
-from DataBase.ConnectDB import db
+from core.ConnectDB import db
 import os
 import uuid
 from typing import List
-from DataBase.models.noticiasModel import Noticias
-from DataBase.schemas.noticiasSchema import noticia_schema
-from utils.security import isEditorOrHigher, isPublicadorOrHigher, getTokenId
+from models.noticiasModel import Noticias
+from schemas.noticiasSchema import noticia_schema
+from core.security import isEditorOrHigher, isPublicadorOrHigher, getTokenId
 from utils.infoVerify import validImagenes, validCategoria, validUser
 from utils.HttpError import errorInterno
 from utils.DbHelper import paginar,totalPages

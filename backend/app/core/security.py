@@ -7,7 +7,7 @@ from utils.HttpError import errorInterno
 from typing import cast,Dict
 import jwt
 from jwt import PyJWTError, ExpiredSignatureError, InvalidTokenError
-from DataBase.ConnectDB import db
+from core.ConnectDB import db
 import os
 import bcrypt
 

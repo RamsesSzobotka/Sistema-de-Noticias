@@ -1,7 +1,7 @@
 from fastapi import APIRouter,HTTPException,status,Depends
-from DataBase.ConnectDB import db
+from core.ConnectDB import db
 from utils.infoVerify import validNoticia
-from utils.security import getTokenId
+from core.security import getTokenId
 from utils.HttpError import errorInterno
 router = APIRouter(prefix="/like",tags=["Likes"])
 

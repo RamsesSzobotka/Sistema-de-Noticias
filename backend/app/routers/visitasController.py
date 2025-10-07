@@ -1,5 +1,5 @@
-from fastapi import APIRouter, HTTPException, status
-from DataBase.ConnectDB import db
+from fastapi import APIRouter, status
+from core.ConnectDB import db
 from utils.HttpError import errorInterno
 
 router = APIRouter(prefix="/vistas", tags=["Vistas"])
