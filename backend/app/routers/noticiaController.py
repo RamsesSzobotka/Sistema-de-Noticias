@@ -12,16 +12,15 @@ from utils.DbHelper import paginar,totalPages
 
 router = APIRouter(prefix="/noticia", tags=["Noticias"])
 
-UPLOAD_DIR = "imagenesDB"
-
+UPLOAD_DIR = "imagenesdb"
 @router.get("/", status_code=status.HTTP_200_OK)
 async def getNoticias(
-    page: int = Query(1, ge=1,description="Número de página"),
+    page: int = Query(1, ge=1, description="Número de página"),
     size: int = Query(10, ge=1, le=100),
 ):
     try:
-        offset = paginar(page,size)
-        
+        offset = paginar(page, size)
+
         query = """
             SELECT 
                 n.id,
@@ -47,37 +46,37 @@ async def getNoticias(
             JOIN categorias c ON n.categoria_id = c.id
             JOIN usuarios u ON n.usuario_id = u.id
             LEFT JOIN imagenes i ON i.noticia_id = n.id
-            WHERE n.activo = TRUE  -- quitar o modificar según GET /all
+            WHERE n.activo = TRUE
             GROUP BY n.id, c.id, u.id
             ORDER BY n.fecha_creacion DESC
             LIMIT :size OFFSET :offset;
         """
-        
-        result = await db.fetch_all(query,{"size":size,"offset":offset})
+
+        result = await db.fetch_all(query, {"size": size, "offset": offset})
 
         if not result:
             return {
-            "page": page,
-            "size": size,
-            "total":0,
-            "total_pages": 0,
-            "usuarios": [noticia_schema(row) for row in result]
-        }
+                "page": page,
+                "size": size,
+                "total": 0,
+                "total_pages": 0,
+                "noticias": [],
+            }
 
         total = await db.fetch_val("SELECT COUNT(*) FROM noticias WHERE activo = TRUE")
+
         return {
             "page": page,
             "size": size,
-            "total":total,
+            "total": total,
             "total_pages": totalPages(total, size),
-            "noticias": [noticia_schema(row) for row in result]
+            "noticias": [noticia_schema(row) for row in result],
         }
 
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500,
-                            detail=f"error: {e}")
+        raise HTTPException(status_code=500, detail=f"error: {e}")
 
 @router.get("/all", status_code=status.HTTP_200_OK)
 async def get_noticias_admin(
@@ -113,7 +112,6 @@ async def get_noticias_admin(
             JOIN categorias c ON n.categoria_id = c.id
             JOIN usuarios u ON n.usuario_id = u.id
             LEFT JOIN imagenes i ON i.noticia_id = n.id
-            WHERE n.activo = TRUE  -- quitar o modificar según GET /all
             GROUP BY n.id, c.id, u.id
             ORDER BY n.fecha_creacion DESC
             LIMIT :size OFFSET :offset;

@@ -97,7 +97,7 @@ function mostrarNoticias(noticias) {
       <td class="contenido-celda" data-contenido="${noticia.contenido.replace(/"/g, '&quot;')}">
         ${noticia.contenido.slice(0, 100)}...
       </td>
-      <td>${noticia.categoria_nombre}</td>
+      <td>${noticia.categoria?.nombre || "Sin categoría"}</td>
       <td>${noticia.autor}</td>
       <td class="imagenes-container">
         ${(noticia.imagenes || [])
@@ -141,7 +141,7 @@ function mostrarNoticias(noticias) {
 
 // PATCH estado de noticia
 function actualizarEstado(id) {
-  const token = localStorage.getItem("access_token");
+  const token = sessionStorage.getItem("access_token");
 
   fetch(`http://localhost:8000/noticia/activo/${id}`, {
     method: "PATCH",

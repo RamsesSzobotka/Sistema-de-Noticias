@@ -221,16 +221,19 @@ function createFeaturedNewsCard(article, className) {
         window.location.href = "detalle-noticia/index.html";
     });
 
-    let imageUrl = "../src/imagenesDB/DEFAULT.png";
+    // URL base de las imágenes servidas por FastAPI
+    let imageUrl = "http://127.0.0.1:8000/imagenesdb/DEFAULT.png";
+
     if (article.imagenes && article.imagenes.length > 0 && article.imagenes[0].imagen) {
-        imageUrl = article.imagenes[0].imagen;
+        // Si la BD guarda rutas relativas (ej: /imagenesdb/foto.jpg)
+        imageUrl = `http://127.0.0.1:8000/${article.imagenes[0].imagen}`;
     }
 
     card.innerHTML = `
-        <img src="../src/${imageUrl}" 
+        <img src="${imageUrl}" 
              alt="${article.titulo}" 
              class="news-image"
-             onerror="this.onerror=null; this.src='../src/imagenesDB/DEFAULT.png';">
+             onerror="this.onerror=null; this.src='http://127.0.0.1:8000/imagenesdb/DEFAULT.jpg';">
         <div class="news-content">
             <h3 class="news-title">${article.titulo}</h3>
             <p class="news-excerpt">${article.contenido.substring(0, className === "main-news" ? 500 : 100)}...</p>
@@ -242,3 +245,4 @@ function createFeaturedNewsCard(article, className) {
     `;
     return card;
 }
+
