@@ -1,41 +1,120 @@
-const apiUrl = "../../api/controllerUsuarios.php";
-let usuariosCargados = []; // Para almacenar todos los usuarios una sola vez
+const apiUrl = "http://127.0.0.1:8000/usuarios/";
+let usuariosCargados = []; // Cache local
 
-// Verifica si el usuario logueado es admin al intentar obtener la lista
+// ==============================
+// 🔹 Verificar sesión y rol
+// ==============================
 async function verificarSesionYPermiso() {
+  let access_token = sessionStorage.getItem("access_token");
+
+  if (!access_token) {
+    Swal.fire({
+      icon: "warning",
+      title: "Debes iniciar sesión",
+      text: "Inicia sesión para acceder a esta sección.",
+    }).then(() => {
+      window.location.href = "../auth/iniciar-sesion/index.html";
+    });
+    return;
+  }
+
+  access_token = access_token.replaceAll('"', '');
+
   try {
-    const res = await fetch(apiUrl); // GET sin ID → requiere sesión y rol admin
+    const res = await fetch("http://127.0.0.1:8000/usuarios/me", {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${access_token}`,
+        "Content-Type": "application/json",
+      },
+    });
 
     if (!res.ok) {
-      const error = await res.json();
+      sessionStorage.clear();
+      throw new Error("Token inválido o sesión expirada");
+    }
+
+    const data = await res.json();
+    console.log("Usuario autenticado:", data);
+
+    sessionStorage.setItem("usuario_id", data.id);
+    sessionStorage.setItem("rol", data.rol);
+    sessionStorage.setItem("usuario", data.usuario);
+
+    if (data.rol.toLowerCase() !== "admin") {
       Swal.fire({
         icon: "error",
         title: "Acceso denegado",
-        text: error.message || "No tienes permisos para acceder.",
+        text: "No tienes permisos para acceder a esta sección.",
       }).then(() => {
-        window.location.href = "../index.php";
+        window.location.href = "../index.html";
       });
       return;
     }
 
-    const usuarios = await res.json();
-    usuariosCargados = usuarios; 
-    renderizarUsuarios(usuarios);
-
+    await cargarUsuarios();
   } catch (error) {
+    console.error("Error verificando sesión:", error);
     Swal.fire({
       icon: "error",
       title: "Error",
-      text: "No se pudo verificar la sesión.",
+      text: error.message || "No se pudo verificar la sesión.",
     });
   }
 }
 
-// Función para mostrar usuarios en tabla
+// ==============================
+// 🔹 Registrar nuevo administrador
+// ==============================
+async function registrarAdmin() {
+  const nombre = document.getElementById("nombre").value.trim();
+  const apellido = document.getElementById("apellido").value.trim();
+  const usuario = document.getElementById("usuario").value.trim();
+  const contrasena = document.getElementById("contrasena").value.trim();
+  const rol = "admin";
+
+  const token = sessionStorage.getItem("access_token")?.replaceAll('"', '');
+
+  if (!nombre || !apellido || !usuario || !contrasena) {
+    Swal.fire("Error", "Todos los campos son obligatorios.", "error");
+    return;
+  }
+
+  try {
+    const response = await fetch("http://127.0.0.1:8000/auth/admin/register", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify({ nombre, apellido, usuario, contrasena, rol }),
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      Swal.fire("Éxito", result.detail, "success");
+      document.getElementById("formAddUser").reset();
+      await cargarUsuarios();
+    } else {
+      Swal.fire("Error", result.detail || "Error al registrar usuario", "error");
+    }
+  } catch (error) {
+    Swal.fire("Error", "No se pudo conectar con el servidor.", "error");
+  }
+}
+
+// ==============================
+// 🔹 Renderizar tabla de usuarios
+// ==============================
 function renderizarUsuarios(usuarios) {
   const tbody = document.querySelector("#usersTable tbody");
+  if (!tbody) {
+    console.error("❌ No se encontró el tbody de la tabla #usersTable");
+    return;
+  }
+
   tbody.innerHTML = "";
-  console.log(usuarios);
   usuarios.forEach(user => {
     const tr = document.createElement("tr");
     tr.className = user.activo == 1 ? "active" : "inactive";
@@ -53,174 +132,59 @@ function renderizarUsuarios(usuarios) {
           <option value="supervisor" ${user.rol === "supervisor" ? "selected" : ""}>Supervisor</option>
         </select>
       </td>
-
       <td>${user.activo == 1 ? "Sí" : "No"}</td>
       <td>
         <button data-action="toggle" data-id="${user.id}">${user.activo == 1 ? "Desactivar" : "Activar"}</button>
-        <button data-action="guardar" data-id="${user.id}">Guardar Cambios</button>
+        <button data-action="guardar" data-id="${user.id}">Guardar</button>
       </td>
     `;
     tbody.appendChild(tr);
   });
 }
 
-// Evento para agregar usuario
-document.getElementById("formAddUser").addEventListener("submit", async e => {
-  e.preventDefault();
-
-  const formData = new FormData(e.target);
-  const data = Object.fromEntries(formData.entries());
-
-  if (!data.nombre || !data.apellido || !data.usuario || !data.contrasena || !data.rol) {
-    Swal.fire({
-      icon: "warning",
-      title: "Campos incompletos",
-      text: "Complete todos los campos",
-    });
-    return;
-  }
+// ==============================
+// 🔹 Cargar usuarios desde backend
+// ==============================
+async function cargarUsuarios(page = 1, size = 50) {
+  const access_token = sessionStorage.getItem("access_token")?.replaceAll('"', '');
+  if (!access_token) return;
 
   try {
-    const res = await fetch(apiUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data)
+    const res = await fetch(`${apiUrl}?page=${page}&size=${size}`, {
+      headers: {
+        "Authorization": `Bearer ${access_token}`,
+        "Content-Type": "application/json",
+      },
     });
 
-    const result = await res.json();
-
-    if (res.status === 201) {
-      Swal.fire({
-        icon: "success",
-        title: "Usuario agregado",
-        text: "El usuario fue agregado correctamente",
-      });
-      e.target.reset();
-      verificarSesionYPermiso(); // recarga usuarios
-    } else {
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: result.message || "Error al agregar usuario",
-      });
+    if (!res.ok) {
+      throw new Error("Error al obtener la lista de usuarios");
     }
+
+    const data = await res.json();
+    console.log("Usuarios recibidos:", data);
+
+    usuariosCargados = data.usuarios || [];
+    renderizarUsuarios(usuariosCargados);
   } catch (error) {
+    console.error("Error cargando usuarios:", error);
     Swal.fire({
       icon: "error",
-      title: "Error de red",
-      text: "No se pudo conectar con el servidor.",
+      title: "Error",
+      text: "No se pudieron cargar los usuarios.",
     });
   }
-});
+}
 
-// Delegación de eventos para activar/desactivar y guardar cambios
-document.querySelector("#usersTable tbody").addEventListener("click", async e => {
-  const target = e.target;
-  const tr = target.closest("tr");
-  if (!tr) return;
+// ==============================
+// 🔹 Listeners y eventos
+// ==============================
+document.addEventListener("DOMContentLoaded", verificarSesionYPermiso);
 
-  const id = target.dataset.id;
-  const action = target.dataset.action;
-  if (!id || !action) return;
-
-  if (action === "toggle") {
-    const nuevoEstado = tr.classList.contains("active") ? 0 : 1;
-
-    try {
-      const res = await fetch(`${apiUrl}?id=${id}`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ activo: nuevoEstado })
-      });
-      const result = await res.json();
-      if (res.ok) {
-        Swal.fire({
-          icon: "success",
-          title: "Estado actualizado",
-          text: "El estado del usuario ha sido actualizado.",
-        });
-        verificarSesionYPermiso();
-      } else {
-        Swal.fire({
-          icon: "error",
-          title: "Error",
-          text: result.message || "Error al cambiar estado",
-        });
-      }
-    } catch (error) {
-      Swal.fire({
-        icon: "error",
-        title: "Error de red",
-        text: "No se pudo conectar con el servidor.",
-      });
-    }
-
-  } else if (action === "guardar") {
-    const nombre = tr.querySelector('[data-field="nombre"]').innerText.trim();
-    const apellido = tr.querySelector('[data-field="apellido"]').innerText.trim();
-    const usuario = tr.querySelector('[data-field="usuario"]').innerText.trim();
-    const rol = tr.querySelector('[data-field="rol"]').value;
-
-    if (!nombre || !apellido || !usuario || !rol) {
-      Swal.fire({
-        icon: "warning",
-        title: "Campos incompletos",
-        text: "Complete todos los campos antes de guardar",
-      });
-      return;
-    }
-
-    try {
-      const res = await fetch(`${apiUrl}?id=${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre, apellido, usuario, rol })
-      });
-      const result = await res.json();
-      
-      if (res.ok) {
-          if (result.message && result.message === "No se realizaron cambios") {
-              Swal.fire({
-                  icon: "info",
-                  title: "Sin cambios",
-                  text: "No se realizaron cambios en los datos del usuario.",
-                  timer: 2000,
-                  showConfirmButton: false,
-              });
-          } else {
-              Swal.fire({
-                  icon: "success",
-                  title: "Actualizado correctamente",
-                  text: "Tus datos han sido modificados.",
-                  timer: 2000,
-                  showConfirmButton: false,
-              });
-          }
-      } else {
-          Swal.fire({
-              icon: "error",
-              title: "Error",
-              text: result.message || "Error al actualizar usuario",
-          });
-      }
-  } catch (error) {
-      console.error("Error al guardar usuario:", error);
-      Swal.fire({
-        icon: "error",
-        title: "Error de red",
-        text: `No se pudo conectar con el servidor. ${error}`
-      });
-    }
-  }
-});
-
-document.getElementById("buscadorUsuarios").addEventListener("input", function () {
-  const palabra = this.value.trim().toLowerCase();
-
-  if (palabra === "") {
-    renderizarUsuarios(usuariosCargados); // muestra todos si no hay texto
-    return;
-  }
+// Buscar usuarios
+document.getElementById("buscadorUsuarios").addEventListener("input", e => {
+  const palabra = e.target.value.trim().toLowerCase();
+  if (!palabra) return renderizarUsuarios(usuariosCargados);
 
   const filtrados = usuariosCargados.filter(user =>
     user.nombre.toLowerCase().includes(palabra) ||
@@ -231,16 +195,12 @@ document.getElementById("buscadorUsuarios").addEventListener("input", function (
   renderizarUsuarios(filtrados);
 });
 
-// Inicia validación al cargar
-verificarSesionYPermiso();
-
-document.getElementById("filtrosUsuarios").addEventListener("click", function (e) {
+// Filtros
+document.getElementById("filtrosUsuarios").addEventListener("click", e => {
   if (e.target.tagName !== "BUTTON") return;
-
   const filtro = e.target.dataset.filtro;
 
   let filtrados = [];
-
   switch (filtro) {
     case "activos":
       filtrados = usuariosCargados.filter(u => u.activo == 1);
@@ -256,8 +216,79 @@ document.getElementById("filtrosUsuarios").addEventListener("click", function (e
       break;
     default:
       filtrados = usuariosCargados;
-      break;
   }
 
   renderizarUsuarios(filtrados);
+});
+
+// ==============================
+// 🔹 Guardar y activar/desactivar usuarios
+// ==============================
+document.querySelector("#usersTable tbody").addEventListener("click", async e => {
+  const btn = e.target;
+  const id = btn.dataset.id;
+  const action = btn.dataset.action;
+  const tr = btn.closest("tr");
+  const token = sessionStorage.getItem("access_token")?.replaceAll('"', '');
+
+  if (!id || !action) return;
+
+  if (action === "toggle") {
+    const nuevoEstado = tr.classList.contains("active") ? 0 : 1;
+
+    try {
+      const res = await fetch(`${apiUrl}activo/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ activo: nuevoEstado }),
+      });
+
+      const result = await res.json();
+
+      if (res.ok) {
+        Swal.fire("Éxito", "Estado actualizado correctamente", "success");
+        await cargarUsuarios();
+      } else {
+        Swal.fire("Error", result.detail || "Error al cambiar estado", "error");
+      }
+    } catch (error) {
+      Swal.fire("Error", "No se pudo conectar con el servidor.", "error");
+    }
+  }
+
+  if (action === "guardar") {
+    const nombre = tr.querySelector('[data-field="nombre"]').innerText.trim();
+    const apellido = tr.querySelector('[data-field="apellido"]').innerText.trim();
+    const usuario = tr.querySelector('[data-field="usuario"]').innerText.trim();
+    const rol = tr.querySelector('[data-field="rol"]').value;
+
+    try {
+      const res = await fetch(`${apiUrl}?id=${id}`, {
+        method: "PUT",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ nombre, apellido, usuario, rol }),
+      });
+
+      const result = await res.json();
+
+      if (res.ok) {
+        Swal.fire("Actualizado", "Usuario modificado correctamente", "success");
+        await cargarUsuarios();
+      } else {
+        Swal.fire("Error", result.detail || "Error al actualizar usuario", "error");
+      }
+    } catch (error) {
+      Swal.fire("Error", "No se pudo conectar con el servidor.", "error");
+    }
+  }
+});
+document.getElementById("formAddUser").addEventListener("submit", e => {
+  e.preventDefault(); // Evita que se recargue la página
+  registrarAdmin();
 });

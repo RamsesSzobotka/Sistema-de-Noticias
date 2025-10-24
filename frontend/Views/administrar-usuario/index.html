@@ -9,7 +9,7 @@
         rel="icon"
         type="image/png"
         sizes="16x16"
-        href="../../logo.png" />
+        href="../../ASSETS/logo.png" />
 </head>
 <header>
   <h1>Administrar Usuarios</h1>
@@ -19,7 +19,7 @@
 
   <!-- Botón de regreso -->
   <div style="margin-bottom: 20px;">
-    <button class="volver-btn" onclick="window.location.href='../index.php'">
+    <button class="volver-btn" onclick="window.location.href='../index.html'">
       ← Volver al Inicio
     </button>
   </div>
@@ -28,19 +28,19 @@
   <form id="formAddUser">
     <h2>Agregar Nuevo Usuario</h2>
     <label>Nombre:
-      <input type="text" name="nombre" required />
+      <input type="text" id="nombre" required />
     </label>
     <label>Apellido:
-      <input type="text" name="apellido" required />
+      <input type="text" id="apellido" required />
     </label>
     <label>Usuario:
-      <input type="text" name="usuario" required />
+      <input type="text" id="usuario" required />
     </label>
     <label>Contraseña:
-      <input type="password" name="contrasena" required />
+      <input type="password" id="contrasena" required />
     </label>
     <label>Rol:
-      <select name="rol" required>
+      <select id="rol" required>
         <option value="">Seleccione</option>
         <option value="editor">Editor</option>
         <option value="global">Global</option>
@@ -48,7 +48,7 @@
         <option value="supervisor">Supervisor</option>
       </select>
     </label>
-    <button type="submit">Agregar Usuario</button>
+    <button id =btnRegistrar type="submit">Agregar Usuario</button>
   </form>
   <input
     type="text"
