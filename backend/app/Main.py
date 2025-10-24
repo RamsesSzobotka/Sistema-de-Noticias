@@ -20,10 +20,8 @@ app.include_router(visitasController.router)
 app.include_router(userController.router)
 app.include_router(likeController.router)
 app.include_router(comentarioController.router)
+#Cargar imagenes
 app.mount("/imagenesdb", StaticFiles(directory="imagenesdb"), name="imagenesdb")
-
-#cargar front
-app.mount("/frontend", StaticFiles(directory="../../frontend/views"), name="frontend")
 
 app.add_middleware(
     CORSMiddleware,

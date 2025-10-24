@@ -5,7 +5,7 @@ from core.security import getTokenId
 from utils.HttpError import errorInterno
 router = APIRouter(prefix="/like",tags=["Likes"])
 
-@router.get("/{noticia_id}",status_code=status.HTTP_200_OK)
+@router.get("/{noticiaId}",status_code=status.HTTP_200_OK)
 async def getLikes(noticiaId:int):
     try:
         await validNoticia(noticiaId)
@@ -20,13 +20,13 @@ async def getLikes(noticiaId:int):
     except Exception:
         errorInterno()
 
-@router.get("/me", status_code=status.HTTP_200_OK)
+@router.get("/me/{noticiaId}", status_code=status.HTTP_200_OK)
 async def likeVerify(noticiaId: int, userId: int = Depends(getTokenId)):
     try:
         query = "SELECT id FROM likes WHERE usuario_id = :usuario_id AND noticia_id = :noticia_id"
         result = await db.fetch_one(query, {"usuario_id": userId, "noticia_id": noticiaId})
         
-        return {"liked": result is not None}
+        return {"liked": True if result else False}
         
     except Exception:
         raise errorInterno()
@@ -81,6 +81,3 @@ async def deleteLike(noticiaId:int, userId: int = Depends(getTokenId)):
         raise
     except Exception:
         raise errorInterno()
-
-
-

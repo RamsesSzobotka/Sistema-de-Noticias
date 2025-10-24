@@ -1,5 +1,5 @@
 const usuario = sessionStorage.getItem("usuario");
-const usuarioId = sessionStorage.getItem("usuario_id");
+let usuarioId = sessionStorage.getItem("usuario_id");
 const rolUsuario = sessionStorage.getItem("rol");
 console.log("Usuario ID:", usuarioId);
 
@@ -12,94 +12,139 @@ const commentForm = document.getElementById("commentForm");
 const commentText = document.getElementById("commentText");
 const commentCount = document.getElementById("commentCount");
 
-document.addEventListener("DOMContentLoaded", () => {
-    fetch("../../api/controllerSessionInfo.php", {
-        method: "GET",
-        credentials: "include",
-    })
-        .then((res) => res.json())
-        .then((data) => {
-            if (data.success) {
-                sessionStorage.setItem("usuario_id", data.usuario_id);
-                sessionStorage.setItem("rol", data.rol);
-
-                const usernameDisplay = document.getElementById("usernameDisplay");
-                if (usernameDisplay) {
-                    usernameDisplay.textContent = `Hola, ${usuario}`;
-                }
-
-                document.querySelector(".user-info").style.display = "flex";
-                document.querySelector(".nav-auth").style.display = "none";
-                document.getElementById("logoutBtn").style.display = "block";
-
-                const perfilBtn = document.getElementById("btn-editar");
-                if (perfilBtn) {
-                    perfilBtn.style.display = "inline-block";
-                    perfilBtn.addEventListener("click", () => {
-                        window.location.href = "../editar-usuario/index.php";
-                    });
-                }
-
-                if (data.rol === "admin") {
-                    const adminBtn = document.getElementById("adminBtn");
-                    if (adminBtn) {
-                        adminBtn.style.display = "inline-block";
-                        adminBtn.addEventListener("click", () => {
-                            window.location.href = "../administrar-usuario/index.php";
-                        });
-                    }
-                }
-
-                if (["editor", "admin", "supervisor"].includes(data.rol)) {
-                    const supervisorBtn = document.getElementById("supervisorPanelBtn");
-                    if (supervisorBtn) {
-                        supervisorBtn.style.display = "inline-block";
-                        supervisorBtn.addEventListener("click", () => {
-                            window.location.href = "../administrar-noticia/index.php";
-                        });
-                    }
-
-                    const publicarBtn = document.getElementById("publicarBtn");
-                    if (publicarBtn) {
-                        publicarBtn.style.display = "inline-block";
-                        publicarBtn.addEventListener("click", () => {
-                            window.location.href = "../crear-noticia/index.php";
-                        });
-                    }
-                }
-            } else {
-                document.querySelector(".user-info").style.display = "none";
-                document.querySelector(".nav-auth").style.display = "flex";
-            }
-        })
-        .catch((error) => {
-            console.error("Error al verificar sesión:", error);
-        });
-
+document.addEventListener("DOMContentLoaded", async () => {
+    await verificarSesion(); // esperar a que la sesión y usuarioId se establezcan
     cargarComentarios();
 
+    // === Función para verificar sesión con FastAPI ===
+    async function verificarSesion() {
+        const access_token = sessionStorage.getItem("access_token");
+        if (!access_token) {
+            document.querySelector(".user-info").style.display = "none";
+            document.querySelector(".nav-auth").style.display = "flex";
+            usuarioId = null;
+            return;
+        }
+
+        try {
+            const res = await fetch("http://127.0.0.1:8000/usuarios/me", {
+                method: "GET",
+                headers: {
+                    "Authorization": `Bearer ${access_token}`,
+                    "Content-Type": "application/json",
+                },
+            });
+
+            if (!res.ok) {
+                // Token inválido o expirado
+                sessionStorage.clear();
+                document.querySelector(".user-info").style.display = "none";
+                document.querySelector(".nav-auth").style.display = "flex";
+                usuarioId = null; // asegurar que la variable local también se limpie
+                return;
+            }
+
+            const data = await res.json();
+
+            // Guardar datos en sessionStorage
+            sessionStorage.setItem("usuario_id", data.id);
+            sessionStorage.setItem("rol", data.rol);
+            sessionStorage.setItem("usuario", data.usuario);
+
+            usuarioId = String(data.id); // <-- actualizar la variable local
+
+            const usernameDisplay = document.getElementById("usernameDisplay");
+            if (usernameDisplay) {
+                usernameDisplay.textContent = `Hola, ${data.usuario}`;
+            }
+
+            document.querySelector(".user-info").style.display = "flex";
+            document.querySelector(".nav-auth").style.display = "none";
+            const logoutBtn = document.getElementById("logoutBtn");
+            if (logoutBtn) logoutBtn.style.display = "block";
+
+            mostrarBotonesPorRol(data.rol);
+
+        } catch (error) {
+            console.error("Error al verificar sesión:", error);
+        }
+    }
+
+    // === Mostrar botones según rol (mismo estilo que tu otro script) ===
+    function mostrarBotonesPorRol(rol) {
+        const botones = ["btn-editar", "adminBtn", "supervisorPanelBtn", "publicarBtn"];
+        botones.forEach(id => {
+            const btn = document.getElementById(id);
+            if (btn) {
+                btn.style.display = "none";
+                btn.replaceWith(btn.cloneNode(true)); // limpia eventos previos
+            }
+        });
+
+        // Botón de perfil
+        const perfilBtn = document.getElementById("btn-editar");
+        if (perfilBtn) {
+            perfilBtn.style.display = "inline-block";
+            perfilBtn.addEventListener("click", () => {
+                window.location.href = "../editar-usuario/index.html";
+            });
+        }
+
+        // Botón admin
+        if (rol === "admin") {
+            const adminBtn = document.getElementById("adminBtn");
+            if (adminBtn) {
+                adminBtn.style.display = "inline-block";
+                adminBtn.addEventListener("click", () => {
+                    window.location.href = "../administrar-usuario/index.html";
+                });
+            }
+        }
+
+        // Botones supervisor/editor
+        if (["admin", "supervisor", "editor"].includes(rol)) {
+            const supervisorBtn = document.getElementById("supervisorPanelBtn");
+            if (supervisorBtn) {
+                supervisorBtn.style.display = "inline-block";
+                supervisorBtn.addEventListener("click", () => {
+                    window.location.href = "../administrar-noticia/index.html";
+                });
+            }
+
+            const publicarBtn = document.getElementById("publicarBtn");
+            if (publicarBtn) {
+                publicarBtn.style.display = "inline-block";
+                publicarBtn.addEventListener("click", () => {
+                    window.location.href = "../crear-noticia/index.html";
+                });
+            }
+        }
+    }
+    // === Cargar comentarios ===
     function cargarComentarios() {
         if (!noticiaId) return;
 
-        fetch(`../../api/controllerComentario.php?noticia_id=${noticiaId}`)
+        fetch(`http://127.0.0.1:8000/comentarios/${noticiaId}`)
             .then((res) => res.json())
             .then((data) => {
-                commentCount.textContent = data.length;
+                // ✅ Tu backend devuelve "usuarios" con los comentarios
+                const comentarios = data.usuarios || [];
+                commentCount.textContent = data.total || 0;
 
                 const commentsContainer = document.getElementById("commentsContainer");
                 commentsContainer.innerHTML = "";
 
                 const comentariosMap = {};
-                data.forEach((c) => {
+                comentarios.forEach((c) => {
                     c.children = [];
                     comentariosMap[c.id] = c;
                 });
 
                 const comentariosRaiz = [];
-                data.forEach((c) => {
-                    if (c.comentario_padre_id) {
-                        if (comentariosMap[c.comentario_padre_id]) {
-                            comentariosMap[c.comentario_padre_id].children.push(c);
+                comentarios.forEach((c) => {
+                    if (c.comentario_padre) {
+                        if (comentariosMap[c.comentario_padre]) {
+                            comentariosMap[c.comentario_padre].children.push(c);
                         }
                     } else {
                         comentariosRaiz.push(c);
@@ -118,7 +163,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const div = document.createElement("div");
         div.className = "comentario";
 
-        if (comentario.usuario_id == usuarioId) {
+        // comparar como strings para evitar mismatch tipo number/string
+        if (String(comentario.usuario.id) === String(usuarioId)) {
             div.classList.add("comentario-propio");
         }
 
@@ -133,7 +179,7 @@ document.addEventListener("DOMContentLoaded", () => {
         div.innerHTML = `
         <div class="comentario-header">
             <div>
-                <p class="comentario-usuario"><strong>${comentario.usuario}</strong></p>
+                <p class="comentario-usuario"><strong>${comentario.usuario.username}</strong></p>
             </div>
             <div class="comentario-fecha-hora">
                 <p class="comentario-fecha">${fecha}</p>
@@ -152,9 +198,8 @@ document.addEventListener("DOMContentLoaded", () => {
             contenedorRespuestas.appendChild(respuestaForm);
         });
 
-        // Mostrar botón eliminar si es admin
         const rol = sessionStorage.getItem("rol");
-        if (rol === "admin" || comentario.usuario_id == usuarioId) {
+        if (rol === "admin" || String(comentario.usuario.id) === String(usuarioId)) {
             const btnEliminar = document.createElement("button");
             btnEliminar.textContent = "Eliminar";
             btnEliminar.className = "eliminar-btn";
@@ -170,7 +215,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     cancelButtonText: "Cancelar",
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        eliminarComentario(comentario.id, comentario.usuario_id);
+                        eliminarComentario(comentario.id);
                     }
                 });
             });
@@ -222,72 +267,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
         form.addEventListener("submit", function (e) {
             e.preventDefault();
-
-            if (!usuarioId) {
-                Swal.fire({
-                    icon: "warning",
-                    title: "Debes iniciar sesión",
-                    text: "Inicia sesión para poder comentar.",
-                    confirmButtonColor: "#3085d6",
-                    confirmButtonText: "Iniciar sesión",
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        window.location.href = "../auth/iniciar-sesion/index.html";
-                    }
-                });
-                return;
-            }
-
-            const texto = textarea.value.trim();
-            if (!texto) return;
-
-            fetch("../../api/controllerComentario.php", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    noticia_id: noticiaId,
-                    usuario_id: usuarioId,
-                    contenido: texto,
-                    comentario_padre_id: comentarioPadreId,
-                }),
-            })
-                .then((res) => res.json())
-                .then((data) => {
-                    if (data.success) {
-                        cargarComentarios();
-                    }
-                })
-                .catch((err) => console.error("Error al responder:", err));
+            publicarComentario(textarea.value.trim(), comentarioPadreId);
         });
 
         return form;
     }
 
-    function eliminarComentario(id,usuario_id) {
-        fetch(`../../api/controllerComentario.php?id=${id}&usuario_id=${usuario_id}`, {
-            method: "DELETE"
-        })
-            .then((res) => res.json())
-            .then((data) => {
-                if (data.success) {
-                    Swal.fire("Eliminado", "Comentario eliminado correctamente.", "success");
-                    cargarComentarios();
-                } else {
-                    console.error("Error al eliminar:", data);
-                    Swal.fire("Error", data.error || "No se pudo eliminar.", "error");
-                }
-            })
-            .catch((err) => {
-                console.error("Error al eliminar:", err);
-                Swal.fire("Error", "No se pudo eliminar el comentario.", "error");
-            });
-    }
-
     commentForm.addEventListener("submit", function (e) {
         e.preventDefault();
+        publicarComentario(commentText.value.trim(), null);
+    });
 
+    async function publicarComentario(contenido, comentarioPadreId) {
         if (!usuarioId) {
             Swal.fire({
                 icon: "warning",
@@ -303,53 +294,137 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        const contenido = commentText.value.trim();
-        if (contenido.length === 0) {
-            alert("Comentario vacío.");
+        if (!contenido) {
+            Swal.fire("Advertencia", "El comentario no puede estar vacío.", "warning");
             return;
         }
 
-        fetch("../../api/controllerComentario.php", {
+        const token = sessionStorage.getItem("access_token");
+
+        const res = await fetch("http://127.0.0.1:8000/comentarios/", {
             method: "POST",
             headers: {
+                "Authorization": `Bearer ${token}`,
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
                 noticia_id: noticiaId,
-                usuario_id: usuarioId,
                 contenido: contenido,
+                comentario_padre_id: comentarioPadreId,
             }),
-        })
-            .then((res) => res.json())
-            .then((data) => {
-                if (data.success) {
-                    commentText.value = "";
-                    cargarComentarios();
-                } else {
-                    alert("Error al enviar comentario.");
-                }
-            })
-            .catch((err) => console.error("Error enviando comentario:", err));
-    });
+        });
 
-    // Like system
+        const data = await res.json();
+
+        if (res.ok) {
+            Swal.fire("Éxito", data.detail, "success");
+            commentText.value = "";
+            cargarComentarios();
+        } else {
+            Swal.fire("Error", data.detail || "No se pudo publicar el comentario.", "error");
+        }
+    }
+
+    async function eliminarComentario(id) {
+        const token = sessionStorage.getItem("access_token");
+
+        const res = await fetch(`http://127.0.0.1:8000/comentarios/?id=${id}`, {
+            method: "DELETE",
+            headers: {
+                "Authorization": `Bearer ${token}`,
+            },
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+            Swal.fire("Eliminado", data.detail, "success");
+            cargarComentarios();
+        } else {
+            Swal.fire("Error", data.detail || "No se pudo eliminar el comentario.", "error");
+        }
+    }
+// === Sistema de Likes ===
+if (!noticiaId) {
+    console.error("⚠️ No se pudo encontrar la noticia.");
+} else {
+    const token = sessionStorage.getItem("access_token");
     let yaDioLike = false;
 
-    if (!noticiaId) {
-        alert("No se pudo encontrar la noticia.");
-        return;
-    }
+    async function inicializarLikes() {
+        try {
+            // 1️⃣ Obtener total de likes
+            const resLikes = await fetch(`http://127.0.0.1:8000/like/${noticiaId}`);
+            const dataLikes = await resLikes.json();
+            likeCount.textContent = dataLikes.total_likes || 0;
 
-    obtenerLikes(noticiaId);
+            // 2️⃣ Verificar si el usuario actual ya dio like (solo si está logueado)
+            if (usuarioId && token) {
+                const resUsuarioLike = await fetch(`http://127.0.0.1:8000/like/me/${noticiaId}`, {
+                    headers: { "Authorization": `Bearer ${token}` },
+                });
+                const dataUsuarioLike = await resUsuarioLike.json();
+                yaDioLike = dataUsuarioLike.liked || false;
+            }
 
-    if (usuarioId) {
-        verificarSiUsuarioDioLike(usuarioId, noticiaId).then((dioLike) => {
-            yaDioLike = dioLike;
+            // 3️⃣ Actualizar estado visual del botón
             actualizarBotonLike();
-        });
+
+        } catch (err) {
+            console.error("Error al inicializar likes:", err);
+        }
     }
 
-    likeBtn.addEventListener("click", function () {
+    function actualizarBotonLike() {
+        if (yaDioLike) {
+            likeBtn.innerHTML = `<i class="fas fa-thumbs-up"></i> Ya te gusta <span class="like-count">${likeCount.textContent}</span>`;
+            likeBtn.style.backgroundColor = "#6c757d"; // gris
+        } else {
+            likeBtn.innerHTML = `<i class="fas fa-thumbs-up"></i> Like <span class="like-count">${likeCount.textContent}</span>`;
+            likeBtn.style.backgroundColor = "#28a745"; // verde
+        }
+    }
+
+    async function darLike() {
+        try {
+            const res = await fetch(`http://127.0.0.1:8000/like/?noticiaId=${noticiaId}`, {
+                method: "POST",
+                headers: { "Authorization": `Bearer ${token}` },
+            });
+            const data = await res.json();
+            if (res.ok) {
+                yaDioLike = true;
+                likeCount.textContent = parseInt(likeCount.textContent) + 1;
+                actualizarBotonLike();
+            } else {
+                console.error("Error al dar like:", data.detail);
+            }
+        } catch (err) {
+            console.error("Error al dar like:", err);
+        }
+    }
+
+    async function quitarLike() {
+        try {
+            const res = await fetch(`http://127.0.0.1:8000/like/?noticiaId=${noticiaId}`, {
+                method: "DELETE",
+                headers: { "Authorization": `Bearer ${token}` },
+            });
+            const data = await res.json();
+            if (res.ok) {
+                yaDioLike = false;
+                likeCount.textContent = Math.max(0, parseInt(likeCount.textContent) - 1);
+                actualizarBotonLike();
+            } else {
+                console.error("Error al quitar like:", data.detail);
+            }
+        } catch (err) {
+            console.error("Error al quitar like:", err);
+        }
+    }
+
+    // Evento del botón
+    likeBtn.addEventListener("click", () => {
         if (!usuarioId) {
             Swal.fire({
                 icon: "warning",
@@ -358,117 +433,47 @@ document.addEventListener("DOMContentLoaded", () => {
                 confirmButtonColor: "#3085d6",
                 confirmButtonText: "Iniciar sesión",
             }).then((result) => {
-                if (result.isConfirmed) {
-                    window.location.href = "../auth/iniciar-sesion/index.html";
-                }
+                if (result.isConfirmed) window.location.href = "../auth/iniciar-sesion/index.html";
             });
             return;
         }
 
-        if (!yaDioLike) {
-            darLike(usuarioId, noticiaId);
+        if (yaDioLike) {
+            quitarLike();
         } else {
-            quitarLike(usuarioId, noticiaId);
+            darLike();
         }
     });
 
-    function actualizarBotonLike() {
-        if (yaDioLike) {
-            likeBtn.innerHTML = `<i class="fas fa-thumbs-up"></i> Ya te gusta <span class="like-count">${likeCount.textContent}</span>`;
-            likeBtn.style.backgroundColor = "#6c757d";
-        } else {
-            likeBtn.innerHTML = `<i class="fas fa-thumbs-up"></i> Like <span class="like-count">${likeCount.textContent}</span>`;
-            likeBtn.style.backgroundColor = "#28a745";
-        }
-    }
+    // Inicializar todo
+    inicializarLikes();
+}
 
-    function verificarSiUsuarioDioLike(usuarioId, noticiaId) {
-        return fetch(`../../api/controllerLike.php?usuario_id=${usuarioId}&noticia_id=${noticiaId}`)
-            .then((res) => res.json())
-            .then((data) => data.ya_dio_like || false)
-            .catch((err) => {
-                console.error("Error verificando like:", err);
-                return false;
-            });
-    }
-
-    function darLike(usuarioId, noticiaId) {
-        fetch("../../api/controllerLike.php", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ usuario_id: usuarioId, noticia_id: noticiaId }),
-        })
-            .then((res) => res.json())
-            .then((data) => {
-                if (data.message.includes("Like registrado")) {
-                    yaDioLike = true;
-                    actualizarBotonLike();
-                    obtenerLikes(noticiaId);
-                } else {
-                    alert(data.message);
-                }
-            })
-            .catch((err) => console.error("Error al dar like:", err));
-    }
-
-    function quitarLike(usuarioId, noticiaId) {
-        fetch("../../api/controllerLike.php", {
-            method: "DELETE",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ usuario_id: usuarioId, noticia_id: noticiaId }),
-        })
-            .then((res) => res.json())
-            .then((data) => {
-                if (data.message.includes("eliminado")) {
-                    yaDioLike = false;
-                    actualizarBotonLike();
-                    obtenerLikes(noticiaId);
-                } else {
-                    alert(data.message);
-                }
-            })
-            .catch((err) => console.error("Error al quitar like:", err));
-    }
-
-    function obtenerLikes(noticiaId) {
-        fetch(`../../api/controllerLike.php?noticia_id=${noticiaId}`)
-            .then((res) => res.json())
-            .then((data) => {
-                const totalLikes = data.total_likes || 0;
-                likeCount.textContent = totalLikes;
-                actualizarBotonLike();
-            })
-            .catch((err) => console.error("Error al obtener likes:", err));
-    }
 
     if (noticia) {
         document.getElementById("titulo").innerText = noticia.titulo;
         document.getElementById("contenido").innerText = noticia.contenido;
         document.getElementById("autor").innerText = noticia.autor;
-        document.getElementById("publicador").innerText = `${noticia.nombre_usuario} ${noticia.apellido_usuario}`;
+        document.getElementById("publicador").innerText = `${noticia.usuario.usuario}`;
 
         const fecha = new Date(noticia.fecha_creacion || noticia.fecha);
         document.getElementById("fecha_creacion").innerText = fecha.toLocaleDateString("es-ES");
 
         if (noticia.imagenes && noticia.imagenes.length > 0) {
-            document.getElementById("imagen1").src = "../" + noticia.imagenes[0].imagen;
-            document.getElementById("imagen2").src = "../" + (noticia.imagenes[2]?.imagen || "../../imagenDB/default.png");
-            document.getElementById("imagen3").src = "../" + (noticia.imagenes[3]?.imagen || "../../imagenDB/default.png");
+            document.getElementById("imagen1").src = "http://127.0.0.1:8000/" + noticia.imagenes[0].imagen;
+            document.getElementById("imagen2").src = "http://127.0.0.1:8000/" + (noticia.imagenes[2]?.imagen || "imagenesdb/DEFAULT.jpeg");
+            document.getElementById("imagen3").src = "http://127.0.0.1:8000/" + (noticia.imagenes[3]?.imagen || "imagenesdb/DEFAULT.jpeg");
         } else {
-            document.getElementById("imagen1").src = "../../imagenDB/default.png";
-            document.getElementById("imagen2").src = "../../imagenDB/default.png";
-            document.getElementById("imagen3").src = "../../imagenDB/default.png";
+            document.getElementById("imagen1").src = "http://127.0.0.1:8000/imagenesdb/DEFAULT.png";
+            document.getElementById("imagen2").src = "http://127.0.0.1:8000/imagenesdb/DEFAULT.png";
+            document.getElementById("imagen3").src = "http://127.0.0.1:8000/imagenesdb/DEFAULT.png";
         }
     } else {
         document.getElementById("titulo").innerText = "Noticia no encontrada.";
     }
 });
 
-// Función logout
+// === Logout ===
 function logout() {
     Swal.fire({
         title: "¿Estás seguro?",
@@ -481,33 +486,8 @@ function logout() {
         cancelButtonText: "Cancelar",
     }).then((result) => {
         if (result.isConfirmed) {
-            fetch("../../api/logoutController.php")
-                .then((res) => res.json())
-                .then((data) => {
-                    if (data.success) {
-                        sessionStorage.clear();
-                        document.querySelector(".user-info").style.display = "none";
-                        document.querySelector(".nav-auth").style.display = "flex";
-                        Swal.fire({
-                            icon: "success",
-                            title: "Sesión cerrada",
-                            text: "Has cerrado sesión correctamente.",
-                            timer: 2000,
-                            showConfirmButton: false,
-                        }).then(() => {
-                            window.location.href = "../index.php";
-                        });
-                    } else {
-                        throw new Error(data.message || "No se pudo cerrar sesión.");
-                    }
-                })
-                .catch((error) => {
-                    Swal.fire({
-                        icon: "error",
-                        title: "Error",
-                        text: error.message || "Error al cerrar sesión.",
-                    });
-                });
+            sessionStorage.clear();
+            window.location.href = "../index.html";
         }
     });
 }
