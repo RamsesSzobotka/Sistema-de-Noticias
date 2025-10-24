@@ -461,8 +461,8 @@ if (!noticiaId) {
 
         if (noticia.imagenes && noticia.imagenes.length > 0) {
             document.getElementById("imagen1").src = "http://127.0.0.1:8000/" + noticia.imagenes[0].imagen;
-            document.getElementById("imagen2").src = "http://127.0.0.1:8000/" + (noticia.imagenes[2]?.imagen || "imagenesdb/DEFAULT.jpeg");
-            document.getElementById("imagen3").src = "http://127.0.0.1:8000/" + (noticia.imagenes[3]?.imagen || "imagenesdb/DEFAULT.jpeg");
+            document.getElementById("imagen2").src = "http://127.0.0.1:8000/" + (noticia.imagenes[1]?.imagen || "imagenesdb/DEFAULT.jpeg");
+            document.getElementById("imagen3").src = "http://127.0.0.1:8000/" + (noticia.imagenes[2]?.imagen || "imagenesdb/DEFAULT.jpeg");
         } else {
             document.getElementById("imagen1").src = "http://127.0.0.1:8000/imagenesdb/DEFAULT.png";
             document.getElementById("imagen2").src = "http://127.0.0.1:8000/imagenesdb/DEFAULT.png";
