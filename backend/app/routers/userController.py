@@ -1,10 +1,11 @@
+import http
 from fastapi import APIRouter, Query, HTTPException, status, Depends
 from core.ConnectDB import db
 from passlib.context import CryptContext
 from schemas.userSchema import admin_user_schema, global_user_schema
 from models.userModel import Usuarios
 from core.security import getTokenId, isAdmin
-from utils.infoVerify import searchUser, validContrasena, validUser
+from utils.infoVerify import searchUser, validContrasena, validRol, validUser
 from utils.DbHelper import paginar, totalPages
 from utils.HttpError import errorInterno  
 
@@ -147,12 +148,7 @@ async def updatePassword(password: str, newPassword: str, userId: int = Depends(
                 detail="La contraseña actual no coincide"
             )
         async with db.transaction():
-            query = """
-                UPDATE usuarios 
-                SET contrasena = :contrasena 
-                WHERE id = :id 
-                RETURNING id
-            """
+            query = "UPDATE usuarios SET contrasena = :contrasena WHERE id = :id RETURNING id"
             result = await db.fetch_val(
                 query, {"contrasena": crypt.hash(newPassword), "id": userId}
             )
@@ -168,3 +164,28 @@ async def updatePassword(password: str, newPassword: str, userId: int = Depends(
         raise
     except Exception:
         raise errorInterno()
+
+@router.patch("/update/rol",status_code=status.HTTP_200_OK)
+async def updateRol(id:int,rol:str,_:bool = Depends(isAdmin)):
+    try:
+        validRol(rol)
+        user = await searchUser(id,1)
+            
+        if user is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail="Usuario inexistente")
+        
+        async with db.transaction():
+            query = "UPDATE usuarios SET rol = :rol WHERE id = :id Returning id"
+            
+            result = await db.fetch_val(query,{"id":id,"rol":rol})
+            
+            if not result:
+                raise errorInterno("Error al actualizar el rol, no se han realizado cambios")
+            return {
+                "detail":"Rol actualizado correctamente"
+            }
+    except HTTPException:
+        raise
+    except Exception:
+        errorInterno()

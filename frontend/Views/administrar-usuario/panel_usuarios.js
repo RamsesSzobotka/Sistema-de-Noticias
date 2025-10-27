@@ -222,7 +222,7 @@ document.getElementById("filtrosUsuarios").addEventListener("click", e => {
 });
 
 // ==============================
-// 🔹 Guardar y activar/desactivar usuarios
+// Guardar y activar/desactivar usuarios
 // ==============================
 document.querySelector("#usersTable tbody").addEventListener("click", async e => {
   const btn = e.target;
@@ -259,34 +259,31 @@ document.querySelector("#usersTable tbody").addEventListener("click", async e =>
     }
   }
 
-  if (action === "guardar") {
-    const nombre = tr.querySelector('[data-field="nombre"]').innerText.trim();
-    const apellido = tr.querySelector('[data-field="apellido"]').innerText.trim();
-    const usuario = tr.querySelector('[data-field="usuario"]').innerText.trim();
-    const rol = tr.querySelector('[data-field="rol"]').value;
+if (action === "guardar") {
+  const id = tr.querySelector("td:first-child").innerText.trim(); // Columna ID
+  const rol = tr.querySelector('[data-field="rol"]').value;
 
-    try {
-      const res = await fetch(`${apiUrl}?id=${id}`, {
-        method: "PUT",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ nombre, apellido, usuario, rol }),
-      });
+  try {
+    const res = await fetch(`${apiUrl}update/rol?id=${id}&rol=${rol}`, {
+      method: "PATCH",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+      },
+    });
 
-      const result = await res.json();
+    const result = await res.json();
 
-      if (res.ok) {
-        Swal.fire("Actualizado", "Usuario modificado correctamente", "success");
-        await cargarUsuarios();
-      } else {
-        Swal.fire("Error", result.detail || "Error al actualizar usuario", "error");
-      }
-    } catch (error) {
-      Swal.fire("Error", "No se pudo conectar con el servidor.", "error");
+    if (res.ok) {
+      Swal.fire("Actualizado", result.detail || "Usuario modificado correctamente", "success");
+      await cargarUsuarios();
+    } else {
+      Swal.fire("Error", result.detail || "Error al actualizar usuario", "error");
     }
+  } catch (error) {
+    Swal.fire("Error", "No se pudo conectar con el servidor.", "error");
   }
+}
+
 });
 document.getElementById("formAddUser").addEventListener("submit", e => {
   e.preventDefault(); // Evita que se recargue la página
