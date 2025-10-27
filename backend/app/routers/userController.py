@@ -1,4 +1,5 @@
 import http
+from anyio import Condition
 from fastapi import APIRouter, Query, HTTPException, status, Depends
 from core.ConnectDB import db
 from passlib.context import CryptContext
@@ -16,41 +17,73 @@ router = APIRouter(prefix="/usuarios", tags=["Usuarios"])
 crypt = CryptContext(schemes=["bcrypt"])
 
 
-# Obtener todos los usuarios (solo admin)
 @router.get("/", status_code=status.HTTP_200_OK)
 async def getUsers(
+    filtro: str = Query(
+        "todos",
+        description="Filtrar usuarios por: 'activo', 'inactivo', 'supervisor', 'editor', 'admin'"
+    ),
     page: int = Query(1, ge=1, description="Número de página"),
-    size: int = Query(10, ge=1, le=100),
+    size: int = Query(10, ge=1, le=100, description="Cantidad de resultados por página"),
     _: bool = Depends(isAdmin)
 ):
     try:
         offset = paginar(page, size)
+        condicion = {"size": size, "offset": offset}
 
-        query = "SELECT * FROM usuarios ORDER BY id LIMIT :size OFFSET :offset"
-        usuarios = await db.fetch_all(query, {"size": size, "offset": offset})
-        
-        
+        # -----------------------------
+        # Construir query base
+        # -----------------------------
+        query = "SELECT * FROM usuarios "
+
+        # -----------------------------
+        # Aplicar filtro si corresponde
+        # -----------------------------
+        if filtro.lower() != "todos":
+            # Filtrar por estado activo/inactivo
+            if filtro.lower() == "activo":
+                query += "WHERE activo = true "
+            elif filtro.lower() == "inactivo":
+                query += "WHERE activo = false "
+            # Filtrar por rol 
+            elif validRol(filtro):
+                query += "WHERE rol = :rol "
+                condicion["rol"] = filtro.lower()
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                    detail=f"Filtro inválido: {filtro}"
+                )
+
+        query += "ORDER BY id LIMIT :size OFFSET :offset"
+
+        usuarios = await db.fetch_all(query, condicion)
+
+
         if not usuarios:
-            return {"page": page,
-                    "size": size,
-                    "total": 0,
-                    "total_pages": 0,
-                    "usuarios": []}
-            
+            return {
+                "page": page,
+                "size": size,
+                "total": 0,
+                "total_pages": 0,
+                "usuarios": []
+            }
+
         total = await db.fetch_val("SELECT COUNT(*) FROM usuarios")
+
         return {
             "page": page,
             "size": size,
-            "total":total,
+            "total": total,
             "total_pages": totalPages(total, size),
             "usuarios": [admin_user_schema(row) for row in usuarios]
         }
+
     except HTTPException:
         raise
     except Exception:
         raise errorInterno()
-
-
+    
 # Obtener datos del usuario logueado
 @router.get("/me", status_code=status.HTTP_200_OK)
 async def get_me(userId: int = Depends(getTokenId)):
@@ -62,7 +95,6 @@ async def get_me(userId: int = Depends(getTokenId)):
         raise
     except Exception:
         raise errorInterno()
-
 
 # Actualizar usuario logueado
 @router.put("/me", status_code=status.HTTP_200_OK)

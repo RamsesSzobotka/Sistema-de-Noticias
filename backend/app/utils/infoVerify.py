@@ -35,7 +35,7 @@ def validRol(rol: str):
             status_code=status.HTTP_406_NOT_ACCEPTABLE,
             detail="Rol invalido"
         )
-
+    return True
 
 async def searchUser(data: str | int, option: int):
     try:

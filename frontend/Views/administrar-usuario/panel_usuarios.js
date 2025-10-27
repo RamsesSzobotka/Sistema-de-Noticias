@@ -71,7 +71,7 @@ async function registrarAdmin() {
   const apellido = document.getElementById("apellido").value.trim();
   const usuario = document.getElementById("usuario").value.trim();
   const contrasena = document.getElementById("contrasena").value.trim();
-  const rol = "admin";
+  const rol = document.getElementById("rol").value.trim();
 
   const token = sessionStorage.getItem("access_token")?.replaceAll('"', '');
 
@@ -143,14 +143,24 @@ function renderizarUsuarios(usuarios) {
 }
 
 // ==============================
-// 🔹 Cargar usuarios desde backend
+// 🔹 Cargar usuarios desde backend (con filtros y paginación)
 // ==============================
-async function cargarUsuarios(page = 1, size = 50) {
+async function cargarUsuarios(filtro = "todos", page = 1, size = 50) {
   const access_token = sessionStorage.getItem("access_token")?.replaceAll('"', '');
   if (!access_token) return;
 
+  // Pantalla de carga con SweetAlert
+  Swal.fire({
+    title: "Cargando usuarios...",
+    text: "Por favor espera un momento.",
+    allowOutsideClick: false,
+    didOpen: () => {
+      Swal.showLoading();
+    }
+  });
+
   try {
-    const res = await fetch(`${apiUrl}?page=${page}&size=${size}`, {
+    const res = await fetch(`${apiUrl}?filtro=${filtro}&page=${page}&size=${size}`, {
       headers: {
         "Authorization": `Bearer ${access_token}`,
         "Content-Type": "application/json",
@@ -166,6 +176,8 @@ async function cargarUsuarios(page = 1, size = 50) {
 
     usuariosCargados = data.usuarios || [];
     renderizarUsuarios(usuariosCargados);
+
+    Swal.close(); // Cerrar alerta de carga
   } catch (error) {
     console.error("Error cargando usuarios:", error);
     Swal.fire({
@@ -181,7 +193,7 @@ async function cargarUsuarios(page = 1, size = 50) {
 // ==============================
 document.addEventListener("DOMContentLoaded", verificarSesionYPermiso);
 
-// Buscar usuarios
+// 🔍 Buscar usuarios (solo en la lista cargada)
 document.getElementById("buscadorUsuarios").addEventListener("input", e => {
   const palabra = e.target.value.trim().toLowerCase();
   if (!palabra) return renderizarUsuarios(usuariosCargados);
@@ -195,34 +207,37 @@ document.getElementById("buscadorUsuarios").addEventListener("input", e => {
   renderizarUsuarios(filtrados);
 });
 
-// Filtros
-document.getElementById("filtrosUsuarios").addEventListener("click", e => {
+// ==============================
+// 🔹 Filtros: hacen petición al backend
+// ==============================
+document.getElementById("filtrosUsuarios").addEventListener("click", async e => {
   if (e.target.tagName !== "BUTTON") return;
-  const filtro = e.target.dataset.filtro;
 
-  let filtrados = [];
-  switch (filtro) {
+  const filtroBtn = e.target.dataset.filtro;
+  let filtroQuery = "todos";
+
+  switch (filtroBtn) {
     case "activos":
-      filtrados = usuariosCargados.filter(u => u.activo == 1);
+      filtroQuery = "activo";
       break;
     case "inactivos":
-      filtrados = usuariosCargados.filter(u => u.activo == 0);
+      filtroQuery = "inactivo";
       break;
     case "supervisor":
-      filtrados = usuariosCargados.filter(u => u.rol === "supervisor");
+      filtroQuery = "supervisor";
       break;
     case "editor":
-      filtrados = usuariosCargados.filter(u => u.rol === "editor");
+      filtroQuery = "editor";
       break;
     default:
-      filtrados = usuariosCargados;
+      filtroQuery = "todos";
   }
 
-  renderizarUsuarios(filtrados);
+  await cargarUsuarios(filtroQuery);
 });
 
 // ==============================
-// Guardar y activar/desactivar usuarios
+// 🔹 Guardar y activar/desactivar usuarios
 // ==============================
 document.querySelector("#usersTable tbody").addEventListener("click", async e => {
   const btn = e.target;
@@ -259,33 +274,36 @@ document.querySelector("#usersTable tbody").addEventListener("click", async e =>
     }
   }
 
-if (action === "guardar") {
-  const id = tr.querySelector("td:first-child").innerText.trim(); // Columna ID
-  const rol = tr.querySelector('[data-field="rol"]').value;
+  if (action === "guardar") {
+    const id = tr.querySelector("td:first-child").innerText.trim();
+    const rol = tr.querySelector('[data-field="rol"]').value;
 
-  try {
-    const res = await fetch(`${apiUrl}update/rol?id=${id}&rol=${rol}`, {
-      method: "PATCH",
-      headers: {
-        "Authorization": `Bearer ${token}`,
-      },
-    });
+    try {
+      const res = await fetch(`${apiUrl}update/rol?id=${id}&rol=${rol}`, {
+        method: "PATCH",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      });
 
-    const result = await res.json();
+      const result = await res.json();
 
-    if (res.ok) {
-      Swal.fire("Actualizado", result.detail || "Usuario modificado correctamente", "success");
-      await cargarUsuarios();
-    } else {
-      Swal.fire("Error", result.detail || "Error al actualizar usuario", "error");
+      if (res.ok) {
+        Swal.fire("Actualizado", result.detail || "Usuario modificado correctamente", "success");
+        await cargarUsuarios();
+      } else {
+        Swal.fire("Error", result.detail || "Error al actualizar usuario", "error");
+      }
+    } catch (error) {
+      Swal.fire("Error", "No se pudo conectar con el servidor.", "error");
     }
-  } catch (error) {
-    Swal.fire("Error", "No se pudo conectar con el servidor.", "error");
   }
-}
-
 });
+
+// ==============================
+// 🔹 Formulario de nuevo admin
+// ==============================
 document.getElementById("formAddUser").addEventListener("submit", e => {
-  e.preventDefault(); // Evita que se recargue la página
+  e.preventDefault();
   registrarAdmin();
 });
