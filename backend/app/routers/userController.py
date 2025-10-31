@@ -31,14 +31,11 @@ async def getUsers(
         offset = paginar(page, size)
         condicion = {"size": size, "offset": offset}
 
-        # -----------------------------
         # Construir query base
-        # -----------------------------
+       
         query = "SELECT * FROM usuarios "
 
-        # -----------------------------
-        # Aplicar filtro si corresponde
-        # -----------------------------
+        #Aplicar filtros si se envio alguno
         if filtro.lower() != "todos":
             # Filtrar por estado activo/inactivo
             if filtro.lower() == "activo":
@@ -221,3 +218,64 @@ async def updateRol(id:int,rol:str,_:bool = Depends(isAdmin)):
         raise
     except Exception:
         errorInterno()
+    
+# Buscar usuarios (admin o supervisor)
+@router.get("/buscar", status_code=status.HTTP_200_OK)
+async def buscarUsuarios(
+    query: str = Query(..., min_length=1, description="Texto a buscar en nombre, apellido o usuario"),
+    page: int = Query(1, ge=1, description="Número de página"),
+    size: int = Query(10, ge=1, le=100, description="Cantidad de resultados por página"),
+    _: bool = Depends(isAdmin)  # solo administradores pueden buscar
+):
+    try:
+        offset = paginar(page, size)
+
+        # Normalizamos el texto de búsqueda
+        texto = f"%{query.lower()}%"
+
+        # Query SQL usando ILIKE (PostgreSQL, para coincidencia sin distinción de mayúsculas)
+        sql = """
+            SELECT id, usuario, nombre, apellido, rol, activo, create_time , updated_at
+            FROM usuarios
+            WHERE LOWER(nombre) LIKE :texto
+               OR LOWER(apellido) LIKE :texto
+               OR LOWER(usuario) LIKE :texto
+            ORDER BY id
+            LIMIT :size OFFSET :offset
+        """
+
+        params = {"texto": texto, "size": size, "offset": offset}
+
+        usuarios = await db.fetch_all(sql, params)
+
+        if not usuarios:
+            return {
+                "page": page,
+                "size": size,
+                "total": 0,
+                "total_pages": 0,
+                "usuarios": []
+            }
+
+        # Total de coincidencias
+        total_sql = """
+            SELECT COUNT(*) 
+            FROM usuarios 
+            WHERE LOWER(nombre) LIKE :texto
+               OR LOWER(apellido) LIKE :texto
+               OR LOWER(usuario) LIKE :texto
+        """
+        total = await db.fetch_val(total_sql, {"texto": texto})
+
+        return {
+            "page": page,
+            "size": size,
+            "total": total,
+            "total_pages": totalPages(total, size),
+            "usuarios": [admin_user_schema(u) for u in usuarios]
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise errorInterno(e)

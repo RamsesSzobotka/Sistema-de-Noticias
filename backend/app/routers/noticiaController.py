@@ -15,12 +15,18 @@ router = APIRouter(prefix="/noticia", tags=["Noticias"])
 UPLOAD_DIR = "imagenesdb"
 @router.get("/", status_code=status.HTTP_200_OK)
 async def getNoticias(
+    filtro: str = Query(
+        "todas",
+        description="Filtros disponibles: 'deportes', 'politica', 'tecnologia', 'entretenimiento'"
+    ),
     page: int = Query(1, ge=1, description="Número de página"),
-    size: int = Query(10, ge=1, le=100),
+    size: int = Query(10, ge=1, le=100, description="Cantidad de resultados por página"),
 ):
     try:
         offset = paginar(page, size)
+        filtro = filtro.lower()  # para evitar problemas con mayúsculas/minúsculas
 
+        # Base del query
         query = """
             SELECT 
                 n.id,
@@ -46,14 +52,33 @@ async def getNoticias(
             JOIN categorias c ON n.categoria_id = c.id
             JOIN usuarios u ON n.usuario_id = u.id
             LEFT JOIN imagenes i ON i.noticia_id = n.id
-            WHERE n.activo = TRUE
+        """
+
+        condiciones = {"size": size, "offset": offset}
+
+        # Filtros dinámicos
+        if filtro != "todas":
+            if filtro in ["deportes", "politica", "tecnologia", "entretenimiento"]:
+                query += "WHERE LOWER(c.nombre) = :categoria AND n.activo = TRUE "
+                condiciones["categoria"] = filtro
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                    detail=f"Filtro inválido: {filtro}"
+                )
+        else:
+            query += "WHERE n.activo = TRUE "
+
+        query += """
             GROUP BY n.id, c.id, u.id
             ORDER BY n.fecha_creacion DESC
             LIMIT :size OFFSET :offset;
         """
 
-        result = await db.fetch_all(query, {"size": size, "offset": offset})
+        # Ejecutar consulta
+        result = await db.fetch_all(query, condiciones)
 
+        # Si no hay resultados
         if not result:
             return {
                 "page": page,
@@ -63,7 +88,15 @@ async def getNoticias(
                 "noticias": [],
             }
 
-        total = await db.fetch_val("SELECT COUNT(*) FROM noticias WHERE activo = TRUE")
+        # Total de noticias activas (solo cuenta las que cumplen el filtro si aplica)
+        if filtro != "todas":
+            total = await db.fetch_val(
+                "SELECT COUNT(*) FROM noticias n JOIN categorias c ON n.categoria_id = c.id "
+                "WHERE LOWER(c.nombre) = :categoria AND n.activo = TRUE",
+                {"categoria": filtro}
+            )
+        else:
+            total = await db.fetch_val("SELECT COUNT(*) FROM noticias WHERE activo = TRUE")
 
         return {
             "page": page,
@@ -76,7 +109,7 @@ async def getNoticias(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"error: {e}")
+        raise HTTPException(status_code=500, detail=f"Error interno: {e}")
 
 @router.get("/all", status_code=status.HTTP_200_OK)
 async def get_noticias_admin(

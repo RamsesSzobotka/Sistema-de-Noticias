@@ -1,7 +1,7 @@
 // Variables globales
 let currentPage = 1;
 let totalPages = 1;
-let currentCategory = "todas";
+let currentCategory = "todas"; // categoría actual (texto)
 let usuario = sessionStorage.getItem("usuario");
 
 // Función de inicialización
@@ -12,10 +12,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Eventos
     document.getElementById("loadMore").addEventListener("click", loadMoreNews);
+
+    // Manejar clicks en el menú de categorías
     document.querySelector(".main-nav").addEventListener("click", (e) => {
         if (e.target.tagName === "A") {
             e.preventDefault();
-            currentCategory = e.target.dataset.category === "todas" ? "todas" : parseInt(e.target.dataset.category);
+            currentCategory = e.target.dataset.category.toLowerCase(); // ejemplo: 'deportes', 'politica', 'todas'
             document.getElementById("newsGrid").innerHTML = "";
             currentPage = 1;
             cargarNoticias();
@@ -25,7 +27,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("logoutBtn").addEventListener("click", logout);
 });
 
-// Verificar sesión y mostrar botones según rol
+// ==============================
+// Verificar sesión y roles
+// ==============================
 async function verificarSesion() {
     const access_token = sessionStorage.getItem("access_token");
     if (!access_token) return;
@@ -65,58 +69,9 @@ async function verificarSesion() {
     }
 }
 
-function mostrarBotonesPorRol(rol) {
-    // Limpiar listeners existentes
-    const botones = ["btn-editar", "adminBtn", "supervisorPanelBtn", "publicarBtn"];
-    botones.forEach(id => {
-        const btn = document.getElementById(id);
-        if (btn) {
-            btn.style.display = "none";
-            btn.replaceWith(btn.cloneNode(true)); // limpia event listeners previos
-        }
-    });
-
-    // Botón de perfil
-    const perfilBtn = document.getElementById("btn-editar");
-    if (perfilBtn) {
-        perfilBtn.style.display = "inline-block";
-        perfilBtn.addEventListener("click", () => {
-            window.location.href = "editar-usuario/index.html";
-        });
-    }
-
-    // Botón admin
-    if (["admin"].includes(rol)) {
-        const adminBtn = document.getElementById("adminBtn");
-        if (adminBtn) {
-            adminBtn.style.display = "inline-block";
-            adminBtn.addEventListener("click", () => {
-                window.location.href = "administrar-usuario/index.html";
-            });
-        }
-    }
-
-    // Botones supervisor/editor
-    if (["admin", "supervisor", "editor"].includes(rol)) {
-        const supervisorBtn = document.getElementById("supervisorPanelBtn");
-        if (supervisorBtn) {
-            supervisorBtn.style.display = "inline-block";
-            supervisorBtn.addEventListener("click", () => {
-                window.location.href = "administrar-noticia/index.html";
-            });
-        }
-
-        const publicarBtn = document.getElementById("publicarBtn");
-        if (publicarBtn) {
-            publicarBtn.style.display = "inline-block";
-            publicarBtn.addEventListener("click", () => {
-                window.location.href = "crear-noticia/index.html";
-            });
-        }
-    }
-}
-
+// ==============================
 // Cerrar sesión
+// ==============================
 function logout() {
     Swal.fire({
         title: "¿Estás seguro?",
@@ -145,7 +100,9 @@ function logout() {
     });
 }
 
+// ==============================
 // Actualizar visitas
+// ==============================
 async function actualizarVisitas() {
     try {
         await fetch("http://127.0.0.1:8000/vistas/update", { method: "PUT" });
@@ -158,10 +115,16 @@ async function actualizarVisitas() {
     }
 }
 
-// Cargar noticias
+// ==============================
+// Cargar noticias (con filtro)
+// ==============================
 async function cargarNoticias() {
     try {
-        const res = await fetch(`http://127.0.0.1:8000/noticia/?page=${currentPage}&size=10`);
+        // 🟢 Se incluye el parámetro "filtro" en la URL
+        const res = await fetch(
+            `http://127.0.0.1:8000/noticia/?filtro=${currentCategory}&page=${currentPage}&size=10`
+        );
+
         const data = await res.json();
 
         totalPages = data.total_pages;
@@ -183,7 +146,9 @@ async function cargarNoticias() {
     }
 }
 
+// ==============================
 // Cargar más noticias
+// ==============================
 async function loadMoreNews() {
     if (currentPage < totalPages) {
         currentPage++;
@@ -191,7 +156,9 @@ async function loadMoreNews() {
     }
 }
 
+// ==============================
 // Renderizar noticias
+// ==============================
 function renderNews(noticias) {
     const newsGrid = document.getElementById("newsGrid");
 
@@ -211,7 +178,9 @@ function renderNews(noticias) {
     });
 }
 
+// ==============================
 // Crear tarjeta de noticia
+// ==============================
 function createFeaturedNewsCard(article, className) {
     const card = document.createElement("a");
     card.className = `news-card ${className}`;
@@ -221,11 +190,9 @@ function createFeaturedNewsCard(article, className) {
         window.location.href = "detalle-noticia/index.html";
     });
 
-    // URL base de las imágenes servidas por FastAPI
     let imageUrl = "http://127.0.0.1:8000/imagenesdb/DEFAULT.png";
 
     if (article.imagenes && article.imagenes.length > 0 && article.imagenes[0].imagen) {
-        // Si la BD guarda rutas relativas (ej: /imagenesdb/foto.jpg)
         imageUrl = `http://127.0.0.1:8000/${article.imagenes[0].imagen}`;
     }
 
@@ -245,4 +212,3 @@ function createFeaturedNewsCard(article, className) {
     `;
     return card;
 }
-
