@@ -193,19 +193,55 @@ async function cargarUsuarios(filtro = "todos", page = 1, size = 50) {
 // ==============================
 document.addEventListener("DOMContentLoaded", verificarSesionYPermiso);
 
-// 🔍 Buscar usuarios (solo en la lista cargada)
-document.getElementById("buscadorUsuarios").addEventListener("input", e => {
-  const palabra = e.target.value.trim().toLowerCase();
-  if (!palabra) return renderizarUsuarios(usuariosCargados);
+// ==============================
+// 🔍 Buscar usuarios en el backend
+// ==============================
+async function buscarUsuariosBackend(termino) {
+  const access_token = sessionStorage.getItem("access_token")?.replaceAll('"', '');
+  if (!access_token || !termino.trim()) {
+    // Si el campo está vacío, recarga los usuarios normales
+    return await cargarUsuarios();
+  }
 
-  const filtrados = usuariosCargados.filter(user =>
-    user.nombre.toLowerCase().includes(palabra) ||
-    user.apellido.toLowerCase().includes(palabra) ||
-    user.usuario.toLowerCase().includes(palabra)
-  );
+  try {
+    const res = await fetch(`${apiUrl}buscar?query=${encodeURIComponent(termino)}`, {
+      headers: {
+        "Authorization": `Bearer ${access_token}`,
+        "Content-Type": "application/json",
+      },
+    });
 
-  renderizarUsuarios(filtrados);
+    if (!res.ok) {
+      throw new Error("Error al realizar la búsqueda");
+    }
+
+    const data = await res.json();
+
+    usuariosCargados = data.usuarios || [];
+    renderizarUsuarios(usuariosCargados);
+  } catch (error) {
+    console.error("Error en búsqueda:", error);
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: "No se pudo realizar la búsqueda.",
+    });
+  }
+}
+
+// 🔍 Buscar usuarios (con backend)
+document.getElementById("buscadorUsuarios").addEventListener("input", async e => {
+  const termino = e.target.value.trim();
+
+  if (!termino) {
+    // Si se borra el texto, recarga todos
+    await cargarUsuarios();
+    return;
+  }
+
+  await buscarUsuariosBackend(termino);
 });
+
 
 // ==============================
 // 🔹 Filtros: hacen petición al backend

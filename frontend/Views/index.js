@@ -69,6 +69,56 @@ async function verificarSesion() {
     }
 }
 
+function mostrarBotonesPorRol(rol) {
+    // Limpiar listeners existentes
+    const botones = ["btn-editar", "adminBtn", "supervisorPanelBtn", "publicarBtn"];
+    botones.forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) {
+            btn.style.display = "none";
+            btn.replaceWith(btn.cloneNode(true)); // limpia event listeners previos
+        }
+    });
+
+    // Botón de perfil
+    const perfilBtn = document.getElementById("btn-editar");
+    if (perfilBtn) {
+        perfilBtn.style.display = "inline-block";
+        perfilBtn.addEventListener("click", () => {
+            window.location.href = "editar-usuario/index.html";
+        });
+    }
+
+    // Botón admin
+    if (["admin"].includes(rol)) {
+        const adminBtn = document.getElementById("adminBtn");
+        if (adminBtn) {
+            adminBtn.style.display = "inline-block";
+            adminBtn.addEventListener("click", () => {
+                window.location.href = "administrar-usuario/index.html";
+            });
+        }
+    }
+
+    // Botones supervisor/editor
+    if (["admin", "supervisor", "editor"].includes(rol)) {
+        const supervisorBtn = document.getElementById("supervisorPanelBtn");
+        if (supervisorBtn) {
+            supervisorBtn.style.display = "inline-block";
+            supervisorBtn.addEventListener("click", () => {
+                window.location.href = "administrar-noticia/index.html";
+            });
+        }
+
+        const publicarBtn = document.getElementById("publicarBtn");
+        if (publicarBtn) {
+            publicarBtn.style.display = "inline-block";
+            publicarBtn.addEventListener("click", () => {
+                window.location.href = "crear-noticia/index.html";
+            });
+        }
+    }
+}
 // ==============================
 // Cerrar sesión
 // ==============================
@@ -122,7 +172,7 @@ async function cargarNoticias() {
     try {
         // 🟢 Se incluye el parámetro "filtro" en la URL
         const res = await fetch(
-            `http://127.0.0.1:8000/noticia/?filtro=${currentCategory}&page=${currentPage}&size=10`
+            `http://127.0.0.1:8000/noticia/?filtro=${encodeURIComponent(currentCategory)}&page=${currentPage}&size=10`
         );
 
         const data = await res.json();
