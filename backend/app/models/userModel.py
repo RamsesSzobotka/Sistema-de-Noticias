@@ -6,7 +6,7 @@ class Usuarios(BaseModel):
     nombre: str
     apellido: str
     usuario: str
-    contrasena: str
+    contrasena: Optional[str] = None
 
 
 class Usuarios_admin(Usuarios):

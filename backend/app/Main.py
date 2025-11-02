@@ -1,4 +1,6 @@
+import html
 from fastapi import FastAPI
+from fastapi import staticfiles
 from fastapi.staticfiles import StaticFiles
 from routers import authController,noticiaController,visitasController,userController,likeController,comentarioController
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,6 +24,8 @@ app.include_router(likeController.router)
 app.include_router(comentarioController.router)
 #Cargar imagenes
 app.mount("/imagenesdb", StaticFiles(directory="imagenesdb"), name="imagenesdb")
+
+app.mount("/",StaticFiles(directory="../../frontend/Views/",html=True), name="App")
 
 app.add_middleware(
     CORSMiddleware,

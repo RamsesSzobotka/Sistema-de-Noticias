@@ -112,7 +112,7 @@ async def getNoticias(
         raise HTTPException(status_code=500, detail=f"Error interno: {e}")
 
 @router.get("/all", status_code=status.HTTP_200_OK)
-async def get_noticias_admin(
+async def getNoticiasAll(
     page: int = Query(1, ge=1, description="Número de página"),
     size: int = Query(10, ge=1, le=100),
     _: bool = Depends(isPublicadorOrHigher)

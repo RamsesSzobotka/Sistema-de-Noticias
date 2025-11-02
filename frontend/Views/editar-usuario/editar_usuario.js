@@ -1,26 +1,46 @@
-const sessionInfoUrl = "../../api/controllerSessionInfo.php";
-const apiUsuariosUrl = "../../api/controllerUsuarios.php";
+const apiBaseUrl = "http://127.0.0.1:8000/usuarios";
 
-let usuarioId = null;
+let access_token = sessionStorage.getItem("access_token");
 
-async function verificarSesionYObtenerId() {
+// ==============================
+// 🔹 Verificar sesión y obtener datos
+// ==============================
+async function verificarSesionYObtenerDatos() {
+  if (!access_token) {
+    Swal.fire({
+      icon: "error",
+      title: "Sesión no válida",
+      text: "Debes iniciar sesión para acceder.",
+      confirmButtonText: "Ir al inicio",
+    }).then(() => {
+      window.location.href = "../index.html";
+    });
+    return false;
+  }
+
   try {
-    const res = await fetch(sessionInfoUrl);
-    const data = await res.json();
+    const res = await fetch(`${apiBaseUrl}/me`, {
+      headers: {
+        Authorization: `Bearer ${access_token}`,
+      },
+    });
 
-    if (!data.success || !data.usuario_id) {
-      throw new Error("No hay sesión activa");
-    }
+    if (!res.ok) throw new Error("Sesión no válida");
 
-    usuarioId = data.usuario_id;
+    const usuario = await res.json();
+
+    // Mostrar datos en los campos
+    document.querySelector('input[name="nombre"]').value = usuario.nombre;
+    document.querySelector('input[name="apellido"]').value = usuario.apellido;
+    document.querySelector('input[name="usuario"]').value = usuario.usuario;
+
     return true;
-
   } catch (error) {
     Swal.fire({
       icon: "error",
       title: "Sesión no válida",
       text: "Debes iniciar sesión para acceder.",
-      confirmButtonText: "Ir al inicio"
+      confirmButtonText: "Ir al inicio",
     }).then(() => {
       window.location.href = "../index.html";
     });
@@ -28,37 +48,21 @@ async function verificarSesionYObtenerId() {
   }
 }
 
-async function cargarDatosUsuario() {
-  try {
-    const res = await fetch(`${apiUsuariosUrl}?id=${usuarioId}`);
-    if (!res.ok) throw new Error("No se pudo obtener el usuario");
-
-    const usuario = await res.json();
-
-    document.querySelector('input[name="nombre"]').value = usuario.nombre;
-    document.querySelector('input[name="apellido"]').value = usuario.apellido;
-    document.querySelector('input[name="usuario"]').value = usuario.usuario;
-
-  } catch (error) {
-    Swal.fire({
-      icon: "error",
-      title: "Error al cargar datos",
-      text: "No se pudo cargar la información del usuario.",
-    });
-  }
-}
-
+// ==============================
+// 🔹 Habilitar edición
+// ==============================
 document.getElementById("btnEditar").addEventListener("click", () => {
-  document.querySelectorAll('input[name="nombre"], input[name="apellido"], input[name="usuario"]')
-    .forEach(input => input.removeAttribute("disabled"));
+  document
+    .querySelectorAll('input[name="nombre"], input[name="apellido"], input[name="usuario"]')
+    .forEach((input) => input.removeAttribute("disabled"));
 
-  // Mostrar botón guardar
   document.getElementById("btnGuardar").style.display = "inline-block";
-
-  // Ocultar botón editar
   document.getElementById("btnEditar").style.display = "none";
 });
 
+// ==============================
+// 🔹 Guardar cambios
+// ==============================
 document.getElementById("formEditarSesion").addEventListener("submit", async function (e) {
   e.preventDefault();
 
@@ -83,79 +87,58 @@ document.getElementById("formEditarSesion").addEventListener("submit", async fun
     confirmButtonColor: "#3085d6",
     cancelButtonColor: "#d33",
     confirmButtonText: "Sí, guardar",
-    cancelButtonText: "Cancelar"
+    cancelButtonText: "Cancelar",
   });
 
   if (!confirm.isConfirmed) return;
 
   try {
-      const res = await fetch(`${apiUsuariosUrl}?id=${usuarioId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ nombre, apellido, usuario}),
-      });
+    const res = await fetch(`${apiBaseUrl}/me`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${access_token}`,
+      },
+      body: JSON.stringify({ nombre, apellido, usuario }),
+    });
 
-      // Verifica si la respuesta fue exitosa
-      if (!res.ok) {
-          const errorText = await res.text();
-          console.error("Error de servidor:", errorText); // Muestra el HTML completo para depurar
-          throw new Error(`HTTP error! status: ${res.status}`);
-      }
+    const result = await res.json();
 
-      const result = await res.json();
-
-      if (res.ok) {
-          if (result.message && result.message === "No se realizaron cambios") {
-              Swal.fire({
-                  icon: "info",
-                  title: "Sin cambios",
-                  text: "No se realizaron cambios en los datos del usuario.",
-                  timer: 2000,
-                  showConfirmButton: false,
-              });
-          } else {
-              Swal.fire({
-                  icon: "success",
-                  title: "Actualizado correctamente",
-                  text: "Tus datos han sido modificados.",
-                  timer: 2000,
-                  showConfirmButton: false,
-              });
-
-              // Deshabilitar campos y reiniciar botones
-              document
-                  .querySelectorAll(
-                      'input[name="nombre"], input[name="apellido"], input[name="usuario"]'
-                  )
-                  .forEach((input) => input.setAttribute("disabled", true));
-
-              document.getElementById("btnGuardar").style.display = "none";
-              document.getElementById("btnEditar").style.display =
-                  "inline-block";
-          }
-      } else {
-          Swal.fire({
-              icon: "error",
-              title: "Error",
-              text: result.message || "No se pudo actualizar el usuario.",
-          });
-      }
-  } catch (error) {
+    if (res.ok) {
       Swal.fire({
-          icon: "error",
-          title: "Error de red",
-          text: `No se pudo conectar al servidor. Detalle del error: ${
-              error.message || error
-          }`,
+        icon: "success",
+        title: "Actualizado correctamente",
+        text: "Tus datos han sido modificados.",
+        timer: 2000,
+        showConfirmButton: false,
       });
-  }
 
+      // Deshabilitar campos y restaurar botones
+      document
+        .querySelectorAll('input[name="nombre"], input[name="apellido"], input[name="usuario"]')
+        .forEach((input) => input.setAttribute("disabled", true));
+
+      document.getElementById("btnGuardar").style.display = "none";
+      document.getElementById("btnEditar").style.display = "inline-block";
+    } else {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: result.detail || "No se pudo actualizar el usuario.",
+      });
+    }
+  } catch (error) {
+    Swal.fire({
+      icon: "error",
+      title: "Error de red",
+      text: `No se pudo conectar al servidor. Detalle: ${error.message}`,
+    });
+  }
 });
 
-// Ejecutar al cargar
+// ==============================
+// 🔹 Al cargar la página
+// ==============================
 (async function () {
-  const sesionValida = await verificarSesionYObtenerId();
-  if (sesionValida) {
-    cargarDatosUsuario();
-  }
+  await verificarSesionYObtenerDatos();
 })();
