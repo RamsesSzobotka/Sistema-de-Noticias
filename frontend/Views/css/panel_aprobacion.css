@@ -230,3 +230,39 @@ button.btn-editar:hover {
 .btn-filtro:hover {
   background-color: #2980b9;
 } 
+
+/* Botón Eliminar */
+button.btn-eliminar {
+  background-color: #dc3545; /* Rojo Bootstrap */
+  border: none;
+  color: white;
+  padding: 6px 14px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.1s ease;
+  margin: 8px;
+}
+
+button.btn-eliminar:hover {
+  background-color: #b02a37; /* Rojo más oscuro */
+  transform: scale(1.05);
+}
+
+/* Botón Activar */
+button.btn-estado {
+  background-color: #6c757d; 
+  border: none;
+  color: white;
+  padding: 6px 14px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.1s ease;
+  margin: 8px;
+}
+
+button.btn-estado:hover {
+  background-color:#212529;
+  transform: scale(1.05);
+}

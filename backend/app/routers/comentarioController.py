@@ -123,7 +123,7 @@ async def delete_comentario(id: int, userId: int = Depends(getTokenId)):
             if result is None:
                 raise errorInterno("Error al eliminar el like")
 
-            return {"detail": f"Comentario {result['id']} eliminado correctamente"}
+            return {"detail": "Comentario eliminado correctamente"}
 
     except HTTPException:
         raise

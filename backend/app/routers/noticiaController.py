@@ -5,7 +5,7 @@ from typing import List
 from models.noticiasModel import Noticias
 from schemas.noticiasSchema import noticia_schema
 from core.security import isEditorOrHigher, isPublicadorOrHigher, getTokenId
-from utils.infoVerify import validImagenes, validCategoria, validUser,searchNoticia
+from utils.infoVerify import searchNoticia, validImagenes, validCategoria, validUser
 from utils.HttpError import errorInterno
 from utils.DbHelper import paginar,totalPages
 from utils.imagen import insert_img
@@ -367,3 +367,27 @@ async def update_activo(id: int, _: bool = Depends(isPublicadorOrHigher)):
         raise
     except Exception as e:
         raise errorInterno(e)
+
+@router.delete("/",status_code=status.HTTP_200_OK)
+async def deleteNoticia(id: int, _:bool = Depends(isPublicadorOrHigher)):
+    try:
+        if await searchNoticia(id) is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail="Noticia inexistente")
+        
+        async with db.transaction():
+            query = "DELETE FROM noticias WHERE id = :id RETURNING id"
+            
+            result = await db.fetch_val(query,{"id": id})
+            
+            if not result:
+                raise errorInterno("Error al eliminar noticia, la noticia no fue eliminada")
+            
+            return {
+                "detail": "Noticia eliminada exitosamente"
+            }
+            
+    except HTTPException:
+        raise 
+    except Exception:
+        errorInterno()

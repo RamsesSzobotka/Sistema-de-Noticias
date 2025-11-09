@@ -2,7 +2,7 @@ from fastapi import HTTPException,status
 import uuid
 import os
 from core.ConnectDB import db
-from utils.HttpError import errorInterno
+from dotenv import load_dotenv
 
 load_dotenv()
 
