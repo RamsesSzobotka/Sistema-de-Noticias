@@ -1,30 +1,32 @@
 from fastapi import APIRouter,Query , HTTPException, status, Depends, UploadFile, File
 from core.ConnectDB import db
 import os
-import uuid
 from typing import List
 from models.noticiasModel import Noticias
 from schemas.noticiasSchema import noticia_schema
 from core.security import isEditorOrHigher, isPublicadorOrHigher, getTokenId
-from utils.infoVerify import validImagenes, validCategoria, validUser
+from utils.infoVerify import validImagenes, validCategoria, validUser,searchNoticia
 from utils.HttpError import errorInterno
 from utils.DbHelper import paginar,totalPages
+from utils.imagen import insert_img
+from dotenv import load_dotenv
 
 router = APIRouter(prefix="/noticia", tags=["Noticias"])
 
-UPLOAD_DIR = "imagenesdb"
+load_dotenv()
+
+UPLOAD_DIR = os.getenv("UPLOAD_DIR")
+
+   
 @router.get("/", status_code=status.HTTP_200_OK)
 async def getNoticias(
-    filtro: str = Query(
-        "todas",
-        description="Filtros disponibles: 'deportes', 'politica', 'tecnologia', 'entretenimiento'"
-    ),
+    filtro: str = Query("todas",description="Filtros disponibles: 'deportes', 'politica', 'tecnologia', 'entretenimiento'"),
     page: int = Query(1, ge=1, description="Número de página"),
     size: int = Query(10, ge=1, le=100, description="Cantidad de resultados por página"),
 ):
     try:
         offset = paginar(page, size)
-        filtro = filtro.lower()  # para evitar problemas con mayúsculas/minúsculas
+        filtro = filtro.lower() 
 
         # Base del query
         query = """
@@ -175,6 +177,53 @@ async def getNoticiasAll(
         raise
     except Exception as e:
         raise errorInterno(e)
+    
+@router.get("/{id}", status_code=status.HTTP_200_OK)
+async def getNoticia(id: int):
+    try:
+        query = """
+            SELECT 
+                n.id,
+                n.titulo,
+                n.contenido,
+                n.activo,
+                n.fecha_creacion,
+                c.id AS categoria_id,
+                c.nombre AS categoria_nombre,
+                u.id AS usuario_id,
+                u.usuario AS usuario_nombre,
+                n.autor,
+                COALESCE(
+                    json_agg(
+                        json_build_object(
+                            'id', i.id,
+                            'imagen', i.imagen,
+                            'tipo_imagen', i.tipo_imagen
+                        )
+                    ) FILTER (WHERE i.id IS NOT NULL), '[]'::json
+                ) AS imagenes
+            FROM noticias n
+            JOIN categorias c ON n.categoria_id = c.id
+            JOIN usuarios u ON n.usuario_id = u.id
+            LEFT JOIN imagenes i ON i.noticia_id = n.id
+            WHERE n.id = :id
+            GROUP BY n.id, c.id, u.id;
+        """
+
+        result = await db.fetch_one(query, {"id": id})
+
+        if not result:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Noticia no encontrada"
+            )
+
+        return noticia_schema(result)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise errorInterno()
 
 @router.post("/")
 async def crear_noticia(
@@ -224,11 +273,14 @@ async def crear_noticia(
 @router.put("/", status_code=status.HTTP_200_OK)
 async def update_noticia(
     noticia: Noticias = Depends(Noticias.from_form),
-    imagenes: List[UploadFile] = File(...),
+    imagenes: List[UploadFile] = File(None),
     rol: str = Depends(isEditorOrHigher),
     tokenId: int = Depends(getTokenId)
 ):
     try:
+        if noticia.id is None:
+            raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                                detail="Parametro ID vacio, es obligatorio enviar el ID")
         validCategoria(noticia.categoria_id)
 
         userId = await db.fetch_val(
@@ -245,6 +297,7 @@ async def update_noticia(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Sin autorizacion para editar esta noticia"
             )
+
         async with db.transaction():
             query_update = """
             UPDATE noticias
@@ -267,29 +320,24 @@ async def update_noticia(
                     detail="Error al actualizar noticia"
                 )
 
-            if imagenes and len(imagenes) > 0:
-                # Obtener rutas de imágenes antiguas
-                query_select_imgs = """
-                SELECT imagen FROM imagenes WHERE noticia_id = :noticia_id
-                """
-                imagenes_old_path = await db.fetch_all(
-                    query_select_imgs, {"noticia_id": noticia_id}
-                )
+            if imagenes:
+                # Si hay imágenes, verificar cantidad válida
+                if len(imagenes) in (1, 2):
+                    raise HTTPException(
+                        status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                        detail="Cantidad de imágenes inválida, se necesitan mínimo 3 si desea actualizarlas"
+                        )
 
-                # Eliminar archivos viejos del disco
+                # Borrar imágenes viejas y subir nuevas
+                query_select_imgs = "SELECT imagen FROM imagenes WHERE noticia_id = :noticia_id"
+                imagenes_old_path = await db.fetch_all(query_select_imgs, {"noticia_id": noticia.id})
+
                 for old_img in imagenes_old_path:
                     if os.path.exists(old_img["imagen"]):
                         os.remove(old_img["imagen"])
 
-                # Eliminar registros viejos de la base
-                query_delete_imgs = """
-                DELETE FROM imagenes WHERE noticia_id = :noticia_id
-                """
-                await db.execute(query_delete_imgs, {"noticia_id": noticia_id})
-
-                # Insertar nuevas imágenes
-                os.makedirs(UPLOAD_DIR, exist_ok=True)
-                await insert_img(imagenes, noticia_id)
+                await db.execute("DELETE FROM imagenes WHERE noticia_id = :noticia_id", {"noticia_id": noticia.id})
+                await insert_img(imagenes, noticia.id)
 
             return {"detail": "Noticia actualizada correctamente"}
 
@@ -319,38 +367,3 @@ async def update_activo(id: int, _: bool = Depends(isPublicadorOrHigher)):
         raise
     except Exception as e:
         raise errorInterno(e)
-
-
-async def insert_img(imagenes, noticiaId: int):
-    async with db.transaction():
-        query_insert = """
-        INSERT INTO imagenes(noticia_id, imagen, tipo_imagen)
-        VALUES(:noticia_id, :imagen, :tipo_imagen)
-        RETURNING id
-        """
-        os.makedirs(UPLOAD_DIR, exist_ok=True)
-
-        for img in imagenes:
-            original_name = os.path.basename(img.filename or f"unnamed_{noticiaId}.jpg")
-            safe_filename = f"{uuid.uuid4().hex}_{original_name}"
-            file_path = os.path.join(UPLOAD_DIR, safe_filename)
-
-            # Guardar el archivo físico
-            with open(file_path, "wb") as f:
-                f.write(await img.read())
-
-            # Normalizar la ruta (minúsculas + barras /)
-            normalized_path = file_path.replace("\\", "/").lower()
-
-            values = {
-                "noticia_id": noticiaId,
-                "imagen": normalized_path,
-                "tipo_imagen": img.content_type
-            }
-            imagen_id = await db.fetch_val(query_insert, values)
-
-            if imagen_id is None:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Error al guardar imágenes de noticia"
-                )

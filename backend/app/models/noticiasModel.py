@@ -11,7 +11,7 @@ class Noticias(BaseModel):
 
     @staticmethod
     def from_form(
-        id: Optional[int] = Form(None),  # <--- aquí está el cambio
+        id: Optional[int] = Form(None),
         titulo: str = Form(...),
         contenido: str = Form(...),
         categoria_id: int = Form(...),

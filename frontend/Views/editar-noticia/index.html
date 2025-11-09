@@ -3,50 +3,46 @@
 <head>
     <meta charset="UTF-8" />
     <title>Editar Noticia</title>
-    <link
-        rel="icon"
-        type="image/png"
-        sizes="16x16"
-        href="../logo.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="../logo.png" />
     <link rel="stylesheet" href="../css/paneles-comunes.css" />
     <link rel="stylesheet" href="../css/formulario_noticias.css" />
 </head>
-<header>
-    <h1>Editar Noticia</h1>
-</header>
+
 <body>
+    <header>
+        <h1>Editar Noticia</h1>
+    </header>
+
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <!-- Botón de regreso -->
     <div style="margin-bottom: 20px">
         <button
             class="volver-btn"
-            onclick="window.location.href='../administrar-noticia/'"
+            onclick="window.location.href='../administrar-noticia/index.html'"
             style="background-color: #6c757d"
         >
             ← Volver al Panel de Noticias
         </button>
     </div>
 
+    <!-- FORMULARIO PRINCIPAL -->
     <form id="formNoticia" enctype="multipart/form-data">
-        <!-- Campo oculto para el ID de la noticia -->
-        <input type="hidden" id="noticia_id" name="noticia_id" />
-
+        <!-- Campos ocultos -->
+        <input type="hidden" id="noticia_id" name="id" />
         <input type="hidden" id="usuario_id" name="usuario" />
 
+        <!-- Título -->
         <label for="titulo">Título:</label>
         <input type="text" name="titulo" id="titulo" required />
 
+        <!-- Contenido -->
         <label for="contenido">Contenido:</label>
-        <textarea
-            name="contenido"
-            id="contenido"
-            rows="10"
-            required
-        ></textarea>
+        <textarea name="contenido" id="contenido" rows="10" required></textarea>
 
+        <!-- Categoría -->
         <label for="categoria">Categoría:</label>
-        <select name="categoria" id="categoria" required>
+        <select name="categoria_id" id="categoria" required>
             <option value="">Selecciona una categoría</option>
             <option value="1">Deportes</option>
             <option value="2">Política</option>
@@ -54,15 +50,23 @@
             <option value="4">Entretenimiento</option>
         </select>
 
-        <label for="imagen">Imágenes (exactamente 3):</label>
+        <!-- CONTENEDOR DE IMÁGENES (dinámico desde JS) -->
+        <label>Imágenes actuales:</label>
+        <!-- Aquí se insertan dinámicamente las imágenes desde el JS -->
+        <!-- No poner nada aquí, el script lo rellenará -->
+        <div id="imagenes-actuales"></div>
+
+        <!-- Subir nuevas imágenes opcionalmente -->
+        <label for="imagen">Agregar nuevas imágenes (opcional):</label>
         <input
             type="file"
-            name="imagen[]"
             id="imagen"
+            name="imagenes"
             accept="image/*"
             multiple
         />
 
+        <!-- Autor -->
         <label for="autor">Autor (nombre apellido):</label>
         <input
             type="text"
@@ -73,9 +77,11 @@
             title="Debe ingresar nombre y apellido separados por un espacio."
         />
 
+        <!-- Botón guardar -->
         <button type="submit">Guardar Cambios</button>
     </form>
 
+    <!-- JS -->
     <script src="editar-noticia.js"></script>
 </body>
 </html>

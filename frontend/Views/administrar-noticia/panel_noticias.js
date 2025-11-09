@@ -42,17 +42,14 @@ function redirigir(mensaje) {
     title: "Acceso denegado",
     text: mensaje
   }).then(() => {
-    window.location.href = "../login.html";
+    window.location.href = "../auth/iniciar-sesion/index.html";
   });
 }
 
 // Cargar noticias según el rol
 function cargarNoticias() {
   const token = sessionStorage.getItem("access_token");
-  const endpoint =
-    rolUsuario === "editor"
-      ? "http://localhost:8000/noticia/all?page=1&size=20"
-      : "http://localhost:8000/noticia/all?page=1&size=20";
+  const endpoint = "http://localhost:8000/noticia/all?page=1&size=20"
 
   fetch(endpoint, {
     headers: {
@@ -105,7 +102,7 @@ function mostrarNoticias(noticias) {
             obj =>
               `<img src="http://localhost:8000/${obj.imagen}" alt="Imagen noticia" class="imagen-noticia"
                 style="cursor: pointer;" onclick="mostrarImagenModal(this.src)"
-                onerror="this.src='/imagenesDB/default.png'; this.onerror=null;">`
+                onerror="this.src='/imagenesdb/default.png'; this.onerror=null;">`
           )
           .join("")}
       </td>

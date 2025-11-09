@@ -1,8 +1,21 @@
 document.addEventListener("DOMContentLoaded", () => {
+  const apiBase = "http://127.0.0.1:8000";
+  const token = sessionStorage.getItem("access_token");
+
+  if (!token) {
+    Swal.fire({
+      icon: "warning",
+      title: "Sesión expirada",
+      text: "Debes iniciar sesión nuevamente.",
+    }).then(() => (window.location.href = "../auth/iniciar-sesion/index.html"));
+    return;
+  }
+
   const form = document.getElementById("formNoticia");
+  console.log(form)
   const inputImagen = document.getElementById("imagen");
 
-  // Contenedor para previsualización de imágenes
+  // Contenedor para previsualización
   const previewContainer = document.createElement("div");
   previewContainer.id = "previewContainer";
   previewContainer.style.display = "flex";
@@ -10,126 +23,112 @@ document.addEventListener("DOMContentLoaded", () => {
   previewContainer.style.marginTop = "10px";
   inputImagen.parentNode.insertBefore(previewContainer, inputImagen.nextSibling);
 
-  // Verificar sesión y rol para autorización
-  fetch("../../api/controllerSessionInfo.php", {
-    method: "GET",
-    credentials: "include",
-  })
-    .then((res) => res.json())
-    .then((data) => {
-      if (!data.success || !["supervisor", "admin", "editor"].includes(data.rol)) {
+  // Obtener ID desde URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const noticiaId = urlParams.get("id");
+  if (!noticiaId) {
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: "ID de noticia no proporcionado.",
+    }).then(() => (window.location.href = "../administrar-noticia/index.html"));
+    return;
+  }
+
+  // ==========================
+  // 1️⃣ Verificar permisos
+  // ==========================
+  verificarPermiso().then((permitido) => {
+    if (!permitido) return;
+    cargarNoticia(noticiaId);
+    agregarEventos();
+  });
+
+  async function verificarPermiso() {
+    try {
+      const res = await fetch(`${apiBase}/usuarios/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+
+      if (!res.ok || !["admin", "editor", "supervisor"].includes(data.rol)) {
         Swal.fire({
           icon: "error",
           title: "No autorizado",
           text: "No tienes permiso para editar noticias.",
-        }).then(() => {
-          window.location.href = "panel_noticias.php";
-        });
-        return;
+        }).then(() => (window.location.href = "../administrar-noticia/index.html"));
+        return false;
       }
 
-      // Poner usuario_id en input oculto para envío
-      document.getElementById("usuario_id").value = data.usuario_id;
-
-      // Obtener ID de noticia desde la URL
-      const urlParams = new URLSearchParams(window.location.search);
-      const noticiaId = urlParams.get("id");
-
-      if (!noticiaId) {
-        Swal.fire({
-          icon: "error",
-          title: "Error",
-          text: "ID de noticia no proporcionado.",
-        }).then(() => {
-          window.location.href = "../administrar-noticia/";
-        });
-        return;
-      }
-
-      // Cargar datos actuales de la noticia
-      cargarNoticia(noticiaId);
-
-      // Agregar eventos al formulario y input imagen
-      agregarEventos();
-    })
-    .catch(() => {
+      // Guardamos ID usuario
+      document.getElementById("usuario_id").value = data.id;
+      return true;
+    } catch (err) {
       Swal.fire({
         icon: "error",
         title: "Error",
-        text: "No se pudo verificar sesión.",
+        text: "Error verificando sesión.",
       });
-    });
+      return false;
+    }
+  }
 
-  /**
-   * Carga los datos de la noticia por ID y rellena el formulario
-   * @param {string} id - ID de la noticia
-   */
-  function cargarNoticia(id) {
-    fetch(`../../api/controllerNoticia.php?id=${id}`, {
-      credentials: "include",
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (!data.success || !data.noticia) {
-          Swal.fire({
-            icon: "error",
-            title: "Error",
-            text: data.message || "No se encontró la noticia.",
-          }).then(() => {
-            window.location.href = "panel_noticias.php";
-          });
-          return;
-        }
+  // ==========================
+  // 2️⃣ Cargar noticia existente
+  // ==========================
+  async function cargarNoticia(id) {
+    try {
+      const res = await fetch(`${apiBase}/noticia/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
 
-        const noticia = data.noticia;
-
-        // Setear ID en input oculto
-        document.getElementById("noticia_id").value = noticia.id;
-
-        // Rellenar campos del formulario con datos actuales
-        document.getElementById("titulo").value = noticia.titulo;
-        document.getElementById("contenido").value = noticia.contenido;
-        document.getElementById("categoria").value = noticia.categoria_id;
-        document.getElementById("autor").value = noticia.autor;
-
-        // Mostrar previsualización de imágenes actuales (excluyendo thumbnails)
-        previewContainer.innerHTML = "";
-        if (noticia.imagenes && noticia.imagenes.length > 0) {
-          const imagenesPrincipales = noticia.imagenes.filter(
-            (imgObj) => !imgObj.imagen.includes("thumb_")
-          );
-
-          imagenesPrincipales.forEach((imgObj) => {
-            const img = document.createElement("img");
-            const rutaAjustada = imgObj.imagen.replace("../imagenDB", "../../imagenDB");
-            img.src = rutaAjustada;
-            img.style.width = "100px";
-            img.style.height = "100px";
-            img.style.objectFit = "cover";
-            img.style.border = "1px solid #ccc";
-            img.style.borderRadius = "4px";
-            previewContainer.appendChild(img);
-          });
-        }
-      })
-      .catch(() => {
+      if (!res.ok || !data) {
         Swal.fire({
           icon: "error",
           title: "Error",
-          text: "Error cargando datos de la noticia.",
+          text: data.detail || "No se encontró la noticia.",
+        }).then(() => (window.location.href = "../administrar-noticia/index.html"));
+        return;
+      }
+
+      // Rellenar campos
+      document.getElementById("noticia_id").value = data.id;
+      document.getElementById("titulo").value = data.titulo;
+      document.getElementById("contenido").value = data.contenido;
+      document.getElementById("categoria").value = data.categoria.id;
+      document.getElementById("autor").value = data.autor;
+
+      // Mostrar imágenes actuales
+      previewContainer.innerHTML = "";
+      if (data.imagenes && data.imagenes.length > 0) {
+        data.imagenes.forEach((imgObj) => {
+          const img = document.createElement("img");
+          img.src = `${apiBase}/${imgObj.imagen}`;
+          img.style.width = "100px";
+          img.style.height = "100px";
+          img.style.objectFit = "cover";
+          img.style.border = "1px solid #ccc";
+          img.style.borderRadius = "4px";
+          previewContainer.appendChild(img);
         });
+      }
+    } catch (err) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Error cargando noticia.",
       });
+    }
   }
 
-  /**
-   * Agrega eventos para previsualización y manejo del submit del formulario
-   */
+  // ==========================
+  // 3️⃣ Previsualizar nuevas imágenes
+  // ==========================
   function agregarEventos() {
-    // Previsualizar nuevas imágenes al seleccionar archivos
     inputImagen.addEventListener("change", () => {
-      previewContainer.innerHTML = ""; // Limpiar previsualización previa
+      previewContainer.innerHTML = "";
       const files = inputImagen.files;
-
       Array.from(files).forEach((file) => {
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -146,68 +145,71 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
 
-    // Manejar envío del formulario para actualizar noticia
+    // ==========================
+    // 4️⃣ Enviar actualización
+    // ==========================
     form.addEventListener("submit", (e) => {
       e.preventDefault();
 
       const nuevasImagenes = inputImagen.files;
-
-      // Validar que si hay imágenes, sean exactamente 3
       if (nuevasImagenes.length > 0 && nuevasImagenes.length !== 3) {
         Swal.fire({
           icon: "warning",
-          title: "Cantidad de Imágenes",
-          text: "Debes seleccionar exactamente 3 imágenes o dejar el campo vacío para mantener las actuales.",
+          title: "Cantidad inválida",
+          text: "Debes subir exactamente 3 imágenes o dejar el campo vacío.",
         });
         return;
       }
 
-      // Confirmar actualización antes de enviar
       Swal.fire({
-        title: "¿Estás seguro?",
-        text: "Se actualizarán los datos de la noticia.",
+        title: "¿Actualizar noticia?",
+        text: "Los cambios serán revisados antes de publicarse.",
         icon: "question",
         showCancelButton: true,
         confirmButtonText: "Sí, actualizar",
         cancelButtonText: "Cancelar",
       }).then((result) => {
         if (result.isConfirmed) {
-          const formData = new FormData(form);
-
-          // Si no hay nuevas imágenes, eliminar el campo 'imagen' para no enviar archivos
-          if (nuevasImagenes.length === 0) {
-            formData.delete("imagen");
-          }
-
-          // Simular método PUT vía _method
-          formData.append("_method", "PUT");
-
-          fetch("../../api/controllerNoticia.php", {
-            method: "POST",
-            credentials: "include",
-            body: formData,
-          })
-            .then((res) => res.json())
-            .then((data) => {
-              Swal.fire({
-                icon: data.success ? "success" : "error",
-                title: data.success ? "Noticia Actualizada" : "Error",
-                text: data.message || (data.success ? "Actualización exitosa." : "Error al actualizar."),
-              }).then(() => {
-                if (data.success) {
-                  window.location.href = "../administrar-noticia/";
-                }
-              });
-            })
-            .catch(() => {
-              Swal.fire({
-                icon: "error",
-                title: "Error",
-                text: "No se pudo actualizar la noticia.",
-              });
-            });
+          actualizarNoticia();
         }
       });
     });
+  }
+
+  // ==========================
+  // 5️⃣ PUT /noticia/
+  // ==========================
+  async function actualizarNoticia() {
+    const formData = new FormData(form);
+    const nuevasImagenes = inputImagen.files;
+
+    // Si no hay nuevas imágenes, no se envía el campo
+    if (nuevasImagenes.length === 0) {
+      formData.delete("imagen");
+    }
+
+    try {
+      const res = await fetch(`${apiBase}/noticia/`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      const data = await res.json();
+      
+      Swal.fire({
+        icon: res.ok ? "success" : "error",
+        title: res.ok ? "Noticia actualizada" : "Error",
+        text: data.detail || "Error al actualizar la noticia.",
+      }).then(() => {
+        if (res.ok) window.location.href = "../administrar-noticia/index.html";
+      });
+    } catch (err) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Error enviando actualización.",
+      });
+    }
   }
 });
