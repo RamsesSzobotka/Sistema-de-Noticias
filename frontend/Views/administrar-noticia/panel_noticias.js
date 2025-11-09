@@ -50,7 +50,7 @@ function redirigir(mensaje) {
 // Cargar noticias según el rol
 function cargarNoticias(pagina = 1) {
   const token = sessionStorage.getItem("access_token");
-  const endpoint = `http://localhost:8000/noticia/all?page=${pagina}&size=2`;
+  const endpoint = `http://localhost:8000/noticia/all?page=${pagina}&size=10`;
 
   fetch(endpoint, {
     headers: {

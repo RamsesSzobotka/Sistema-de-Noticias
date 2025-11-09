@@ -145,11 +145,10 @@ function renderizarUsuarios(usuarios) {
 // ==============================
 // 🔹 Cargar usuarios desde backend (con filtros y paginación)
 // ==============================
-async function cargarUsuarios(filtro = "todos", page = 1, size = 50) {
+async function cargarUsuarios(filtro = "todos", page = 1, size = 2) {
   const access_token = sessionStorage.getItem("access_token")?.replaceAll('"', '');
   if (!access_token) return;
 
-  // Pantalla de carga con SweetAlert
   Swal.fire({
     title: "Cargando usuarios...",
     text: "Por favor espera un momento.",
@@ -167,9 +166,7 @@ async function cargarUsuarios(filtro = "todos", page = 1, size = 50) {
       },
     });
 
-    if (!res.ok) {
-      throw new Error("Error al obtener la lista de usuarios");
-    }
+    if (!res.ok) throw new Error("Error al obtener la lista de usuarios");
 
     const data = await res.json();
     console.log("Usuarios recibidos:", data);
@@ -177,7 +174,10 @@ async function cargarUsuarios(filtro = "todos", page = 1, size = 50) {
     usuariosCargados = data.usuarios || [];
     renderizarUsuarios(usuariosCargados);
 
-    Swal.close(); // Cerrar alerta de carga
+    // Generar paginación 👇
+    generarPaginacionUsuarios(data.total_pages || 1, data.page || page, filtro);
+
+    Swal.close();
   } catch (error) {
     console.error("Error cargando usuarios:", error);
     Swal.fire({
@@ -185,6 +185,27 @@ async function cargarUsuarios(filtro = "todos", page = 1, size = 50) {
       title: "Error",
       text: "No se pudieron cargar los usuarios.",
     });
+  }
+}
+
+function generarPaginacionUsuarios(totalPaginas, paginaActual, filtroActual = "todos") {
+  const contenedor = document.getElementById("paginacionUsuarios");
+  contenedor.innerHTML = "";
+
+  if (totalPaginas < 1) totalPaginas = 1;
+
+  for (let i = 1; i <= totalPaginas; i++) {
+    const boton = document.createElement("button");
+    boton.textContent = i;
+    boton.classList.add("pagina-btn");
+
+    if (i === paginaActual) boton.classList.add("activa");
+
+    boton.addEventListener("click", () => {
+      cargarUsuarios(filtroActual, i); // 👈 vuelve a llamar con la página seleccionada
+    });
+
+    contenedor.appendChild(boton);
   }
 }
 
