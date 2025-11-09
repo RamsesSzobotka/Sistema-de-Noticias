@@ -266,3 +266,32 @@ button.btn-estado:hover {
   background-color:#212529;
   transform: scale(1.05);
 }
+
+
+  .paginacion-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 15px;
+    gap: 8px;
+  }
+
+  .pagina-btn {
+    padding: 6px 12px;
+    border: 1px solid #3085d6;
+    background: white;
+    color: #3085d6;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+
+  .pagina-btn:hover {
+    background: #3085d6;
+    color: white;
+  }
+
+  .pagina-btn.activa {
+    background: #3085d6;
+    color: white;
+    font-weight: bold;
+  }

@@ -47,9 +47,10 @@ function redirigir(mensaje) {
 }
 
 // Cargar noticias según el rol
-function cargarNoticias() {
+// Cargar noticias según el rol
+function cargarNoticias(pagina = 1) {
   const token = sessionStorage.getItem("access_token");
-  const endpoint = "http://localhost:8000/noticia/all?page=1&size=20";
+  const endpoint = `http://localhost:8000/noticia/all?page=${pagina}&size=2`;
 
   fetch(endpoint, {
     headers: {
@@ -58,8 +59,10 @@ function cargarNoticias() {
   })
     .then(res => res.json())
     .then(data => {
+      console.log(data)
       noticiasCargadas = data.noticias || [];
       mostrarNoticias(noticiasCargadas);
+      generarPaginacion(data.total_pages || 1, pagina);
     })
     .catch(() => {
       Swal.fire({
@@ -68,6 +71,27 @@ function cargarNoticias() {
         text: "No se pudieron cargar las noticias."
       });
     });
+}
+
+// Crear botones de paginación
+function generarPaginacion(totalPaginas, paginaActual) {
+  const contenedor = document.getElementById("paginacion");
+  contenedor.innerHTML = "";
+
+  if (totalPaginas <= 1) return; // no mostrar si solo hay una página
+
+  for (let i = 1; i <= totalPaginas; i++) {
+    const boton = document.createElement("button");
+    boton.textContent = i;
+    boton.classList.add("pagina-btn");
+    if (i === paginaActual) boton.classList.add("activa");
+
+    boton.addEventListener("click", () => {
+      cargarNoticias(i);
+    });
+
+    contenedor.appendChild(boton);
+  }
 }
 
 // Mostrar noticias en la tabla
