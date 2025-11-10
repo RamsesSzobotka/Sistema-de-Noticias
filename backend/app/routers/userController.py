@@ -1,5 +1,3 @@
-import http
-from anyio import Condition
 from fastapi import APIRouter, Query, HTTPException, status, Depends
 from core.ConnectDB import db
 from passlib.context import CryptContext
@@ -83,7 +81,7 @@ async def getUsers(
     
 # Obtener datos del usuario logueado
 @router.get("/me", status_code=status.HTTP_200_OK)
-async def get_me(userId: int = Depends(getTokenId)):
+async def getMe(userId: int = Depends(getTokenId)):
     try:
         userData = await validUser(userId,1)
 

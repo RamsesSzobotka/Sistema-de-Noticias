@@ -145,7 +145,7 @@ function renderizarUsuarios(usuarios) {
 // ==============================
 // 🔹 Cargar usuarios desde backend (con filtros y paginación)
 // ==============================
-async function cargarUsuarios(filtro = "todos", page = 1, size = 2) {
+async function cargarUsuarios(filtro = "todos", page = 1, size = 10) {
   const access_token = sessionStorage.getItem("access_token")?.replaceAll('"', '');
   if (!access_token) return;
 

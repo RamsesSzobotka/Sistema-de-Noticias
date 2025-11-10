@@ -177,7 +177,89 @@ async def getNoticiasAll(
         raise
     except Exception as e:
         raise errorInterno(e)
-    
+
+@router.get("/buscar", status_code=status.HTTP_200_OK)
+async def buscarNoticias(
+    query: str = Query(..., min_length=1, description="Texto a buscar en título, contenido o autor"),
+    page: int = Query(1, ge=1, description="Número de página"),
+    size: int = Query(10, ge=1, le=100, description="Cantidad de resultados por página"),
+):
+    try:
+        offset = paginar(page, size)
+        texto = f"%{query.lower()}%"
+
+        sql = """
+            SELECT 
+                n.id,
+                n.titulo,
+                n.contenido,
+                n.activo,
+                n.fecha_creacion,
+                c.id AS categoria_id,
+                c.nombre AS categoria_nombre,
+                u.id AS usuario_id,
+                u.usuario AS usuario_nombre,
+                n.autor,
+                COALESCE(
+                    json_agg(
+                        json_build_object(
+                            'id', i.id,
+                            'imagen', i.imagen,
+                            'tipo_imagen', i.tipo_imagen
+                        )
+                    ) FILTER (WHERE i.id IS NOT NULL), '[]'::json
+                ) AS imagenes
+            FROM noticias n
+            JOIN categorias c ON n.categoria_id = c.id
+            JOIN usuarios u ON n.usuario_id = u.id
+            LEFT JOIN imagenes i ON i.noticia_id = n.id
+            WHERE (
+                    LOWER(n.titulo) LIKE :texto
+                 OR LOWER(n.contenido) LIKE :texto
+                 OR LOWER(n.autor) LIKE :texto
+              )
+            GROUP BY n.id, c.id, u.id
+            ORDER BY n.fecha_creacion DESC
+            LIMIT :size OFFSET :offset;
+        """
+
+        params = {"texto": texto, "size": size, "offset": offset}
+        result = await db.fetch_all(sql, params)
+
+        if not result:
+            return {
+                "page": page,
+                "size": size,
+                "total": 0,
+                "total_pages": 0,
+                "noticias": [],
+            }
+
+        total_sql = """
+            SELECT COUNT(*)
+            FROM noticias n
+            WHERE (
+                    LOWER(n.titulo) LIKE :texto
+                 OR LOWER(n.contenido) LIKE :texto
+                 OR LOWER(n.autor) LIKE :texto
+              )
+        """
+        total = await db.fetch_val(total_sql, {"texto": texto})
+
+        return {
+            "page": page,
+            "size": size,
+            "total": total,
+            "total_pages": totalPages(total, size),
+            "noticias": [noticia_schema(row) for row in result],
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise errorInterno(e)
+
+
 @router.get("/{id}", status_code=status.HTTP_200_OK)
 async def getNoticia(id: int):
     try:
@@ -367,7 +449,7 @@ async def update_activo(id: int, _: bool = Depends(isPublicadorOrHigher)):
         raise
     except Exception as e:
         raise errorInterno(e)
-
+    
 @router.delete("/",status_code=status.HTTP_200_OK)
 async def deleteNoticia(id: int, _:bool = Depends(isPublicadorOrHigher)):
     try:

@@ -300,3 +300,79 @@ document.addEventListener("click", (e) => {
     mostrarContenidoModal(contenido);
   }
 });
+
+// 🔍 --- BÚSQUEDA DE NOTICIAS ---
+const buscador = document.getElementById("buscadorNoticias");
+let temporizadorBusqueda = null;
+
+buscador.addEventListener("input", () => {
+  clearTimeout(temporizadorBusqueda);
+  const texto = buscador.value.trim();
+
+  // Si no hay texto, recarga todas las noticias
+  if (texto === "") {
+    cargarNoticias(1);
+    return;
+  }
+
+  // Espera 500ms después de dejar de escribir
+  temporizadorBusqueda = setTimeout(() => {
+    buscarNoticias(texto);
+  }, 500);
+});
+
+// Ejecutar búsqueda manual con Enter
+buscador.addEventListener("keypress", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    const texto = buscador.value.trim();
+    if (texto !== "") buscarNoticias(texto);
+  }
+});
+
+// Llamada al endpoint de búsqueda
+function buscarNoticias(texto, pagina = 1) {
+  const token = sessionStorage.getItem("access_token");
+  const url = `http://localhost:8000/noticia/buscar?query=${encodeURIComponent(texto)}&page=${pagina}&size=10`;
+
+  console.log("📤 Enviando búsqueda a:", url); // 🔍 Verificar query enviada
+
+  fetch(url, {
+    method: "GET",
+    headers: {
+      "Authorization": `Bearer ${token}`
+    }
+  })
+    .then(res => {
+      console.log("📥 Respuesta del servidor:", res.status);
+      if (!res.ok) throw new Error("Error al buscar noticias");
+      return res.json();
+    })
+    .then(data => {
+      console.log("📦 Datos recibidos:", data); // 🔍 Verificar contenido
+
+      if (!data.noticias || data.noticias.length === 0) {
+        mostrarNoticias([]);
+        return;
+      }
+
+      noticiasCargadas = data.noticias;
+      mostrarNoticias(noticiasCargadas);
+      generarPaginacion(data.total_pages || 1, pagina);
+
+      // Reasigna paginación para la búsqueda
+      const contenedor = document.getElementById("paginacion");
+      contenedor.querySelectorAll(".pagina-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          buscarNoticias(texto, parseInt(btn.textContent));
+        });
+      });
+    })
+    .catch(err => {
+      Swal.fire({
+        icon: "error",
+        title: "Error en búsqueda",
+        text: err.message
+      });
+    });
+}
