@@ -240,7 +240,7 @@ function createFeaturedNewsCard(article, className) {
         window.location.href = "detalle-noticia/index.html";
     });
 
-    let imageUrl = "http://127.0.0.1:8000/imagenesdb/DEFAULT.png";
+    let imageUrl = "http://127.0.0.1:8000/static/imagenesdb/DEFAULT.png";
 
     if (article.imagenes && article.imagenes.length > 0 && article.imagenes[0].imagen) {
         imageUrl = `http://127.0.0.1:8000/${article.imagenes[0].imagen}`;
@@ -250,7 +250,7 @@ function createFeaturedNewsCard(article, className) {
         <img src="${imageUrl}" 
              alt="${article.titulo}" 
              class="news-image"
-             onerror="this.onerror=null; this.src='http://127.0.0.1:8000/imagenesdb/DEFAULT.jpg';">
+             onerror="this.onerror=null; this.src='http://127.0.0.1:8000/static/imagenesdb/DEFAULT.png';">
         <div class="news-content">
             <h3 class="news-title">${article.titulo}</h3>
             <p class="news-excerpt">${article.contenido.substring(0, className === "main-news" ? 500 : 100)}...</p>

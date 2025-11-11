@@ -1,6 +1,7 @@
 from fastapi import HTTPException, status
 import uuid
 import os
+from utils.HttpError import errorInterno
 from core.ConnectDB import db
 from dotenv import load_dotenv
 
@@ -71,3 +72,45 @@ async def insert_img(imagenes, noticiaId: int):
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Error al guardar imágenes de noticia"
                 )
+
+async def deleteImgsNoticia(noticia_id: int):
+    """
+    Elimina las imágenes asociadas a una noticia tanto de la base de datos
+    como del sistema de archivos.
+
+    Parámetros:
+        noticia_id (int): ID de la noticia cuyas imágenes se eliminarán.
+
+    Descripción:
+        - Obtiene todas las rutas de imágenes asociadas desde la base de datos.
+        - Elimina físicamente los archivos del disco si existen.
+        - Borra los registros de la tabla `imagenes`.
+
+    Lanza:
+        HTTPException:
+            - 500 INTERNAL SERVER ERROR: Si ocurre un error al eliminar archivos o registros.
+    """
+    try:
+        # Obtener las rutas de las imágenes asociadas
+        query_select = "SELECT imagen FROM imagenes WHERE noticia_id = :noticia_id"
+        imagenes = await db.fetch_all(query_select, {"noticia_id": noticia_id})
+
+        # Eliminar físicamente los archivos
+        for img in imagenes:
+            path = img["imagen"]
+            if os.path.exists(path):
+                try:
+                    os.remove(path)
+                except Exception as e:
+                    raise HTTPException(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail=f"Error al eliminar archivo físico: {path} ({e})"
+                    )
+
+        # Eliminar registros de la base de datos
+        await db.execute("DELETE FROM imagenes WHERE noticia_id = :noticia_id", {"noticia_id": noticia_id})
+
+    except HTTPException:
+        raise
+    except Exception:
+        raise errorInterno("Error al eliminar imagenes")

@@ -8,7 +8,7 @@ from core.security import isEditorOrHigher, isPublicadorOrHigher, getTokenId
 from utils.infoVerify import searchNoticia, validImagenes, validCategoria, validUser
 from utils.HttpError import errorInterno
 from utils.DbHelper import paginar,totalPages
-from utils.imagen import insert_img
+from utils.imagen import insert_img, deleteImgsNoticia
 from dotenv import load_dotenv
 
 router = APIRouter(prefix="/noticia", tags=["Noticias"])
@@ -407,16 +407,9 @@ async def update_noticia(
                         status_code=status.HTTP_406_NOT_ACCEPTABLE,
                         detail="Cantidad de imágenes inválida, se necesitan mínimo 3 si desea actualizarlas"
                         )
-
-                # Borrar imágenes viejas y subir nuevas
-                query_select_imgs = "SELECT imagen FROM imagenes WHERE noticia_id = :noticia_id"
-                imagenes_old_path = await db.fetch_all(query_select_imgs, {"noticia_id": noticia.id})
-
-                for old_img in imagenes_old_path:
-                    if os.path.exists(old_img["imagen"]):
-                        os.remove(old_img["imagen"])
-
-                await db.execute("DELETE FROM imagenes WHERE noticia_id = :noticia_id", {"noticia_id": noticia.id})
+                    
+                # Borrar imágenes anteriores y subir las nuevas
+                await deleteImgsNoticia(noticia.id)
                 await insert_img(imagenes, noticia.id)
 
             return {"detail": "Noticia actualizada correctamente"}
@@ -456,6 +449,8 @@ async def deleteNoticia(id: int, _:bool = Depends(isPublicadorOrHigher)):
                                 detail="Noticia inexistente")
         
         async with db.transaction():
+            
+            await deleteImgsNoticia(id)
             query = "DELETE FROM noticias WHERE id = :id RETURNING id"
             
             result = await db.fetch_val(query,{"id": id})

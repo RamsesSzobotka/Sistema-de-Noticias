@@ -460,14 +460,30 @@ if (!noticiaId) {
         document.getElementById("fecha_creacion").innerText = fecha.toLocaleDateString("es-ES");
 
         if (noticia.imagenes && noticia.imagenes.length > 0) {
-            document.getElementById("imagen1").src = "http://127.0.0.1:8000/" + noticia.imagenes[0].imagen;
-            document.getElementById("imagen2").src = "http://127.0.0.1:8000/" + (noticia.imagenes[1]?.imagen || "imagenesdb/DEFAULT.jpeg");
-            document.getElementById("imagen3").src = "http://127.0.0.1:8000/" + (noticia.imagenes[2]?.imagen || "imagenesdb/DEFAULT.jpeg");
+            const imagen1 = document.getElementById("imagen1");
+            const imagen2 = document.getElementById("imagen2");
+            const imagen3 = document.getElementById("imagen3");
+
+            const defaultImg = "http://127.0.0.1:8000/static/imagenesdb/DEFAULT.png";
+
+            imagen1.src = "http://127.0.0.1:8000/" + (noticia.imagenes[0]?.imagen || "static/imagenesdb/DEFAULT.png");
+            imagen2.src = "http://127.0.0.1:8000/" + (noticia.imagenes[1]?.imagen || "static/imagenesdb/DEFAULT.png");
+            imagen3.src = "http://127.0.0.1:8000/" + (noticia.imagenes[2]?.imagen || "static/imagenesdb/DEFAULT.png");
+
+            // Si falla la carga, usar la imagen por defecto
+            [imagen1, imagen2, imagen3].forEach(img => {
+                img.onerror = () => {
+                    img.src = defaultImg;
+                };
+            });
         } else {
-            document.getElementById("imagen1").src = "http://127.0.0.1:8000/imagenesdb/DEFAULT.png";
-            document.getElementById("imagen2").src = "http://127.0.0.1:8000/imagenesdb/DEFAULT.png";
-            document.getElementById("imagen3").src = "http://127.0.0.1:8000/imagenesdb/DEFAULT.png";
+            // Si no hay imágenes asociadas
+            const defaultImg = "http://127.0.0.1:8000/static/imagenesdb/DEFAULT.png";
+            document.getElementById("imagen1").src = defaultImg;
+            document.getElementById("imagen2").src = defaultImg;
+            document.getElementById("imagen3").src = defaultImg;
         }
+
     } else {
         document.getElementById("titulo").innerText = "Noticia no encontrada.";
     }

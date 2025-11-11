@@ -23,7 +23,7 @@ app.include_router(userController.router)
 app.include_router(likeController.router)
 app.include_router(comentarioController.router)
 #Cargar imagenes
-app.mount("/imagenesdb", StaticFiles(directory="imagenesdb"), name="imagenesdb")
+app.mount("/static", StaticFiles(directory="static"), name="imagenesdb")
 
 app.mount("/",StaticFiles(directory="../../frontend/Views/",html=True), name="App")
 

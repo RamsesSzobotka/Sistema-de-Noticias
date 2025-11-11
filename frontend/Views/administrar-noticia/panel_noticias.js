@@ -130,7 +130,7 @@ function mostrarNoticias(noticias) {
             obj =>
               `<img src="http://localhost:8000/${obj.imagen}" alt="Imagen noticia" class="imagen-noticia"
                 style="cursor: pointer;" onclick="mostrarImagenModal(this.src)"
-                onerror="this.src='/imagenesdb/default.png'; this.onerror=null;">`
+                onerror="this.src='/static/imagenesdb/default.png'; this.onerror=null;">`
           )
           .join("")}
       </td>
