@@ -17,7 +17,6 @@ load_dotenv()
 
 UPLOAD_DIR = os.getenv("UPLOAD_DIR")
 
-   
 @router.get("/", status_code=status.HTTP_200_OK)
 async def getNoticias(
     filtro: str = Query("todas",description="Filtros disponibles: 'deportes', 'politica', 'tecnologia', 'entretenimiento'"),
@@ -258,7 +257,6 @@ async def buscarNoticias(
         raise
     except Exception as e:
         raise errorInterno(e)
-
 
 @router.get("/{id}", status_code=status.HTTP_200_OK)
 async def getNoticia(id: int):
