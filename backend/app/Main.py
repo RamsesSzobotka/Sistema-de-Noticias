@@ -28,11 +28,12 @@ app.include_router(visitasController.router)
 app.include_router(userController.router)
 app.include_router(likeController.router)
 app.include_router(comentarioController.router)
-#Cargar imagenes
+#Cargar imagenesDB
 app.mount("/static", StaticFiles(directory="static"), name="imagenesdb")
-
+#Cargar Assets
+app.mount("/assets",StaticFiles(directory="../../frontend/assets/"),name="assets")
+#Cargar Front
 app.mount("/",StaticFiles(directory="../../frontend/Views/",html=True), name="App")
-
 
 @app.get("/")
 async def root():
