@@ -76,13 +76,29 @@
 
     <!-- Menú central de categorías -->
     <nav class="main-nav">
-        <ul>
-            <li><a href="#" data-category="todas">Todas</a></li>
-            <li><a href="#" data-category="deportes">Deportes</a></li>
-            <li><a href="#" data-category="politica">Política</a></li>
-            <li><a href="#" data-category="tecnologia">Tecnología</a></li>
-            <li><a href="#" data-category="entretenimiento">Entretenimiento</a></li>
-        </ul>
+        <div class="main-nav-content">
+             <!-- Barra de búsqueda -->
+            <div class="search-container">
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    placeholder="Buscar noticias..." 
+                    class="search-box"
+                >
+                <button id="searchBtn" class="search-btn">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+            <!-- Categorías -->
+            <ul class="category-menu">
+                <li><p>Filtros: </p></li>
+                <li><a href="#" data-category="todas">Todas</a></li>
+                <li><a href="#" data-category="deportes">Deportes</a></li>
+                <li><a href="#" data-category="politica">Política</a></li>
+                <li><a href="#" data-category="tecnologia">Tecnología</a></li>
+                <li><a href="#" data-category="entretenimiento">Entretenimiento</a></li>
+            </ul>
+        </div>
     </nav>
 
 

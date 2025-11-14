@@ -73,37 +73,6 @@ body {
     color: #2c3e50;
 }
 
-/* Menú central */
-.main-nav {
-    background: white;
-    padding: 1rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    position: fixed;
-    top: 59px;
-    left: 0;
-    width: 100%;
-    z-index: 999;
-}
-
-.main-nav ul {
-    list-style: none;
-    display: flex;
-    justify-content: center;
-    gap: 2rem;
-}
-
-.main-nav a {
-    text-decoration: none;
-    color: #2c3e50;
-    font-weight: 500;
-    padding: 0.5rem 1rem;
-    transition: all 0.3s;
-}
-
-.main-nav a:hover {
-    color: #3498db;
-}
-
 #wrapper {
     flex: 4;
     display: flex;
@@ -489,4 +458,84 @@ body {
 
 #btn-editar:active {
     transform: scale(0.98);
+}
+
+/* === NAV PRINCIPAL (categorías + búsqueda) === */
+
+.main-nav {
+    background: white;
+    padding: 0.8rem 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    position: fixed;
+    top: 59px;
+    left: 0;
+    width: 100%;
+    z-index: 999;
+}
+
+.main-nav-content {
+    max-width: 1300px;
+    margin: 0 auto;
+
+    /* Alineación perfecta */
+    display: flex;
+    justify-content: space-between;  
+    align-items: center;
+}
+
+/* Menú de categorías */
+.category-menu {
+    list-style: none;
+    display: flex;
+    gap: 1.5rem;
+}
+
+.category-menu a {
+    text-decoration: none;
+    color: #2c3e50;
+    font-weight: 500;
+    padding: 0.5rem 0.8rem;
+    transition: 0.3s;
+}
+
+.category-menu a:hover {
+    color: #3498db;
+}
+
+/* === Barra de búsqueda integrada === */
+
+.search-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.search-box {
+    width: 250px;
+    padding: 0.6rem;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 1rem;
+}
+
+.search-btn {
+    padding: 0.6rem 1rem;
+    border: none;
+    background: #3498db;
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.search-btn:hover {
+    background: #2980b9;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .main-nav-content {
+        flex-direction: column;
+        gap: 1rem;
+    }
 }

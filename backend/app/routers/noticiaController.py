@@ -61,7 +61,7 @@ async def getNoticias(
         if filtro != "todas":
             if filtro in ["deportes", "politica", "tecnologia", "entretenimiento"]:
                 query += "WHERE LOWER(c.nombre) = :categoria AND n.activo = TRUE "
-                condiciones["categoria"] = filtro
+                condiciones["categoria"] = filtro # type: ignore
             else:
                 raise HTTPException(
                     status_code=status.HTTP_406_NOT_ACCEPTABLE,
@@ -336,7 +336,7 @@ async def crear_noticia(
                     detail="Error al crear la noticia"
                 )
 
-            os.makedirs(UPLOAD_DIR, exist_ok=True)
+            os.makedirs(UPLOAD_DIR, exist_ok=True)  # type: ignore
             await insert_img(imagenes, noticia_id)
 
             return {

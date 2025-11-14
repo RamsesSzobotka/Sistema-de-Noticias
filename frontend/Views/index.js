@@ -9,6 +9,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     await verificarSesion();
     await actualizarVisitas();
     await cargarNoticias();
+    // Eventos para búsqueda
+    document.getElementById("searchBtn").addEventListener("click", () => {
+        const query = document.getElementById("searchInput").value.trim();
+        if (query) buscarNoticias(query);
+    });
+
+    document.getElementById("searchInput").addEventListener("keyup", (e) => {
+        if (e.key === "Enter") {
+            const query = e.target.value.trim();
+            if (query) buscarNoticias(query);
+        }
+    });
+
 
     // Eventos
     document.getElementById("loadMore").addEventListener("click", loadMoreNews);
@@ -261,4 +274,54 @@ function createFeaturedNewsCard(article, className) {
         </div>
     `;
     return card;
+}
+
+// ==============================
+// Buscar noticias con el endpoint /noticia/buscar
+// ==============================
+async function buscarNoticias(query) {
+    try {
+        const res = await fetch(
+            `http://127.0.0.1:8000/noticia/buscar?query=${encodeURIComponent(query)}&page=1&size=10`
+        );
+
+        if (!res.ok) {
+            console.error("Error en búsqueda");
+            return;
+        }
+
+        const data = await res.json();
+        const noticias = data.noticias || [];
+
+        const grid = document.getElementById("newsGrid");
+        grid.innerHTML = ""; // limpiar grid
+
+        // 🟥 Si no hay resultados
+        if (noticias.length === 0) {
+            grid.innerHTML = `
+                <p style="text-align:center;font-size:18px;color:#2c3e50;">
+                    No se encontraron noticias para "${query}".
+                </p>
+            `;
+            document.getElementById("loadMore").style.display = "none";
+            return;
+        }
+
+        // 🟩 Crear contenedor igual que en renderNews()
+        const container = document.createElement("div");
+        container.className = "secondary-news";
+        grid.appendChild(container);
+
+        // 🟧 Renderizar cards
+        noticias.forEach((article) => {
+            const card = createFeaturedNewsCard(article, "secondary-news-card");
+            container.appendChild(card);
+        });
+
+        // 🟦 Ocultar botón "Cargar más" mientras se está buscando
+        document.getElementById("loadMore").style.display = "none";
+
+    } catch (error) {
+        console.error("Error en buscarNoticias:", error);
+    }
 }
