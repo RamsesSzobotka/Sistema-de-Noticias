@@ -206,6 +206,7 @@ async def buscarNoticias(
                             'imagen', i.imagen,
                             'tipo_imagen', i.tipo_imagen
                         )
+                        ORDER BY i.id desc
                     ) FILTER (WHERE i.id IS NOT NULL), '[]'::json
                 ) AS imagenes
             FROM noticias n
