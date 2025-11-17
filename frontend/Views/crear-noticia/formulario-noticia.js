@@ -1,3 +1,5 @@
+import { API_BASE_URL } from "/config/config.js";
+
 document.addEventListener("DOMContentLoaded", async () => {
     const access_token = sessionStorage.getItem("access_token");
     if (!access_token) {
@@ -11,7 +13,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Verificar sesión y rol con JWT
     try {
-        const res = await fetch("http://127.0.0.1:8000/usuarios/me", {
+        const res = await fetch(`${API_BASE_URL}/usuarios/me`, {
             method: "GET",
             headers: {
                 "Authorization": `Bearer ${access_token}`,
@@ -102,7 +104,7 @@ form.addEventListener("submit", async (e) => {
     });
 
     try {
-        const res = await fetch("http://127.0.0.1:8000/noticia/", {
+        const res = await fetch(`${API_BASE_URL}/noticia/`, {
             method: "POST",
             headers: {
                 "Authorization": `Bearer ${access_token}`

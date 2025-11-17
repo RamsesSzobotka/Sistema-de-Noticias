@@ -1,5 +1,7 @@
+import { API_BASE_URL } from "/config/config.js";
+
 document.addEventListener("DOMContentLoaded", () => {
-  const apiBase = "http://127.0.0.1:8000";
+  const apiBase = API_BASE_URL;
   const token = sessionStorage.getItem("access_token");
 
   if (!token) {

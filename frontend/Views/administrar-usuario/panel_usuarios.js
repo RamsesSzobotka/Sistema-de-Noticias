@@ -1,4 +1,5 @@
-const apiUrl = "http://127.0.0.1:8000/usuarios/";
+import { API_BASE_URL } from "/config/config.js";
+const apiUrl = `${API_BASE_URL}/usuarios/`;
 let usuariosCargados = []; // Cache local
 
 // ==============================
@@ -21,7 +22,7 @@ async function verificarSesionYPermiso() {
   access_token = access_token.replaceAll('"', '');
 
   try {
-    const res = await fetch("http://127.0.0.1:8000/usuarios/me", {
+    const res = await fetch(`${API_BASE_URL}/usuarios/me`, {
       method: "GET",
       headers: {
         "Authorization": `Bearer ${access_token}`,
@@ -81,7 +82,7 @@ async function registrarAdmin() {
   }
 
   try {
-    const response = await fetch("http://127.0.0.1:8000/auth/admin/register", {
+    const response = await fetch(`${API_BASE_URL}/auth/admin/register`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

@@ -107,7 +107,7 @@ async def delete_comentario(id: int, userId: int = Depends(getTokenId)):
                                     detail="Comentario no encontrado")
 
             # Validar permisos
-            if not (userId == comentario_usuario["usuario_id"] or getRol(userId) == "admin"):
+            if not (userId == comentario_usuario["usuario_id"] or getRol(userId) != "admin"):
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                                     detail="No tienes acceso a esta acción")
 
