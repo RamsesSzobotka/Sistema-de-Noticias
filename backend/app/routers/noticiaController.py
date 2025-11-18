@@ -59,7 +59,7 @@ async def getNoticias(
 
         # Filtros dinámicos
         if filtro != "todas":
-            if filtro in ["deportes", "politica", "tecnologia", "entretenimiento"]:
+            if filtro in ["deporte", "politica", "tecnologia", "entretenimiento"]:
                 query += "WHERE LOWER(c.nombre) = :categoria AND n.activo = TRUE "
                 condiciones["categoria"] = filtro # type: ignore
             else:
