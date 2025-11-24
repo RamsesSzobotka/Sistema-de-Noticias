@@ -344,7 +344,7 @@ buscador.addEventListener("keypress", (e) => {
 // Llamada al endpoint de búsqueda
 function buscarNoticias(texto, pagina = 1) {
   const token = sessionStorage.getItem("access_token");
-  const url = `${API_BASE_URL}/noticia/buscar?query=${encodeURIComponent(texto)}&page=${pagina}&size=10`;
+  const url = `${API_BASE_URL}/noticia/buscar/admin?query=${encodeURIComponent(texto)}&page=${pagina}&size=10`;
 
   console.log("📤 Enviando búsqueda a:", url); // 🔍 Verificar query enviada
 

@@ -187,7 +187,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Si no hay nuevas imágenes, no se envía el campo
     if (nuevasImagenes.length === 0) {
-      formData.delete("imagen");
+      formData.delete("imagenes");
     }
 
     try {
