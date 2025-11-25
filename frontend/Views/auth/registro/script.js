@@ -1,3 +1,5 @@
+import { API_BASE_URL } from "/config/config.js";
+
 document
     .getElementById("registerForm")
     .addEventListener("submit", function (event) {
@@ -28,7 +30,7 @@ document
             contrasena: password, // importante usar 'contrasena' como en el modelo
         };
 
-        fetch("http://127.0.0.1:8000/auth/register", {
+        fetch(`${API_BASE_URL}/auth/register`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

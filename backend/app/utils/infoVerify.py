@@ -113,7 +113,7 @@ async def searchUser(data: str | int, option: int):
         raise errorInterno(e)
 
 
-def validContrasena(password: str) -> bool:
+def validContrasena(password: str ) -> bool:
     """
     Verifica si una contraseña cumple los criterios de seguridad.
 

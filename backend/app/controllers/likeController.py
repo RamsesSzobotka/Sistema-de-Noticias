@@ -1,12 +1,9 @@
-from fastapi import APIRouter,HTTPException,status,Depends
+from fastapi import HTTPException,status
 from core.ConnectDB import db
 from utils.infoVerify import validNoticia
-from core.security import getTokenId
 from utils.HttpError import errorInterno
-router = APIRouter(prefix="/like",tags=["Likes"])
 
-@router.get("/{noticiaId}",status_code=status.HTTP_200_OK)
-async def getLikes(noticiaId:int):
+async def getLikesController(noticiaId:int):
     try:
         await validNoticia(noticiaId)
             
@@ -20,8 +17,7 @@ async def getLikes(noticiaId:int):
     except Exception:
         errorInterno()
 
-@router.get("/me/{noticiaId}", status_code=status.HTTP_200_OK)
-async def likeVerify(noticiaId: int, userId: int = Depends(getTokenId)):
+async def likeVerifyController(noticiaId: int, userId: int):
     try:
         query = "SELECT id FROM likes WHERE usuario_id = :usuario_id AND noticia_id = :noticia_id"
         result = await db.fetch_one(query, {"usuario_id": userId, "noticia_id": noticiaId})
@@ -31,9 +27,7 @@ async def likeVerify(noticiaId: int, userId: int = Depends(getTokenId)):
     except Exception:
         raise errorInterno()
 
-    
-@router.post("/",status_code=status.HTTP_201_CREATED)
-async def postLike(noticiaId:int,userId: int = Depends(getTokenId)):
+async def postLikeController(noticiaId:int,userId: int ):
     try:
         await validNoticia(noticiaId)
         async with db.transaction():
@@ -61,8 +55,7 @@ async def postLike(noticiaId:int,userId: int = Depends(getTokenId)):
     except Exception:
         errorInterno()
 
-@router.delete("/", status_code=status.HTTP_200_OK)
-async def deleteLike(noticiaId:int, userId: int = Depends(getTokenId)):
+async def deleteLikeController(noticiaId:int, userId: int):
     try:
         await validNoticia(noticiaId)
         values = {"usuario_id": userId, "noticia_id": noticiaId}

@@ -1,21 +1,14 @@
-from fastapi import APIRouter, status
 from core.ConnectDB import db
 from utils.HttpError import errorInterno
 
-router = APIRouter(prefix="/vistas", tags=["Vistas"])
-
-
-@router.get("/", status_code=status.HTTP_200_OK)
-async def getVisitas():
+async def getVisitasController():
     try:
         visitas = await obtainVisitas()
         return {"cantidad": visitas}
     except Exception:
         raise errorInterno()
 
-
-@router.put("/update", status_code=status.HTTP_200_OK)
-async def updateVisitas():
+async def updateVisitasController():
     try:
         visitas = await obtainVisitas()
         nueva_cantidad = visitas + 1
@@ -23,7 +16,6 @@ async def updateVisitas():
         await db.execute(query, {"cantidad": nueva_cantidad})
     except Exception:
         raise errorInterno()
-
 
 async def obtainVisitas():
     try:

@@ -1,17 +1,14 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from passlib.context import CryptContext
 from core.ConnectDB import db
 from models.userModel import Usuarios,Usuarios_admin
-from core.security import generateJWT,generateRefreshJWT,isAdmin
+from core.security import generateJWT,generateRefreshJWT
 from utils.infoVerify import searchUser,validUsername,validRol,validContrasena
-
-router = APIRouter(prefix ="/auth",tags=["Autenticacion"])
 
 crypt = CryptContext(schemes=["bcrypt"])
 
-@router.post("/login",status_code=status.HTTP_200_OK)
-async def login(form : OAuth2PasswordRequestForm = Depends()):
+async def login(form : OAuth2PasswordRequestForm):
     try:  
         result = await searchUser(form.username,2)
     
@@ -32,12 +29,11 @@ async def login(form : OAuth2PasswordRequestForm = Depends()):
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail="Error interno en el servidor")  
         
-@router.post("/register",status_code=status.HTTP_201_CREATED)
-async def register(user: Usuarios): 
+async def registerController(user: Usuarios): 
     try:
         await validUsername(user.usuario)
         async with db.transaction():
-            if not validContrasena(user.contrasena) :
+            if user.contrasena is None or not validContrasena(user.contrasena):
                 raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
                                     detail="Contraseña invalida,introduzca una contraseña que contenga 8 caracteres minimo y que incluya una letra mayuscula,una minuscula,un numero y un caracter especial(@$!%*?&),ejemplo: Hola123!")
             
@@ -66,12 +62,11 @@ async def register(user: Usuarios):
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail="Error interno del servidor")
         
-@router.post("/admin/register",status_code=status.HTTP_201_CREATED)
-async def registerAdmin(user: Usuarios_admin,_: bool = Depends(isAdmin)):
+async def registerAdminController(user: Usuarios_admin):
     try:
         await validUsername(user.usuario)
         
-        if not validContrasena(user.contrasena) :
+        if user.contrasena is None or not validContrasena(user.contrasena) :
             raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
                                 detail="Contraseña invalida,introduzca una contraseña que contenga 8 caracteres minimo y que incluya una letra mayuscula,una minuscula,un numero y un caracter especial(@$!%*?&),ejemplo: Hola123!")
         validRol(user.rol)

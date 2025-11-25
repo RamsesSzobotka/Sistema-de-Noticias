@@ -1,5 +1,18 @@
+import { API_BASE_URL } from "/config/config.js";
+
 document.addEventListener("DOMContentLoaded", () => {
   verificarSesion();
+  document.getElementById("btnMostrarTodas").addEventListener("click", () => {
+  cargarNoticias(1, "todas");
+  });
+
+  document.getElementById("btnFiltrarActivas").addEventListener("click", () => {
+    cargarNoticias(1, "activa");
+  });
+
+  document.getElementById("btnFiltrarInactivas").addEventListener("click", () => {
+    cargarNoticias(1, "inactiva");
+  });
 });
 
 let noticiasCargadas = [];
@@ -12,7 +25,7 @@ function verificarSesion() {
     return redirigir("No hay sesión activa.");
   }
 
-  fetch("http://localhost:8000/usuarios/me", {
+  fetch(`${API_BASE_URL}/usuarios/me`, {
     method: "GET",
     headers: {
       "Authorization": `Bearer ${token}`
@@ -47,22 +60,18 @@ function redirigir(mensaje) {
 }
 
 // Cargar noticias según el rol
-// Cargar noticias según el rol
-function cargarNoticias(pagina = 1) {
+function cargarNoticias(pagina = 1, filtro = "todas") {
   const token = sessionStorage.getItem("access_token");
-  const endpoint = `http://localhost:8000/noticia/all?page=${pagina}&size=10`;
+  const endpoint = `${API_BASE_URL}/noticia/all?filtro=${filtro}&page=${pagina}&size=10`;
 
   fetch(endpoint, {
-    headers: {
-      "Authorization": `Bearer ${token}`
-    }
+    headers: { "Authorization": `Bearer ${token}` }
   })
     .then(res => res.json())
     .then(data => {
-      console.log(data)
       noticiasCargadas = data.noticias || [];
       mostrarNoticias(noticiasCargadas);
-      generarPaginacion(data.total_pages || 1, pagina);
+      generarPaginacion(data.total_pages || 1, pagina, filtro);
     })
     .catch(() => {
       Swal.fire({
@@ -73,12 +82,9 @@ function cargarNoticias(pagina = 1) {
     });
 }
 
-// Crear botones de paginación
-function generarPaginacion(totalPaginas, paginaActual) {
+function generarPaginacion(totalPaginas, paginaActual, filtro = "todas") {
   const contenedor = document.getElementById("paginacion");
   contenedor.innerHTML = "";
-
-  if (totalPaginas <= 1) return; // no mostrar si solo hay una página
 
   for (let i = 1; i <= totalPaginas; i++) {
     const boton = document.createElement("button");
@@ -86,9 +92,7 @@ function generarPaginacion(totalPaginas, paginaActual) {
     boton.classList.add("pagina-btn");
     if (i === paginaActual) boton.classList.add("activa");
 
-    boton.addEventListener("click", () => {
-      cargarNoticias(i);
-    });
+    boton.addEventListener("click", () => cargarNoticias(i, filtro));
 
     contenedor.appendChild(boton);
   }
@@ -128,9 +132,12 @@ function mostrarNoticias(noticias) {
         ${(noticia.imagenes || [])
           .map(
             obj =>
-              `<img src="http://localhost:8000/${obj.imagen}" alt="Imagen noticia" class="imagen-noticia"
-                style="cursor: pointer;" onclick="mostrarImagenModal(this.src)"
-                onerror="this.src='/static/imagenesdb/default.png'; this.onerror=null;">`
+              `<img src="${API_BASE_URL}/${obj.imagen}" 
+                alt="Imagen noticia" 
+                class="imagen-noticia"
+                style="cursor: pointer;"
+                onerror="this.src='/static/imagenesdb/default.png'; this.onerror=null;">
+            `
           )
           .join("")}
       </td>
@@ -146,6 +153,12 @@ function mostrarNoticias(noticias) {
     `;
     tbody.appendChild(fila);
   });
+  
+  document.querySelectorAll(".imagen-noticia").forEach(img => {
+  img.addEventListener("click", () => {
+    mostrarImagenModal(img.src);
+  });
+});
 
   // Botón activar/desactivar
   document.querySelectorAll(".btn-estado").forEach(btn => {
@@ -194,7 +207,7 @@ function confirmarEliminacion(id) {
 function eliminarNoticia(id) {
   const token = sessionStorage.getItem("access_token");
 
-  fetch(`http://localhost:8000/noticia/?id=${id}`, {
+  fetch(`${API_BASE_URL}/noticia/?id=${id}`, {
     method: "DELETE",
     headers: {
       "Authorization": `Bearer ${token}`
@@ -227,7 +240,7 @@ function eliminarNoticia(id) {
 function actualizarEstado(id) {
   const token = sessionStorage.getItem("access_token");
 
-  fetch(`http://localhost:8000/noticia/activo/${id}`, {
+  fetch(`${API_BASE_URL}/noticia/activo/${id}`, {
     method: "PATCH",
     headers: {
       "Authorization": `Bearer ${token}`
@@ -333,7 +346,7 @@ buscador.addEventListener("keypress", (e) => {
 // Llamada al endpoint de búsqueda
 function buscarNoticias(texto, pagina = 1) {
   const token = sessionStorage.getItem("access_token");
-  const url = `http://localhost:8000/noticia/buscar?query=${encodeURIComponent(texto)}&page=${pagina}&size=10`;
+  const url = `${API_BASE_URL}/noticia/buscar/admin?query=${encodeURIComponent(texto)}&page=${pagina}&size=10`;
 
   console.log("📤 Enviando búsqueda a:", url); // 🔍 Verificar query enviada
 

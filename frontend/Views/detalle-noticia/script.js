@@ -1,3 +1,5 @@
+import { API_BASE_URL } from "/config/config.js";
+
 const usuario = sessionStorage.getItem("usuario");
 let usuarioId = sessionStorage.getItem("usuario_id");
 const rolUsuario = sessionStorage.getItem("rol");
@@ -27,7 +29,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         try {
-            const res = await fetch("http://127.0.0.1:8000/usuarios/me", {
+            const res = await fetch(`${API_BASE_URL}/usuarios/me`, {
                 method: "GET",
                 headers: {
                     "Authorization": `Bearer ${access_token}`,
@@ -124,7 +126,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     function cargarComentarios() {
         if (!noticiaId) return;
 
-        fetch(`http://127.0.0.1:8000/comentarios/${noticiaId}`)
+        fetch(`${API_BASE_URL}/comentarios/${noticiaId}`)
             .then((res) => res.json())
             .then((data) => {
                 // ✅ Tu backend devuelve "usuarios" con los comentarios
@@ -301,7 +303,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         const token = sessionStorage.getItem("access_token");
 
-        const res = await fetch("http://127.0.0.1:8000/comentarios/", {
+        const res = await fetch(`${API_BASE_URL}/comentarios/`, {
             method: "POST",
             headers: {
                 "Authorization": `Bearer ${token}`,
@@ -328,7 +330,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     async function eliminarComentario(id) {
         const token = sessionStorage.getItem("access_token");
 
-        const res = await fetch(`http://127.0.0.1:8000/comentarios/?id=${id}`, {
+        const res = await fetch(`${API_BASE_URL}/comentarios/?id=${id}`, {
             method: "DELETE",
             headers: {
                 "Authorization": `Bearer ${token}`,
@@ -354,13 +356,13 @@ if (!noticiaId) {
     async function inicializarLikes() {
         try {
             // 1️⃣ Obtener total de likes
-            const resLikes = await fetch(`http://127.0.0.1:8000/like/${noticiaId}`);
+            const resLikes = await fetch(`${API_BASE_URL}/like/${noticiaId}`);
             const dataLikes = await resLikes.json();
             likeCount.textContent = dataLikes.total_likes || 0;
 
             // 2️⃣ Verificar si el usuario actual ya dio like (solo si está logueado)
             if (usuarioId && token) {
-                const resUsuarioLike = await fetch(`http://127.0.0.1:8000/like/me/${noticiaId}`, {
+                const resUsuarioLike = await fetch(`${API_BASE_URL}/like/me/${noticiaId}`, {
                     headers: { "Authorization": `Bearer ${token}` },
                 });
                 const dataUsuarioLike = await resUsuarioLike.json();
@@ -387,7 +389,7 @@ if (!noticiaId) {
 
     async function darLike() {
         try {
-            const res = await fetch(`http://127.0.0.1:8000/like/?noticiaId=${noticiaId}`, {
+            const res = await fetch(`${API_BASE_URL}/like/?noticiaId=${noticiaId}`, {
                 method: "POST",
                 headers: { "Authorization": `Bearer ${token}` },
             });
@@ -406,7 +408,7 @@ if (!noticiaId) {
 
     async function quitarLike() {
         try {
-            const res = await fetch(`http://127.0.0.1:8000/like/?noticiaId=${noticiaId}`, {
+            const res = await fetch(`${API_BASE_URL}/like/?noticiaId=${noticiaId}`, {
                 method: "DELETE",
                 headers: { "Authorization": `Bearer ${token}` },
             });
@@ -464,11 +466,11 @@ if (!noticiaId) {
             const imagen2 = document.getElementById("imagen2");
             const imagen3 = document.getElementById("imagen3");
 
-            const defaultImg = "http://127.0.0.1:8000/static/imagenesdb/DEFAULT.png";
+            const defaultImg = `${API_BASE_URL}/static/imagenesdb/DEFAULT.png`;
 
-            imagen1.src = "http://127.0.0.1:8000/" + (noticia.imagenes[0]?.imagen || "static/imagenesdb/DEFAULT.png");
-            imagen2.src = "http://127.0.0.1:8000/" + (noticia.imagenes[1]?.imagen || "static/imagenesdb/DEFAULT.png");
-            imagen3.src = "http://127.0.0.1:8000/" + (noticia.imagenes[2]?.imagen || "static/imagenesdb/DEFAULT.png");
+            imagen1.src = `${API_BASE_URL}/` + (noticia.imagenes[0]?.imagen || "static/imagenesdb/DEFAULT.png");
+            imagen2.src = `${API_BASE_URL}/` + (noticia.imagenes[1]?.imagen || "static/imagenesdb/DEFAULT.png");
+            imagen3.src = `${API_BASE_URL}/` + (noticia.imagenes[2]?.imagen || "static/imagenesdb/DEFAULT.png");
 
             // Si falla la carga, usar la imagen por defecto
             [imagen1, imagen2, imagen3].forEach(img => {
@@ -478,7 +480,7 @@ if (!noticiaId) {
             });
         } else {
             // Si no hay imágenes asociadas
-            const defaultImg = "http://127.0.0.1:8000/static/imagenesdb/DEFAULT.png";
+            const defaultImg = `${API_BASE_URL}/static/imagenesdb/DEFAULT.png`;
             document.getElementById("imagen1").src = defaultImg;
             document.getElementById("imagen2").src = defaultImg;
             document.getElementById("imagen3").src = defaultImg;
@@ -486,6 +488,13 @@ if (!noticiaId) {
 
     } else {
         document.getElementById("titulo").innerText = "Noticia no encontrada.";
+    }
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+    const logoutBtn = document.getElementById("logoutBtn");
+    if (logoutBtn) {
+        logoutBtn.addEventListener("click", logout);
     }
 });
 

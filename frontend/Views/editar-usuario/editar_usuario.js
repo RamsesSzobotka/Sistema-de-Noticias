@@ -1,4 +1,6 @@
-const apiBaseUrl = "http://127.0.0.1:8000/usuarios";
+import { API_BASE_URL } from "/config/config.js";
+
+const apiBaseUrl = `${API_BASE_URL}/usuarios`;
 
 let access_token = sessionStorage.getItem("access_token");
 

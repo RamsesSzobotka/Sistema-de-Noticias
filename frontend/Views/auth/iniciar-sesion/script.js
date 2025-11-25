@@ -1,3 +1,4 @@
+import { API_BASE_URL } from "/config/config.js";
 document
     .getElementById("loginForm")
     .addEventListener("submit", function (event) {
@@ -29,7 +30,7 @@ document
         formData.append("username", usuario);
         formData.append("password", password);
 
-        fetch("http://localhost:8000/auth/login", {
+        fetch(`${API_BASE_URL}/auth/login`, {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
             body: formData.toString(),

@@ -1,14 +1,30 @@
 // Variables globales
+import { API_BASE_URL } from "/config/config.js";
+
+console.log("API cargada desde:", API_BASE_URL);
+
 let currentPage = 1;
 let totalPages = 1;
 let currentCategory = "todas"; // categoría actual (texto)
-let usuario = sessionStorage.getItem("usuario");
 
 // Función de inicialización
 document.addEventListener("DOMContentLoaded", async () => {
     await verificarSesion();
     await actualizarVisitas();
     await cargarNoticias();
+    // Eventos para búsqueda
+    document.getElementById("searchBtn").addEventListener("click", () => {
+        const query = document.getElementById("searchInput").value.trim();
+        if (query) buscarNoticias(query);
+    });
+
+    document.getElementById("searchInput").addEventListener("keyup", (e) => {
+        if (e.key === "Enter") {
+            const query = e.target.value.trim();
+            if (query) buscarNoticias(query);
+        }
+    });
+
 
     // Eventos
     document.getElementById("loadMore").addEventListener("click", loadMoreNews);
@@ -35,7 +51,7 @@ async function verificarSesion() {
     if (!access_token) return;
 
     try {
-        const res = await fetch("http://127.0.0.1:8000/usuarios/me", {
+        const res = await fetch(`${API_BASE_URL}/usuarios/me`, {
             method: "GET",
             headers: {
                 "Authorization": `Bearer ${access_token}`,
@@ -155,8 +171,8 @@ function logout() {
 // ==============================
 async function actualizarVisitas() {
     try {
-        await fetch("http://127.0.0.1:8000/vistas/update", { method: "PUT" });
-        const res = await fetch("http://127.0.0.1:8000/vistas/", { method: "GET" });
+        await fetch(`${API_BASE_URL}/vistas/update`, { method: "PUT" });
+        const res = await fetch(`${API_BASE_URL}/vistas/`, { method: "GET" });
         const data = await res.json();
         const visitorCountEl = document.getElementById("visitorCount");
         if (visitorCountEl) visitorCountEl.textContent = `${data.cantidad} visitas`;
@@ -172,7 +188,7 @@ async function cargarNoticias() {
     try {
         // 🟢 Se incluye el parámetro "filtro" en la URL
         const res = await fetch(
-            `http://127.0.0.1:8000/noticia/?filtro=${encodeURIComponent(currentCategory)}&page=${currentPage}&size=10`
+            `${API_BASE_URL}/noticia/?filtro=${encodeURIComponent(currentCategory)}&page=${currentPage}&size=10`
         );
 
         const data = await res.json();
@@ -240,17 +256,17 @@ function createFeaturedNewsCard(article, className) {
         window.location.href = "detalle-noticia/index.html";
     });
 
-    let imageUrl = "http://127.0.0.1:8000/static/imagenesdb/DEFAULT.png";
+    let imageUrl = `${API_BASE_URL}/static/imagenesdb/DEFAULT.png`;
 
     if (article.imagenes && article.imagenes.length > 0 && article.imagenes[0].imagen) {
-        imageUrl = `http://127.0.0.1:8000/${article.imagenes[0].imagen}`;
+        imageUrl = `${API_BASE_URL}/${article.imagenes[0].imagen}`;
     }
 
     card.innerHTML = `
         <img src="${imageUrl}" 
              alt="${article.titulo}" 
              class="news-image"
-             onerror="this.onerror=null; this.src='http://127.0.0.1:8000/static/imagenesdb/DEFAULT.png';">
+             onerror="this.onerror=null; this.src='${API_BASE_URL}/static/imagenesdb/DEFAULT.png';">
         <div class="news-content">
             <h3 class="news-title">${article.titulo}</h3>
             <p class="news-excerpt">${article.contenido.substring(0, className === "main-news" ? 500 : 100)}...</p>
@@ -261,4 +277,54 @@ function createFeaturedNewsCard(article, className) {
         </div>
     `;
     return card;
+}
+
+// ==============================
+// Buscar noticias con el endpoint /noticia/buscar
+// ==============================
+async function buscarNoticias(query) {
+    try {
+        const res = await fetch(
+            `${API_BASE_URL}/noticia/buscar?query=${encodeURIComponent(query)}&page=1&size=10`
+        );
+
+        if (!res.ok) {
+            console.error("Error en búsqueda");
+            return;
+        }
+
+        const data = await res.json();
+        const noticias = data.noticias || [];
+
+        const grid = document.getElementById("newsGrid");
+        grid.innerHTML = ""; // limpiar grid
+
+        // 🟥 Si no hay resultados
+        if (noticias.length === 0) {
+            grid.innerHTML = `
+                <p style="text-align:center;font-size:18px;color:#2c3e50;">
+                    No se encontraron noticias para "${query}".
+                </p>
+            `;
+            document.getElementById("loadMore").style.display = "none";
+            return;
+        }
+
+        // 🟩 Crear contenedor igual que en renderNews()
+        const container = document.createElement("div");
+        container.className = "secondary-news";
+        grid.appendChild(container);
+
+        // 🟧 Renderizar cards
+        noticias.forEach((article) => {
+            const card = createFeaturedNewsCard(article, "secondary-news-card");
+            container.appendChild(card);
+        });
+
+        // 🟦 Ocultar botón "Cargar más" mientras se está buscando
+        document.getElementById("loadMore").style.display = "none";
+
+    } catch (error) {
+        console.error("Error en buscarNoticias:", error);
+    }
 }

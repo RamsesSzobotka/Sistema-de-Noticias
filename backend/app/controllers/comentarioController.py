@@ -1,20 +1,13 @@
-from fastapi import APIRouter,HTTPException,status,Depends,Query
+from fastapi import HTTPException,status
 from models.comentarioModel import Comentario
 from schemas.comentarioSchema import comentario_schema
 from core.ConnectDB import db
 from utils.infoVerify import validUser,validNoticia,validComentarioPadre
-from core.security import getTokenId,getRol
+from core.security import getRol
 from utils.HttpError import errorInterno
 from utils.DbHelper import paginar,totalPages
 
-router = APIRouter(prefix="/comentarios",tags=["Comentarios"])
-
-@router.get("/{noticia_id}",status_code=status.HTTP_200_OK)
-async def getComentarios(
-    noticia_id:int,
-    page: int = Query(1, ge=1,description="Número de página"),
-    size: int = Query(10, ge=1, le=100),
-):
+async def obtenerComentarios(noticia_id:int, page: int ,size: int):
     try:
    
         await validNoticia(noticia_id)
@@ -56,8 +49,7 @@ async def getComentarios(
     except Exception:
         raise errorInterno()
 
-@router.post("/",status_code=status.HTTP_201_CREATED)
-async def post_comentario(comentario:Comentario,userId:int = Depends(getTokenId)):
+async def crearComentario(comentario:Comentario,userId:int):
     try:
         await validNoticia(comentario.noticia_id)
         await validUser(userId,1)
@@ -92,8 +84,7 @@ async def post_comentario(comentario:Comentario,userId:int = Depends(getTokenId)
     except Exception:
         raise errorInterno()
 
-@router.delete("/", status_code=status.HTTP_200_OK)
-async def delete_comentario(id: int, userId: int = Depends(getTokenId)):
+async def borrarComentario(id: int, userId: int):
     try:
         # Validar usuario
         await validUser(userId, 1)
@@ -107,7 +98,7 @@ async def delete_comentario(id: int, userId: int = Depends(getTokenId)):
                                     detail="Comentario no encontrado")
 
             # Validar permisos
-            if not (userId == comentario_usuario["usuario_id"] or getRol(userId) == "admin"):
+            if not (userId == comentario_usuario["usuario_id"] or getRol(userId) != "admin"):
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                                     detail="No tienes acceso a esta acción")
 
