@@ -287,6 +287,9 @@ document.getElementById("filtrosUsuarios").addEventListener("click", async e => 
     case "editor":
       filtroQuery = "editor";
       break;
+    case "admin":
+      filtroQuery = "admin";
+      break;
     default:
       filtroQuery = "todos";
   }

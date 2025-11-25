@@ -14,7 +14,6 @@ router = APIRouter(prefix="/usuarios", tags=["Usuarios"])
 # Cifrado de contraseñas
 crypt = CryptContext(schemes=["bcrypt"])
 
-
 @router.get("/", status_code=status.HTTP_200_OK)
 async def getUsers(
     filtro: str = Query(
@@ -32,28 +31,27 @@ async def getUsers(
         # Construir query base
        
         query = "SELECT * FROM usuarios "
-
+        whereClause = ""
         #Aplicar filtros si se envio alguno
         if filtro.lower() != "todos":
             # Filtrar por estado activo/inactivo
             if filtro.lower() == "activo":
-                query += "WHERE activo = true "
+                whereClause = " WHERE activo = true "
             elif filtro.lower() == "inactivo":
-                query += "WHERE activo = false "
+                whereClause = " WHERE activo = false "
             # Filtrar por rol 
             elif validRol(filtro):
-                query += "WHERE rol = :rol "
+                whereClause = " WHERE rol = :rol "
                 condicion["rol"] = filtro.lower()
             else:
                 raise HTTPException(
                     status_code=status.HTTP_406_NOT_ACCEPTABLE,
                     detail=f"Filtro inválido: {filtro}"
                 )
-
+        query += whereClause
         query += "ORDER BY id LIMIT :size OFFSET :offset"
 
         usuarios = await db.fetch_all(query, condicion)
-
 
         if not usuarios:
             return {
@@ -64,7 +62,13 @@ async def getUsers(
                 "usuarios": []
             }
 
-        total = await db.fetch_val("SELECT COUNT(*) FROM usuarios")
+        totalQuery = f"""
+            SELECT COUNT(*)
+            FROM usuarios
+            {whereClause}
+        """
+
+        total = await db.fetch_val(totalQuery)
 
         return {
             "page": page,
