@@ -3,7 +3,7 @@ import os
 from typing import List, Optional
 from controllers import noticiasController as Noticia
 from models.noticiasModel import Noticias
-from core.security import isAdmin, isEditorOrHigher, isPublicadorOrHigher, getTokenId
+from core.security import isEditorOrHigher, isPublicadorOrHigher, getTokenId
 from dotenv import load_dotenv
 
 router = APIRouter(prefix="/noticia", tags=["Noticias"])
@@ -14,7 +14,7 @@ UPLOAD_DIR = os.getenv("UPLOAD_DIR")
 
 @router.get("/", status_code=status.HTTP_200_OK)
 async def getNoticias(
-    filtro: str = Query("todas",description="Filtros disponibles: 'deportes', 'politica', 'tecnologia', 'entretenimiento'"),
+    filtro: str = Query("todas",description="Filtros disponibles: 'deportes', 'politica', 'tecnologia', 'entretenimiento', 'activa' , 'inactiva'"),
     page: int = Query(1, ge=1, description="Número de página"),
     size: int = Query(10, ge=1, le=100, description="Cantidad de resultados por página"),
 ):
@@ -22,11 +22,12 @@ async def getNoticias(
 
 @router.get("/all", status_code=status.HTTP_200_OK)
 async def getNoticiasAll(
+    filtro: str = Query("todas",description="Filtros disponibles: 'activa', 'inactiva' "),
     page: int = Query(1, ge=1, description="Número de página"),
     size: int = Query(10, ge=1, le=100),
     _: bool = Depends(isPublicadorOrHigher)
 ):
-    return await Noticia.getNoticiasAllController(page,size)
+    return await Noticia.getNoticiasAllController(page,size,filtro)
 
 @router.get("/buscar", status_code=status.HTTP_200_OK)
 async def buscarNoticias(

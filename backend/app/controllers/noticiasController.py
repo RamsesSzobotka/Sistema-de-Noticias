@@ -1,3 +1,4 @@
+from pickle import FALSE
 from fastapi import HTTPException, status
 from core.ConnectDB import db
 import os
@@ -95,11 +96,13 @@ async def getNoticiasController(filtro: str, page: int, size: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error interno: {e}")
 
-async def getNoticiasAllController(page: int, size: int):
+async def getNoticiasAllController(page: int, size: int, estado: str):
     try:
         offset = paginar(page, size)
+        estado = estado.lower()
 
-        query = """
+        # Base del SELECT
+        baseQuery = """
             SELECT 
                 n.id,
                 n.titulo,
@@ -124,23 +127,42 @@ async def getNoticiasAllController(page: int, size: int):
             JOIN categorias c ON n.categoria_id = c.id
             JOIN usuarios u ON n.usuario_id = u.id
             LEFT JOIN imagenes i ON i.noticia_id = n.id
+        """
+
+        # Filtros dinámicos
+        condiciones = {"size": size, "offset": offset}
+
+        if estado == "todas":
+            whereClause = ""  # sin filtro
+        elif estado == "activa":
+            whereClause = "WHERE n.activo = TRUE"
+        elif estado == "inactiva":
+            whereClause = "WHERE n.activo = FALSE"
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Estado inválido: {estado}. Usa: activa, inactiva, todas."
+            )
+
+        # Query final
+        query = f"""
+            {baseQuery}
+            {whereClause}
             GROUP BY n.id, c.id, u.id
             ORDER BY n.fecha_creacion DESC
             LIMIT :size OFFSET :offset;
         """
 
-        result = await db.fetch_all(query, {"size": size, "offset": offset})
+        result = await db.fetch_all(query, condiciones)
 
-        if not result:
-            return {
-                "page": page,
-                "size": size,
-                "total": 0,
-                "total_pages": 0,
-                "noticias": []
-            }
+        # Contador de total filtrado
+        total_query = f"""
+            SELECT COUNT(*)
+            FROM noticias n
+            {whereClause}
+        """
 
-        total = await db.fetch_val("SELECT COUNT(*) FROM noticias")
+        total = await db.fetch_val(total_query)
 
         return {
             "page": page,

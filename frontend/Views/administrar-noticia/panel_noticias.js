@@ -2,6 +2,17 @@ import { API_BASE_URL } from "/config/config.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   verificarSesion();
+  document.getElementById("btnMostrarTodas").addEventListener("click", () => {
+  cargarNoticias(1, "todas");
+  });
+
+  document.getElementById("btnFiltrarActivas").addEventListener("click", () => {
+    cargarNoticias(1, "activa");
+  });
+
+  document.getElementById("btnFiltrarInactivas").addEventListener("click", () => {
+    cargarNoticias(1, "inactiva");
+  });
 });
 
 let noticiasCargadas = [];
@@ -49,22 +60,18 @@ function redirigir(mensaje) {
 }
 
 // Cargar noticias según el rol
-// Cargar noticias según el rol
-function cargarNoticias(pagina = 1) {
+function cargarNoticias(pagina = 1, filtro = "todas") {
   const token = sessionStorage.getItem("access_token");
-  const endpoint = `${API_BASE_URL}/noticia/all?page=${pagina}&size=10`;
+  const endpoint = `${API_BASE_URL}/noticia/all?filtro=${filtro}&page=${pagina}&size=10`;
 
   fetch(endpoint, {
-    headers: {
-      "Authorization": `Bearer ${token}`
-    }
+    headers: { "Authorization": `Bearer ${token}` }
   })
     .then(res => res.json())
     .then(data => {
-      console.log(data)
       noticiasCargadas = data.noticias || [];
       mostrarNoticias(noticiasCargadas);
-      generarPaginacion(data.total_pages || 1, pagina);
+      generarPaginacion(data.total_pages || 1, pagina, filtro);
     })
     .catch(() => {
       Swal.fire({
@@ -75,12 +82,9 @@ function cargarNoticias(pagina = 1) {
     });
 }
 
-// Crear botones de paginación
-function generarPaginacion(totalPaginas, paginaActual) {
+function generarPaginacion(totalPaginas, paginaActual, filtro = "todas") {
   const contenedor = document.getElementById("paginacion");
   contenedor.innerHTML = "";
-
-  if (totalPaginas <= 1) return; // no mostrar si solo hay una página
 
   for (let i = 1; i <= totalPaginas; i++) {
     const boton = document.createElement("button");
@@ -88,9 +92,7 @@ function generarPaginacion(totalPaginas, paginaActual) {
     boton.classList.add("pagina-btn");
     if (i === paginaActual) boton.classList.add("activa");
 
-    boton.addEventListener("click", () => {
-      cargarNoticias(i);
-    });
+    boton.addEventListener("click", () => cargarNoticias(i, filtro));
 
     contenedor.appendChild(boton);
   }
