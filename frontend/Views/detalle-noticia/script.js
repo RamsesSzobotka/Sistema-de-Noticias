@@ -491,6 +491,13 @@ if (!noticiaId) {
     }
 });
 
+document.addEventListener("DOMContentLoaded", () => {
+    const logoutBtn = document.getElementById("logoutBtn");
+    if (logoutBtn) {
+        logoutBtn.addEventListener("click", logout);
+    }
+});
+
 // === Logout ===
 function logout() {
     Swal.fire({

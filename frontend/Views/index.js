@@ -6,7 +6,6 @@ console.log("API cargada desde:", API_BASE_URL);
 let currentPage = 1;
 let totalPages = 1;
 let currentCategory = "todas"; // categoría actual (texto)
-let usuario = sessionStorage.getItem("usuario");
 
 // Función de inicialización
 document.addEventListener("DOMContentLoaded", async () => {
