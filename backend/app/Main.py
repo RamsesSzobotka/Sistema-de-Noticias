@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from routers import authController,noticiaController,visitasController,userController,likeController,comentarioController
+from routers import authRouter,noticiaRouter,userRouter,likeRouter, comentarioRouter, visitasRouter
 from core.ConnectDB import connect, disconnect
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -30,12 +30,12 @@ app.add_middleware(
 )
 
 #   Routers
-app.include_router(authController.router)
-app.include_router(noticiaController.router)
-app.include_router(visitasController.router)
-app.include_router(userController.router)
-app.include_router(likeController.router)
-app.include_router(comentarioController.router)
+app.include_router(authRouter.router)
+app.include_router(noticiaRouter.router)
+app.include_router(visitasRouter.router)
+app.include_router(userRouter.router)
+app.include_router(likeRouter.router)
+app.include_router(comentarioRouter.router)
 
 #   Static files
 
