@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "/config/config.js";
+import { API_BASE_URL } from "../../../config/config.js";
 document
     .getElementById("loginForm")
     .addEventListener("submit", function (event) {

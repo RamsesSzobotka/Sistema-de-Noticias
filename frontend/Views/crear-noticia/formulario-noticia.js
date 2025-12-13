@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "/config/config.js";
+import { API_BASE_URL } from "../../config/config.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
     const access_token = sessionStorage.getItem("access_token");
