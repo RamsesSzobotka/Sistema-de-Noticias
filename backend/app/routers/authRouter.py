@@ -17,3 +17,7 @@ async def register(user: Usuarios):
 @router.post("/admin/register",status_code=status.HTTP_201_CREATED)
 async def registerAdmin(user: Usuarios_admin,_: bool = Depends(isAdmin)):
     return await Auth.registerAdminController(user)
+
+@router.post("/refresh")
+async def refresh(refreshToken: str):
+    return Auth.newTokenController(refreshToken)

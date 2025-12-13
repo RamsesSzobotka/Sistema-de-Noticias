@@ -109,37 +109,58 @@ def generateRefreshJWT(id: int) -> str:
     return jwt.encode(playload, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def refreshJWT(token: dict = Depends(authToken)) -> str:
+def refreshJWT(refreshToken: str) -> Dict:
     """
-    Genera un nuevo token de acceso a partir de un token válido.
+    Valida un refresh token y genera un nuevo access token.
 
     Parámetros:
-        token (dict): Datos decodificados del token anterior.
+        refresh_token (str): Token JWT tipo refresh enviado por el cliente.
 
     Retorna:
-        str: Nuevo token JWT generado.
+        Dict: { "access_token": ..., "token_type": "bearer" }
 
     Lanza:
-        HTTPException: Si el token no contiene un ID de usuario o es inválido.
+        HTTPException: Si el token no es válido o no es de tipo refresh.
     """
     try:
-        user_id = token.get("sub")
+        # Decodificar el token
+        payload = jwt.decode(refreshToken, SECRET_KEY, algorithms=[ALGORITHM])
 
-        if not user_id:
+        # Verificar ID de usuario
+        userId = payload["sub"]
+        if not userId:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token inválido: no contiene ID de usuario"
+                detail="Token inválido: no contiene ID de usuario",
+                headers={"WWW-Authenticate": "Bearer"}
             )
 
-        return generateJWT(user_id)
-    except HTTPException:
-        raise
-    except Exception:
+        # Asegurar que sea un refresh token
+        if payload["type"] != "refresh":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="El token proporcionado no es un refresh token",
+                headers={"WWW-Authenticate": "Bearer"}
+            )
+
+        return {
+            "access_token": generateJWT(int(userId)),
+            "token_type": "bearer"
+        }
+
+    except ExpiredSignatureError:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error interno del servidor"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token expirado, inicie sesión de nuevo",
+            headers={"WWW-Authenticate": "Bearer"}
         )
 
+    except InvalidTokenError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token inválido",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
 
 def hashPassword(password: str) -> str:
     """

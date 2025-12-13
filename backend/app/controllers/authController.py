@@ -1,9 +1,10 @@
 from fastapi import HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from passlib.context import CryptContext
+from utils.HttpError import errorInterno
 from core.ConnectDB import db
 from models.userModel import Usuarios,Usuarios_admin
-from core.security import generateJWT,generateRefreshJWT
+from core.security import generateJWT,generateRefreshJWT,refreshJWT
 from utils.infoVerify import searchUser,validUsername,validRol,validContrasena
 
 crypt = CryptContext(schemes=["bcrypt"])
@@ -26,8 +27,7 @@ async def login(form : OAuth2PasswordRequestForm):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail="Error interno en el servidor")  
+        raise errorInterno()
         
 async def registerController(user: Usuarios): 
     try:
@@ -59,9 +59,8 @@ async def registerController(user: Usuarios):
     except HTTPException:
         raise
     except Exception:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail="Error interno del servidor")
-        
+        raise errorInterno()
+    
 async def registerAdminController(user: Usuarios_admin):
     try:
         await validUsername(user.usuario)
@@ -92,5 +91,23 @@ async def registerAdminController(user: Usuarios_admin):
     except HTTPException:
         raise
     except Exception:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail="Error interno del servidor")
+        raise errorInterno()
+
+def newTokenController(refreshToken: str):
+    """
+    Controlador para generar un nuevo access token desde un refresh token.
+    """
+    try:
+        if not refreshToken:
+            raise HTTPException(
+                status_code=400,
+                detail="No se envió refresh token"
+            )
+
+        # Llamamos la función que valida y genera el nuevo token
+        return refreshJWT(refreshToken)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise errorInterno(e)
