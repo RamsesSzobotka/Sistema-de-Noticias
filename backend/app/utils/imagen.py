@@ -45,10 +45,16 @@ async def insert_img(imagenes, noticiaId: int):
         os.makedirs(UPLOAD_DIR, exist_ok=True)
 
         for img in imagenes:
-            # Generar un nombre único y seguro para el archivo
             original_name = os.path.basename(img.filename or f"unnamed_{noticiaId}.jpg")
-            safe_filename = f"{uuid.uuid4().hex}_{original_name}"
+
+            # separar nombre y extensión
+            name, ext = os.path.splitext(original_name)
+
+            # normalizar TODO a minúsculas
+            safe_filename = f"{uuid.uuid4().hex}_{name.lower()}{ext.lower()}"
+
             file_path = os.path.join(UPLOAD_DIR, safe_filename)
+
 
             # Guardar el archivo físico
             with open(file_path, "wb") as f:
