@@ -38,12 +38,11 @@ app.include_router(likeRouter.router)
 app.include_router(comentarioRouter.router)
 
 #   Static files
-
 # Imágenes de la BD
 app.mount("/static", StaticFiles(directory="static"), name="imagenesdb")
-# ==============================
+
 #   Ruta raíz
-# ==============================
+
 @app.get("/api")
 async def root():
     return {"message": "Bienvenido a NoticiaPTY"}
