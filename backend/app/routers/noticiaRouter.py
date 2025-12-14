@@ -17,7 +17,7 @@ UPLOAD_DIR = os.getenv("UPLOAD_DIR")
 async def getNoticias(
     filtro: str = Query("todas",description="Filtros disponibles: 'deportes', 'politica', 'tecnologia', 'entretenimiento', 'activa' , 'inactiva'"),
     page: int = Query(1, ge=1, description="Número de página"),
-    size: int = Query(10, ge=1, le=100, description="Cantidad de resultados por página"),
+    size: int = Query(5, ge=1, le=100, description="Cantidad de resultados por página"),
 ):
     return await Noticia.getNoticiasController(filtro,page,size)
 
