@@ -1,5 +1,5 @@
 // Variables globales
-import { API_BASE_URL } from "../config/config.js";
+import { API_BASE_URL } from "/config/config.js";
 
 console.log("API cargada desde:", API_BASE_URL);
 

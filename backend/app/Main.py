@@ -46,6 +46,15 @@ app.include_router(comentarioRouter.router)
 # Imágenes de la BD
 app.mount("/static", StaticFiles(directory="static"), name="imagenesdb")
 
+# Assets del frontend
+app.mount("/assets", StaticFiles(directory=ASSETS_DIR), name="assets")
+
+# Config.js (importable desde /config/config.js)
+app.mount("/config", StaticFiles(directory=CONFIG_DIR), name="config")
+
+# Vistas del frontend (sirve index.html automáticamente)
+app.mount("/", StaticFiles(directory=VIEWS_DIR, html=True), name="app")
+
 #   Ruta raíz
 
 @app.get("/api")

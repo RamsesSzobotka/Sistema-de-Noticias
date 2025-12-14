@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "../../config/config.js";
+import { API_BASE_URL } from "/config/config.js";
 const apiUrl = `${API_BASE_URL}/usuarios/`;
 let usuariosCargados = []; // Cache local
 
