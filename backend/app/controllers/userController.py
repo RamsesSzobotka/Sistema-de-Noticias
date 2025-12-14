@@ -38,32 +38,33 @@ async def getUsers(filtro: str,page: int,size: int,):
         query += whereClause
         query += "ORDER BY id LIMIT :size OFFSET :offset"
 
-        usuarios = await db.fetch_all(query, condicion)
+        async with db.transaction():
+            usuarios = await db.fetch_all(query, condicion)
 
-        if not usuarios:
+            if not usuarios:
+                return {
+                    "page": page,
+                    "size": size,
+                    "total": 0,
+                    "total_pages": 0,
+                    "usuarios": []
+                }
+
+            totalQuery = f"""
+                SELECT COUNT(*)
+                FROM usuarios
+                {whereClause}
+            """
+
+            total = await db.fetch_val(totalQuery)
+
             return {
                 "page": page,
                 "size": size,
-                "total": 0,
-                "total_pages": 0,
-                "usuarios": []
+                "total": total,
+                "total_pages": totalPages(total, size),
+                "usuarios": [admin_user_schema(row) for row in usuarios]
             }
-
-        totalQuery = f"""
-            SELECT COUNT(*)
-            FROM usuarios
-            {whereClause}
-        """
-
-        total = await db.fetch_val(totalQuery)
-
-        return {
-            "page": page,
-            "size": size,
-            "total": total,
-            "total_pages": totalPages(total, size),
-            "usuarios": [admin_user_schema(row) for row in usuarios]
-        }
 
     except HTTPException:
         raise
@@ -85,15 +86,16 @@ async def getMe(userId: int):
 # Actualizar usuario logueado
 async def updateUser(user: Usuarios, userId: int):
     try:
-        await validUser(userId,1)
-
-        existingUser = await searchUser(user.usuario, 2)
-        if existingUser and existingUser["id"] != userId:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="El nombre de usuario ya está en uso"
-            )
         async with db.transaction():
+            await validUser(userId,1)
+
+            existingUser = await searchUser(user.usuario, 2)
+            if existingUser and existingUser["id"] != userId:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="El nombre de usuario ya está en uso"
+                )
+                
             query = """
                 UPDATE usuarios 
                 SET nombre = :nombre, apellido = :apellido, usuario = :usuario 
@@ -154,15 +156,15 @@ async def updatePassword(password: str, newPassword: str, userId: int):
                     "Ejemplo: Hola123!"
                 )
             )
-
-        user = await validUser(userId,1)
-
-        if not crypt.verify(password, user["contrasena"]):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="La contraseña actual no coincide"
-            )
         async with db.transaction():
+            user = await validUser(userId,1)
+
+            if not crypt.verify(password, user["contrasena"]):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="La contraseña actual no coincide"
+            )
+
             query = "UPDATE usuarios SET contrasena = :contrasena WHERE id = :id RETURNING id"
             result = await db.fetch_val(
                 query, {"contrasena": crypt.hash(newPassword), "id": userId}
@@ -183,13 +185,13 @@ async def updatePassword(password: str, newPassword: str, userId: int):
 async def updateRol(id:int,rol:str):
     try:
         validRol(rol)
-        user = await searchUser(id,1)
-            
-        if user is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                                detail="Usuario inexistente")
-        
         async with db.transaction():
+            user = await searchUser(id,1)
+                
+            if user is None:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                    detail="Usuario inexistente")
+            
             query = "UPDATE usuarios SET rol = :rol WHERE id = :id Returning id"
             
             result = await db.fetch_val(query,{"id":id,"rol":rol})
@@ -224,35 +226,35 @@ async def buscarUsuarios(query: str, page: int, size: int):
         """
 
         params = {"texto": texto, "size": size, "offset": offset}
+        async with db.transaction():
+            usuarios = await db.fetch_all(sql, params)
 
-        usuarios = await db.fetch_all(sql, params)
+            if not usuarios:
+                return {
+                    "page": page,
+                    "size": size,
+                    "total": 0,
+                    "total_pages": 0,
+                    "usuarios": []
+                }
 
-        if not usuarios:
+            # Total de coincidencias
+            total_sql = """
+                SELECT COUNT(*) 
+                FROM usuarios 
+                WHERE LOWER(nombre) LIKE :texto
+                OR LOWER(apellido) LIKE :texto
+                OR LOWER(usuario) LIKE :texto
+            """
+            total = await db.fetch_val(total_sql, {"texto": texto})
+
             return {
                 "page": page,
                 "size": size,
-                "total": 0,
-                "total_pages": 0,
-                "usuarios": []
+                "total": total,
+                "total_pages": totalPages(total, size),
+                "usuarios": [admin_user_schema(u) for u in usuarios]
             }
-
-        # Total de coincidencias
-        total_sql = """
-            SELECT COUNT(*) 
-            FROM usuarios 
-            WHERE LOWER(nombre) LIKE :texto
-               OR LOWER(apellido) LIKE :texto
-               OR LOWER(usuario) LIKE :texto
-        """
-        total = await db.fetch_val(total_sql, {"texto": texto})
-
-        return {
-            "page": page,
-            "size": size,
-            "total": total,
-            "total_pages": totalPages(total, size),
-            "usuarios": [admin_user_schema(u) for u in usuarios]
-        }
 
     except HTTPException:
         raise

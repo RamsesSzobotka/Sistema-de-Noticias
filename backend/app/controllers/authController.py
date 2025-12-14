@@ -31,8 +31,8 @@ async def login(form : OAuth2PasswordRequestForm):
         
 async def registerController(user: Usuarios): 
     try:
-        await validUsername(user.usuario)
         async with db.transaction():
+            await validUsername(user.usuario)
             if user.contrasena is None or not validContrasena(user.contrasena):
                 raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
                                     detail="Contraseña invalida,introduzca una contraseña que contenga 8 caracteres minimo y que incluya una letra mayuscula,una minuscula,un numero y un caracter especial(@$!%*?&),ejemplo: Hola123!")
@@ -63,31 +63,32 @@ async def registerController(user: Usuarios):
     
 async def registerAdminController(user: Usuarios_admin):
     try:
-        await validUsername(user.usuario)
-        
-        if user.contrasena is None or not validContrasena(user.contrasena) :
-            raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
-                                detail="Contraseña invalida,introduzca una contraseña que contenga 8 caracteres minimo y que incluya una letra mayuscula,una minuscula,un numero y un caracter especial(@$!%*?&),ejemplo: Hola123!")
-        validRol(user.rol)
-        query ="""INSERT INTO usuarios(nombre,apellido,usuario,contrasena,rol,activo) 
-                VALUES(:nombre,:apellido,:usuario,:contrasena,:rol,:activo)
-                RETURNING id"""
-        values ={
-            "nombre":user.nombre,
-            "apellido":user.apellido,
-            "usuario":user.usuario,
-            "contrasena":crypt.hash(user.contrasena),
-            "rol": user.rol,
-            "activo": True
-        }
-        
-        result = await db.fetch_one(query,values)
-        
-        if result is None:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                               detail="Error al registrar usuario") 
+        async with db.transaction():
+            await validUsername(user.usuario)
             
-        return {"detail":"Usuario registrado exitosamente"}    
+            if user.contrasena is None or not validContrasena(user.contrasena) :
+                raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                                    detail="Contraseña invalida,introduzca una contraseña que contenga 8 caracteres minimo y que incluya una letra mayuscula,una minuscula,un numero y un caracter especial(@$!%*?&),ejemplo: Hola123!")
+            validRol(user.rol)
+            query ="""INSERT INTO usuarios(nombre,apellido,usuario,contrasena,rol,activo) 
+                    VALUES(:nombre,:apellido,:usuario,:contrasena,:rol,:activo)
+                    RETURNING id"""
+            values ={
+                "nombre":user.nombre,
+                "apellido":user.apellido,
+                "usuario":user.usuario,
+                "contrasena":crypt.hash(user.contrasena),
+                "rol": user.rol,
+                "activo": True
+            }
+            
+            result = await db.fetch_one(query,values)
+            
+            if result is None:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                                detail="Error al registrar usuario") 
+                
+            return {"detail":"Usuario registrado exitosamente"}    
     except HTTPException:
         raise
     except Exception:

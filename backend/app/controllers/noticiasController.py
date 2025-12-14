@@ -64,35 +64,34 @@ async def getNoticiasController(filtro: str, page: int, size: int):
             ORDER BY n.fecha_creacion DESC
             LIMIT :size OFFSET :offset;
         """
+        async with db.transaction():
+            result = await db.fetch_all(query, condiciones)
 
-        result = await db.fetch_all(query, condiciones)
+            if not result:
+                return {
+                    "page": page,
+                    "size": size,
+                    "total": 0,
+                    "total_pages": 0,
+                    "noticias": [],
+                }
 
-        if not result:
+            if filtro != "todas":
+                total = await db.fetch_val(
+                    "SELECT COUNT(*) FROM noticias n JOIN categorias c ON n.categoria_id = c.id "
+                    "WHERE LOWER(c.nombre) = :categoria AND n.activo = TRUE",
+                    {"categoria": filtro}
+                )
+            else:
+                total = await db.fetch_val("SELECT COUNT(*) FROM noticias WHERE activo = TRUE")
+
             return {
                 "page": page,
                 "size": size,
-                "total": 0,
-                "total_pages": 0,
-                "noticias": [],
+                "total": total,
+                "total_pages": totalPages(total, size),
+                "noticias": [noticia_schema(row) for row in result],
             }
-
-        if filtro != "todas":
-            total = await db.fetch_val(
-                "SELECT COUNT(*) FROM noticias n JOIN categorias c ON n.categoria_id = c.id "
-                "WHERE LOWER(c.nombre) = :categoria AND n.activo = TRUE",
-                {"categoria": filtro}
-            )
-        else:
-            total = await db.fetch_val("SELECT COUNT(*) FROM noticias WHERE activo = TRUE")
-
-        return {
-            "page": page,
-            "size": size,
-            "total": total,
-            "total_pages": totalPages(total, size),
-            "noticias": [noticia_schema(row) for row in result],
-        }
-
     except HTTPException:
         raise
     except Exception as e:
@@ -154,25 +153,25 @@ async def getNoticiasAllController(page: int, size: int, estado: str):
             ORDER BY n.fecha_creacion DESC
             LIMIT :size OFFSET :offset;
         """
+        async with db.transaction():
+            result = await db.fetch_all(query, condiciones)
 
-        result = await db.fetch_all(query, condiciones)
+            # Contador de total filtrado
+            total_query = f"""
+                SELECT COUNT(*)
+                FROM noticias n
+                {whereClause}
+            """
 
-        # Contador de total filtrado
-        total_query = f"""
-            SELECT COUNT(*)
-            FROM noticias n
-            {whereClause}
-        """
+            total = await db.fetch_val(total_query)
 
-        total = await db.fetch_val(total_query)
-
-        return {
-            "page": page,
-            "size": size,
-            "total": total,
-            "total_pages": totalPages(total, size),
-            "noticias": [noticia_schema(row) for row in result]
-        }
+            return {
+                "page": page,
+                "size": size,
+                "total": total,
+                "total_pages": totalPages(total, size),
+                "noticias": [noticia_schema(row) for row in result]
+            }
 
     except HTTPException:
         raise
@@ -219,37 +218,37 @@ async def buscarNoticiasController(queryText: str, page: int, size: int):
             ORDER BY n.fecha_creacion DESC
             LIMIT :size OFFSET :offset;
         """
+        async with db.transaction():
+            params = {"texto": texto, "size": size, "offset": offset}
+            result = await db.fetch_all(sql, params)
 
-        params = {"texto": texto, "size": size, "offset": offset}
-        result = await db.fetch_all(sql, params)
+            if not result:
+                return {
+                    "page": page,
+                    "size": size,
+                    "total": 0,
+                    "total_pages": 0,
+                    "noticias": [],
+                }
 
-        if not result:
+            total_sql = """
+                SELECT COUNT(*)
+                FROM noticias n
+                WHERE (
+                        LOWER(n.titulo) LIKE :texto
+                    OR LOWER(n.contenido) LIKE :texto
+                    OR LOWER(n.autor) LIKE :texto
+                )
+            """
+            total = await db.fetch_val(total_sql, {"texto": texto})
+
             return {
                 "page": page,
                 "size": size,
-                "total": 0,
-                "total_pages": 0,
-                "noticias": [],
+                "total": total,
+                "total_pages": totalPages(total, size),
+                "noticias": [noticia_schema(row) for row in result],
             }
-
-        total_sql = """
-            SELECT COUNT(*)
-            FROM noticias n
-            WHERE (
-                    LOWER(n.titulo) LIKE :texto
-                 OR LOWER(n.contenido) LIKE :texto
-                 OR LOWER(n.autor) LIKE :texto
-              )
-        """
-        total = await db.fetch_val(total_sql, {"texto": texto})
-
-        return {
-            "page": page,
-            "size": size,
-            "total": total,
-            "total_pages": totalPages(total, size),
-            "noticias": [noticia_schema(row) for row in result],
-        }
 
     except HTTPException:
         raise
@@ -298,35 +297,36 @@ async def buscarNoticiasAdminController(queryText: str, page: int, size: int):
         """
 
         params = {"texto": texto, "size": size, "offset": offset}
-        result = await db.fetch_all(sql, params)
+        async with db.transaction():
+            result = await db.fetch_all(sql, params)
 
-        if not result:
+            if not result:
+                return {
+                    "page": page,
+                    "size": size,
+                    "total": 0,
+                    "total_pages": 0,
+                    "noticias": [],
+                }
+
+            total_sql = """
+                SELECT COUNT(*)
+                FROM noticias n
+                WHERE (
+                        LOWER(n.titulo) LIKE :texto
+                    OR LOWER(n.contenido) LIKE :texto
+                    OR LOWER(n.autor) LIKE :texto
+                )
+            """
+            total = await db.fetch_val(total_sql, {"texto": texto})
+
             return {
                 "page": page,
                 "size": size,
-                "total": 0,
-                "total_pages": 0,
-                "noticias": [],
+                "total": total,
+                "total_pages": totalPages(total, size),
+                "noticias": [noticia_schema(row) for row in result],
             }
-
-        total_sql = """
-            SELECT COUNT(*)
-            FROM noticias n
-            WHERE (
-                    LOWER(n.titulo) LIKE :texto
-                 OR LOWER(n.contenido) LIKE :texto
-                 OR LOWER(n.autor) LIKE :texto
-              )
-        """
-        total = await db.fetch_val(total_sql, {"texto": texto})
-
-        return {
-            "page": page,
-            "size": size,
-            "total": total,
-            "total_pages": totalPages(total, size),
-            "noticias": [noticia_schema(row) for row in result],
-        }
 
     except HTTPException:
         raise
@@ -363,16 +363,16 @@ async def getNoticiaController(id: int):
             WHERE n.id = :id
             GROUP BY n.id, c.id, u.id;
         """
+        async with db.transaction():
+            result = await db.fetch_one(query, {"id": id})
 
-        result = await db.fetch_one(query, {"id": id})
+            if not result:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Noticia no encontrada"
+                )
 
-        if not result:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Noticia no encontrada"
-            )
-
-        return noticia_schema(result)
+            return noticia_schema(result)
 
     except HTTPException:
         raise
@@ -382,11 +382,11 @@ async def getNoticiaController(id: int):
 
 async def crearNoticiaController(noticia, imagenes, userId):
     try:
-        validImagenes(imagenes)
-        validCategoria(noticia.categoria_id)
-        await validUser(userId, 1)
-
         async with db.transaction():
+            validImagenes(imagenes)
+            validCategoria(noticia.categoria_id)
+            await validUser(userId, 1)
+
             query = """
             INSERT INTO noticias(titulo,contenido,activo,categoria_id,usuario_id,autor)
             VALUES (:titulo,:contenido,:activo,:categoria_id,:usuario_id,:autor)
@@ -427,24 +427,23 @@ async def updateNoticiaController(noticia, imagenes, rol, tokenId):
             )
 
         validCategoria(noticia.categoria_id)
-
-        userId = await db.fetch_val(
-            "SELECT usuario_id FROM noticias WHERE id = :id", {"id": noticia.id}
-        )
-
-        if userId is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="No existe la noticia"
-            )
-
-        if rol == "editor" and tokenId != userId:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Sin autorización"
-            )
-
         async with db.transaction():
+            userId = await db.fetch_val(
+                "SELECT usuario_id FROM noticias WHERE id = :id", {"id": noticia.id}
+            )
+
+            if userId is None:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="No existe la noticia"
+                )
+
+            if rol == "editor" and tokenId != userId:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Sin autorización"
+                )
+
             queryUpdate = """
             UPDATE noticias
             SET titulo = :titulo,
@@ -486,18 +485,19 @@ async def updateNoticiaController(noticia, imagenes, rol, tokenId):
 
 async def updateActivoController(id: int):
     try:
-        result = await db.fetch_val(
-            "UPDATE noticias SET activo = NOT activo WHERE id = :id RETURNING id",
-            {"id": id}
-        )
-
-        if not result:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Noticia inexistente"
+        async with db.transaction():
+            result = await db.fetch_val(
+                "UPDATE noticias SET activo = NOT activo WHERE id = :id RETURNING id",
+                {"id": id}
             )
 
-        return {"detail": "Estado actualizado"}
+            if not result:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Noticia inexistente"
+                )
+
+            return {"detail": "Estado actualizado"}
 
     except HTTPException:
         raise
@@ -507,13 +507,13 @@ async def updateActivoController(id: int):
 
 async def deleteNoticiaController(id: int):
     try:
-        if await searchNoticia(id) is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Noticia inexistente"
-            )
-
         async with db.transaction():
+            if await searchNoticia(id) is None:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Noticia inexistente"
+                )
+
             await deleteImgsNoticia(id)
 
             result = await db.fetch_val(

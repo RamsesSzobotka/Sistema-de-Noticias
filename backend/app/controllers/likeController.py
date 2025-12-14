@@ -5,13 +5,14 @@ from utils.HttpError import errorInterno
 
 async def getLikesController(noticiaId:int):
     try:
-        await validNoticia(noticiaId)
+        async with db.transaction():
+            await validNoticia(noticiaId)
+                
+            query = "SELECT COUNT(*) AS total_likes FROM likes WHERE noticia_id = :noticia_id"
             
-        query = "SELECT COUNT(*) AS total_likes FROM likes WHERE noticia_id = :noticia_id"
-        
-        totalLikes = await db.fetch_val(query,{"noticia_id":noticiaId})
+            totalLikes = await db.fetch_val(query,{"noticia_id":noticiaId})
 
-        return {"total_likes":totalLikes or 0}
+            return {"total_likes":totalLikes or 0}
     except HTTPException:
         raise
     except Exception:
@@ -19,18 +20,20 @@ async def getLikesController(noticiaId:int):
 
 async def likeVerifyController(noticiaId: int, userId: int):
     try:
-        query = "SELECT id FROM likes WHERE usuario_id = :usuario_id AND noticia_id = :noticia_id"
-        result = await db.fetch_one(query, {"usuario_id": userId, "noticia_id": noticiaId})
-        
-        return {"liked": True if result else False}
-        
+        async with db.transaction():
+            query = "SELECT id FROM likes WHERE usuario_id = :usuario_id AND noticia_id = :noticia_id"
+            result = await db.fetch_one(query, {"usuario_id": userId, "noticia_id": noticiaId})
+            
+            return {"liked": True if result else False}
+            
     except Exception:
         raise errorInterno()
 
 async def postLikeController(noticiaId:int,userId: int ):
     try:
-        await validNoticia(noticiaId)
         async with db.transaction():
+            await validNoticia(noticiaId)
+
             query = "SELECT id FROM likes WHERE usuario_id =:usuario_id and noticia_id =:noticia_id"
             
             values = {
@@ -57,19 +60,20 @@ async def postLikeController(noticiaId:int,userId: int ):
 
 async def deleteLikeController(noticiaId:int, userId: int):
     try:
-        await validNoticia(noticiaId)
-        values = {"usuario_id": userId, "noticia_id": noticiaId}
+        async with db.transaction():
+            await validNoticia(noticiaId)
+            values = {"usuario_id": userId, "noticia_id": noticiaId}
 
-        query = "DELETE FROM likes WHERE usuario_id = :usuario_id AND noticia_id = :noticia_id RETURNING id"
-        result = await db.fetch_val(query, values)
+            query = "DELETE FROM likes WHERE usuario_id = :usuario_id AND noticia_id = :noticia_id RETURNING id"
+            result = await db.fetch_val(query, values)
 
-        if not result:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="No le has dado like a esta noticia"
-            )
+            if not result:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="No le has dado like a esta noticia"
+                )
 
-        return {"detail": "Like eliminado"}
+            return {"detail": "Like eliminado"}
     except HTTPException:
         raise
     except Exception:

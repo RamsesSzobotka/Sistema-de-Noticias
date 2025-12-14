@@ -9,41 +9,41 @@ from utils.DbHelper import paginar,totalPages
 
 async def obtenerComentarios(noticia_id:int, page: int ,size: int):
     try:
-   
-        await validNoticia(noticia_id)
-        offset= paginar(page,size)
-        
-        query = """
-        SELECT c.id, 
-            c.contenido, 
-            c.fecha_creacion, 
-            c.usuario_id, 
-            c.comentario_padre_id, 
-            u.usuario
-        FROM comentarios c
-        JOIN usuarios u ON c.usuario_id = u.id
-        WHERE c.noticia_id = :noticia_id
-        ORDER BY c.fecha_creacion ASC
-        LIMIT :size OFFSET :offset
-        """
-        values = {
-            "noticia_id":noticia_id,
-            "size":size,
-            "offset":offset
-        }
-        
-        comentarios = await db.fetch_all(query,values)
-        total = await db.fetch_val(
-        "SELECT COUNT(*) FROM comentarios WHERE noticia_id = :noticia_id",
-        {"noticia_id": noticia_id})
-        
-        return {
-            "page": page,
-            "size": size,
-            "total":total,
-            "total_pages": totalPages(total, size),
-            "usuarios": [comentario_schema(row) for row in comentarios]
-        }
+        async with db.transaction():
+            await validNoticia(noticia_id)
+            offset= paginar(page,size)
+            
+            query = """
+            SELECT c.id, 
+                c.contenido, 
+                c.fecha_creacion, 
+                c.usuario_id, 
+                c.comentario_padre_id, 
+                u.usuario
+            FROM comentarios c
+            JOIN usuarios u ON c.usuario_id = u.id
+            WHERE c.noticia_id = :noticia_id
+            ORDER BY c.fecha_creacion ASC
+            LIMIT :size OFFSET :offset
+            """
+            values = {
+                "noticia_id":noticia_id,
+                "size":size,
+                "offset":offset
+            }
+            
+            comentarios = await db.fetch_all(query,values)
+            total = await db.fetch_val(
+            "SELECT COUNT(*) FROM comentarios WHERE noticia_id = :noticia_id",
+            {"noticia_id": noticia_id})
+            
+            return {
+                "page": page,
+                "size": size,
+                "total":total,
+                "total_pages": totalPages(total, size),
+                "usuarios": [comentario_schema(row) for row in comentarios]
+            }
     except HTTPException:
         raise
     except Exception:
@@ -51,16 +51,17 @@ async def obtenerComentarios(noticia_id:int, page: int ,size: int):
 
 async def crearComentario(comentario:Comentario,userId:int):
     try:
-        await validNoticia(comentario.noticia_id)
-        await validUser(userId,1)
-        await validComentarioPadre(comentario.comentario_padre_id)
-        
-        if not comentario.contenido or not comentario.contenido.strip():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="El comentario no puede estar vacío"
-            )
         async with db.transaction():
+            await validNoticia(comentario.noticia_id)
+            await validUser(userId,1)
+            await validComentarioPadre(comentario.comentario_padre_id)
+            
+            if not comentario.contenido or not comentario.contenido.strip():
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="El comentario no puede estar vacío"
+                )
+
             query = """
             INSERT INTO comentarios(noticia_id,usuario_id,contenido,comentario_padre_id)
             VALUES(:noticia_id,:usuario_id,:contenido,:comentario_padre_id) RETURNING id"""
@@ -86,11 +87,11 @@ async def crearComentario(comentario:Comentario,userId:int):
 
 async def borrarComentario(id: int, userId: int):
     try:
-        # Validar usuario
-        await validUser(userId, 1)
-
-        # Verificar si el comentario existe
         async with db.transaction():
+             # Validar usuario
+            await validUser(userId, 1)
+            
+            # Verificar si el comentario existe
             query = "SELECT usuario_id FROM comentarios WHERE id = :id"
             comentario_usuario = await db.fetch_one(query, {"id": id})
             if comentario_usuario is None:
