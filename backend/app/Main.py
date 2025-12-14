@@ -5,6 +5,7 @@ from routers import authRouter,noticiaRouter,userRouter,likeRouter, comentarioRo
 from core.ConnectDB import connect, disconnect
 from contextlib import asynccontextmanager
 from pathlib import Path
+import asyncio
 
 BASE_DIR = Path(__file__).resolve().parents[2]  
 FRONTEND_DIR = BASE_DIR / "frontend"
@@ -17,7 +18,11 @@ VIEWS_DIR = FRONTEND_DIR / "Views"
 async def lifespan(app: FastAPI):
     await connect()
     yield
-    await disconnect()
+    # aplicar timeout al disconnect para evitar bloqueos largos
+    try:
+        await asyncio.wait_for(disconnect(), timeout=30)
+    except asyncio.TimeoutError:
+        pass
 
 app = FastAPI(lifespan=lifespan)
 

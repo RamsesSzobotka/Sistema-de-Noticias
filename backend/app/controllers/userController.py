@@ -73,9 +73,10 @@ async def getUsers(filtro: str,page: int,size: int,):
 # Obtener datos del usuario logueado
 async def getMe(userId: int):
     try:
-        userData = await validUser(userId,1)
+        async with db.transaction():
+            userData = await validUser(userId,1)
 
-        return global_user_schema(userData)
+            return global_user_schema(userData)
     except HTTPException:
         raise
     except Exception:

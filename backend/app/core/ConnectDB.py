@@ -12,7 +12,7 @@ DB_NAME=os.getenv("DB_NAME")
 
 DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
-db = Database(DATABASE_URL)
+db = Database(DATABASE_URL, statement_cache_size=0)
 
 async def connect():
     if not db.is_connected:

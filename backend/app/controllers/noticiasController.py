@@ -35,7 +35,9 @@ async def getNoticiasController(filtro: str, page: int, size: int):
                             'imagen', i.imagen,
                             'tipo_imagen', i.tipo_imagen
                         )
-                    ) FILTER (WHERE i.id IS NOT NULL), '[]'::json
+                        ORDER BY i.id ASC
+                    ) FILTER (WHERE i.id IS NOT NULL),
+                    '[]'::json
                 ) AS imagenes
             FROM noticias n
             JOIN categorias c ON n.categoria_id = c.id

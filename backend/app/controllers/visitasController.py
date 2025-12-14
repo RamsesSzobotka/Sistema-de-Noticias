@@ -19,10 +19,11 @@ async def updateVisitasController():
 
 async def obtainVisitas():
     try:
-        query = "SELECT cantidad FROM visitas"
-        visitas = await db.fetch_one(query)
-        if visitas is None:
-            return 0
-        return visitas["cantidad"]
-    except Exception:
-        raise errorInterno()
+        async with db.transaction():
+            query = "SELECT cantidad FROM visitas"
+            visitas = await db.fetch_one(query)
+            if visitas is None:
+                return 0
+            return visitas["cantidad"]
+    except Exception as e:
+        raise errorInterno(e)
