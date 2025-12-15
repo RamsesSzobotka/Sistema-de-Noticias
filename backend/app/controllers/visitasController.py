@@ -5,8 +5,8 @@ async def getVisitasController():
     try:
         visitas = await obtainVisitas()
         return {"cantidad": visitas}
-    except Exception:
-        raise errorInterno()
+    except Exception as e:
+        raise errorInterno(e)
 
 async def updateVisitasController():
     try:
@@ -15,8 +15,8 @@ async def updateVisitasController():
             nueva_cantidad = visitas + 1
             query = "UPDATE visitas SET cantidad = :cantidad WHERE id = '1'"
             await db.execute(query, {"cantidad": nueva_cantidad})
-    except Exception:
-        raise errorInterno()
+    except Exception as e:
+        raise errorInterno(e)
 
 async def obtainVisitas():
     try:
