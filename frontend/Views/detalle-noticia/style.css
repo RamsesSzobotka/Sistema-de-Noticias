@@ -9,7 +9,6 @@ body {
     font-family: 'Arial', sans-serif;
     background-color: #f9f9f9;
     color: #333;
-  
 }
 
 /* Menú superior */
@@ -638,10 +637,11 @@ textarea {
     border-left: 2px dashed #ccc;
 }
 
-
-
 /* Responsive Design */
 @media (max-width: 768px) {
+    body{
+        width: 900px;
+    }
     .noticia-detalle {
         padding: 1.5rem;
     }
