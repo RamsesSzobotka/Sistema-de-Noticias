@@ -1,14 +1,16 @@
 import asyncio
 import os
+import sys
+
+# Agregar app/ al path para que los módulos dentro de app/ puedan
+# importarse entre sí (utils.xxx, core.xxx, etc.) sin prefijo "app."
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "app"))
 
 from dotenv import load_dotenv
 import asyncpg
-from passlib.context import CryptContext
+from core.security import pwd_context
 
 load_dotenv()
-
-crypt = CryptContext(schemes=["bcrypt"])
-
 
 async def migrate() -> None:
     conn = await asyncpg.connect(
@@ -48,7 +50,7 @@ async def migrate() -> None:
             "Admin",
             "Admin",
             "Admin",
-            crypt.hash("Admin123!"),
+            pwd_context.hash("Admin123!"),
             "admin",
             True,
         )

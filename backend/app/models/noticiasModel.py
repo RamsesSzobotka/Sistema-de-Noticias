@@ -1,13 +1,13 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from fastapi import Form
 from typing import Optional
 
 class Noticias(BaseModel):
     id: Optional[int] = None
-    titulo: str
-    contenido: str
+    titulo: str = Field(min_length=1, max_length=250)
+    contenido: str = Field(min_length=1)
     categoria_id: int
-    autor: str
+    autor: str = Field(min_length=1, max_length=100)
 
     @staticmethod
     def from_form(

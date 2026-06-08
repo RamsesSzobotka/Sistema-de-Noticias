@@ -241,3 +241,8 @@ def getTokenId(token: Dict = Depends(authToken)):
             detail="Token inválido: no contiene ID de usuario"
         )
     return user_id
+
+
+from passlib.context import CryptContext
+
+pwd_context = CryptContext(schemes=["bcrypt"])

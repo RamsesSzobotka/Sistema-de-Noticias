@@ -165,20 +165,37 @@ def validImagenes(imagenes):
             )
 
 
-def validCategoria(categoria: int):
+async def validCategoria(categoria: int):
     """
-    Valida que la categoría esté dentro del rango permitido.
+    Valida que la categoría exista en la base de datos.
 
     Parámetros:
-        categoria (int): ID de categoría (1-4 permitido).
+        categoria (int): ID de categoría.
 
     Lanza:
-        HTTPException: Si la categoría es inválida.
+        HTTPException: Si la categoría es inválida o hay error de consulta.
     """
-    if not categoria or not (1 <= categoria <= 4):
+    if not categoria:
         raise HTTPException(
             status_code=status.HTTP_406_NOT_ACCEPTABLE,
             detail="Categoría inválida"
+        )
+    try:
+        result = await db.fetch_val(
+            "SELECT COUNT(*) FROM categorias WHERE id = :id",
+            {"id": categoria}
+        )
+        if result == 0:
+            raise HTTPException(
+                status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                detail="Categoría inválida"
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al validar categoría: {e}"
         )
 
 

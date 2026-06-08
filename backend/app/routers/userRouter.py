@@ -1,14 +1,10 @@
 from fastapi import APIRouter, Query, status, Depends
-from passlib.context import CryptContext
 from models.userModel import Usuarios
 from core.security import getTokenId, isAdmin
 from controllers import userController as User
 
 # Router
 router = APIRouter(prefix="/usuarios", tags=["Usuarios"])
-
-# Cifrado de contraseñas
-crypt = CryptContext(schemes=["bcrypt"])
 
 @router.get("/", status_code=status.HTTP_200_OK)
 async def getUsers(

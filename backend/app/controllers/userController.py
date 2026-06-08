@@ -1,14 +1,11 @@
 from fastapi import HTTPException, status
 from core.ConnectDB import db
-from passlib.context import CryptContext
 from schemas.userSchema import admin_user_schema, global_user_schema
 from models.userModel import Usuarios
 from utils.infoVerify import searchUser, validContrasena, validRol, validUser
 from utils.DbHelper import paginar, totalPages
 from utils.HttpError import errorInterno  
-
-# Cifrado de contraseñas
-crypt = CryptContext(schemes=["bcrypt"])
+from core.security import pwd_context
 
 async def getUsers(filtro: str,page: int,size: int,):
     try:
@@ -159,7 +156,7 @@ async def updatePassword(password: str, newPassword: str, userId: int):
         async with db.transaction():
             user = await validUser(userId,1)
 
-            if not crypt.verify(password, user["contrasena"]):
+            if not pwd_context.verify(password, user["contrasena"]):
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="La contraseña actual no coincide"
@@ -167,7 +164,7 @@ async def updatePassword(password: str, newPassword: str, userId: int):
 
             query = "UPDATE usuarios SET contrasena = :contrasena WHERE id = :id RETURNING id"
             result = await db.fetch_val(
-                query, {"contrasena": crypt.hash(newPassword), "id": userId}
+                query, {"contrasena": pwd_context.hash(newPassword), "id": userId}
             )
 
             if not result:

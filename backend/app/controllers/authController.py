@@ -1,13 +1,10 @@
 from fastapi import HTTPException, status, Response
 from fastapi.security import OAuth2PasswordRequestForm
-from passlib.context import CryptContext
 from utils.HttpError import errorInterno
 from core.ConnectDB import db
 from models.userModel import Usuarios, Usuarios_admin
-from core.security import generateJWT
+from core.security import generateJWT, pwd_context
 from utils.infoVerify import searchUser, validUsername, validRol, validContrasena
-
-crypt = CryptContext(schemes=["bcrypt"])
 
 COOKIE_MAX_AGE = 7 * 24 * 60 * 60
 
@@ -25,7 +22,7 @@ async def login(form: OAuth2PasswordRequestForm, response: Response):
     try:
         result = await searchUser(form.username, 2)
 
-        if not result or not crypt.verify(form.password, result["contrasena"]):
+        if not result or not pwd_context.verify(form.password, result["contrasena"]):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                                 detail="Usuario o contraseña incorrectos")
         if not result["activo"]:
@@ -58,7 +55,7 @@ async def registerController(user: Usuarios, response: Response):
                 "nombre": user.nombre,
                 "apellido": user.apellido,
                 "usuario": user.usuario,
-                "contrasena": crypt.hash(user.contrasena),
+                "contrasena": pwd_context.hash(user.contrasena),
                 "rol": "global",
                 "activo": True,
             }
@@ -94,7 +91,7 @@ async def registerAdminController(user: Usuarios_admin):
                 "nombre": user.nombre,
                 "apellido": user.apellido,
                 "usuario": user.usuario,
-                "contrasena": crypt.hash(user.contrasena),
+                "contrasena": pwd_context.hash(user.contrasena),
                 "rol": user.rol,
                 "activo": True,
             }

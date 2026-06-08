@@ -1,4 +1,3 @@
-from pickle import FALSE
 from fastapi import HTTPException, status
 from core.ConnectDB import db
 import os
@@ -11,39 +10,44 @@ from dotenv import load_dotenv
 load_dotenv()
 UPLOAD_DIR = os.getenv("UPLOAD_DIR")
 
+
+def _base_noticia_query(order_by: str = "ASC") -> str:
+    return f"""
+        SELECT 
+            n.id,
+            n.titulo,
+            n.contenido,
+            n.activo,
+            n.fecha_creacion,
+            c.id AS categoria_id,
+            c.nombre AS categoria_nombre,
+            u.id AS usuario_id,
+            u.usuario AS usuario_nombre,
+            n.autor,
+            COALESCE(
+                json_agg(
+                    json_build_object(
+                        'id', i.id,
+                        'imagen', i.imagen,
+                        'tipo_imagen', i.tipo_imagen
+                    )
+                    ORDER BY i.id {order_by}
+                ) FILTER (WHERE i.id IS NOT NULL),
+                '[]'::json
+            ) AS imagenes
+        FROM noticias n
+        JOIN categorias c ON n.categoria_id = c.id
+        JOIN usuarios u ON n.usuario_id = u.id
+        LEFT JOIN imagenes i ON i.noticia_id = n.id
+    """
+
+
 async def getNoticiasController(filtro: str, page: int, size: int):
     try:
         offset = paginar(page, size)
         filtro = filtro.lower()
 
-        query = """
-            SELECT 
-                n.id,
-                n.titulo,
-                n.contenido,
-                n.activo,
-                n.fecha_creacion,
-                c.id AS categoria_id,
-                c.nombre AS categoria_nombre,
-                u.id AS usuario_id,
-                u.usuario AS usuario_nombre,
-                n.autor,
-                COALESCE(
-                    json_agg(
-                        json_build_object(
-                            'id', i.id,
-                            'imagen', i.imagen,
-                            'tipo_imagen', i.tipo_imagen
-                        )
-                        ORDER BY i.id ASC
-                    ) FILTER (WHERE i.id IS NOT NULL),
-                    '[]'::json
-                ) AS imagenes
-            FROM noticias n
-            JOIN categorias c ON n.categoria_id = c.id
-            JOIN usuarios u ON n.usuario_id = u.id
-            LEFT JOIN imagenes i ON i.noticia_id = n.id
-        """
+        query = _base_noticia_query()
 
         condiciones = {"size": size, "offset": offset}
 
@@ -103,32 +107,7 @@ async def getNoticiasAllController(page: int, size: int, estado: str):
         estado = estado.lower()
 
         # Base del SELECT
-        baseQuery = """
-            SELECT 
-                n.id,
-                n.titulo,
-                n.contenido,
-                n.activo,
-                n.fecha_creacion,
-                c.id AS categoria_id,
-                c.nombre AS categoria_nombre,
-                u.id AS usuario_id,
-                u.usuario AS usuario_nombre,
-                n.autor,
-                COALESCE(
-                    json_agg(
-                        json_build_object(
-                            'id', i.id,
-                            'imagen', i.imagen,
-                            'tipo_imagen', i.tipo_imagen
-                        )
-                    ) FILTER (WHERE i.id IS NOT NULL), '[]'::json
-                ) AS imagenes
-            FROM noticias n
-            JOIN categorias c ON n.categoria_id = c.id
-            JOIN usuarios u ON n.usuario_id = u.id
-            LEFT JOIN imagenes i ON i.noticia_id = n.id
-        """
+        baseQuery = _base_noticia_query()
 
         # Filtros dinámicos
         condiciones = {"size": size, "offset": offset}
@@ -183,32 +162,8 @@ async def buscarNoticiasController(queryText: str, page: int, size: int):
         offset = paginar(page, size)
         texto = f"%{queryText.lower()}%"
 
-        sql = """
-            SELECT 
-                n.id,
-                n.titulo,
-                n.contenido,
-                n.activo,
-                n.fecha_creacion,
-                c.id AS categoria_id,
-                c.nombre AS categoria_nombre,
-                u.id AS usuario_id,
-                u.usuario AS usuario_nombre,
-                n.autor,
-                COALESCE(
-                    json_agg(
-                        json_build_object(
-                            'id', i.id,
-                            'imagen', i.imagen,
-                            'tipo_imagen', i.tipo_imagen
-                        )
-                        ORDER BY i.id desc
-                    ) FILTER (WHERE i.id IS NOT NULL), '[]'::json
-                ) AS imagenes
-            FROM noticias n
-            JOIN categorias c ON n.categoria_id = c.id
-            JOIN usuarios u ON n.usuario_id = u.id
-            LEFT JOIN imagenes i ON i.noticia_id = n.id
+        sql = _base_noticia_query(order_by="DESC")
+        sql += """
             WHERE (
                     LOWER(n.titulo) LIKE :texto
                  OR LOWER(n.contenido) LIKE :texto
@@ -260,37 +215,13 @@ async def buscarNoticiasAdminController(queryText: str, page: int, size: int):
         offset = paginar(page, size)
         texto = f"%{queryText.lower()}%"
 
-        sql = """
-            SELECT 
-                n.id,
-                n.titulo,
-                n.contenido,
-                n.activo,
-                n.fecha_creacion,
-                c.id AS categoria_id,
-                c.nombre AS categoria_nombre,
-                u.id AS usuario_id,
-                u.usuario AS usuario_nombre,
-                n.autor,
-                COALESCE(
-                    json_agg(
-                        json_build_object(
-                            'id', i.id,
-                            'imagen', i.imagen,
-                            'tipo_imagen', i.tipo_imagen
-                        )
-                        ORDER BY i.id desc
-                    ) FILTER (WHERE i.id IS NOT NULL), '[]'::json
-                ) AS imagenes
-            FROM noticias n
-            JOIN categorias c ON n.categoria_id = c.id
-            JOIN usuarios u ON n.usuario_id = u.id
-            LEFT JOIN imagenes i ON i.noticia_id = n.id
+        sql = _base_noticia_query(order_by="DESC")
+        sql += """
             WHERE (
                     LOWER(n.titulo) LIKE :texto
                  OR LOWER(n.contenido) LIKE :texto
                  OR LOWER(n.autor) LIKE :texto
-              ) 
+              )
             GROUP BY n.id, c.id, u.id
             ORDER BY n.fecha_creacion DESC
             LIMIT :size OFFSET :offset;
@@ -335,34 +266,8 @@ async def buscarNoticiasAdminController(queryText: str, page: int, size: int):
     
 async def getNoticiaController(id: int):
     try:
-        query = """
-            SELECT 
-                n.id,
-                n.titulo,
-                n.contenido,
-                n.activo,
-                n.fecha_creacion,
-                c.id AS categoria_id,
-                c.nombre AS categoria_nombre,
-                u.id AS usuario_id,
-                u.usuario AS usuario_nombre,
-                n.autor,
-                COALESCE(
-                    json_agg(
-                        json_build_object(
-                            'id', i.id,
-                            'imagen', i.imagen,
-                            'tipo_imagen', i.tipo_imagen
-                        )
-                    ) FILTER (WHERE i.id IS NOT NULL), '[]'::json
-                ) AS imagenes
-            FROM noticias n
-            JOIN categorias c ON n.categoria_id = c.id
-            JOIN usuarios u ON n.usuario_id = u.id
-            LEFT JOIN imagenes i ON i.noticia_id = n.id
-            WHERE n.id = :id
-            GROUP BY n.id, c.id, u.id;
-        """
+        query = _base_noticia_query()
+        query += "WHERE n.id = :id GROUP BY n.id, c.id, u.id;"
         async with db.transaction():
             result = await db.fetch_one(query, {"id": id})
 
@@ -384,7 +289,7 @@ async def crearNoticiaController(noticia, imagenes, userId):
     try:
         async with db.transaction():
             validImagenes(imagenes)
-            validCategoria(noticia.categoria_id)
+            await validCategoria(noticia.categoria_id)
             await validUser(userId, 1)
 
             query = """
@@ -426,7 +331,7 @@ async def updateNoticiaController(noticia, imagenes, rol, tokenId):
                 detail="Parametro ID vacío"
             )
 
-        validCategoria(noticia.categoria_id)
+        await validCategoria(noticia.categoria_id)
         async with db.transaction():
             userId = await db.fetch_val(
                 "SELECT usuario_id FROM noticias WHERE id = :id", {"id": noticia.id}
