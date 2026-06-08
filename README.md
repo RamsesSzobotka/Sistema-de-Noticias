@@ -142,7 +142,7 @@ SECRET_KEY= clave_secreta_para_jwt
 cors_origins= origenes_permitidos_separados_por_comas (usar "*" para  aceptar todos)
 ACCESS_TOKEN_EXPIRED_MINUTES=60
 REFRESH_TOKEN_EXPIRED_MINUTES=1440
-ALGORITHM=HS256
+ALGORITHM=algoritmo_a_usar
 VALID_ROL=admin,supervisor,editor,global
 
 UPLOAD_DIR = "static/imagenesdb"

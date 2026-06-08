@@ -1,2 +1,4 @@
 .env
 referencias/
+venv
+__pycache__/
