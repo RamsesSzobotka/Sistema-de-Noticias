@@ -159,7 +159,7 @@ function formatDate(dateStr) {
 // ==============================
 function renderHero(noticia) {
     const heroSection = document.getElementById('heroSection') || createHeroSection();
-    const categoria = noticia.categoria_nombre || noticia.categoria || 'General';
+    const categoria = noticia.categoria.nombre|| noticia.categoria || 'General';
 
     heroSection.innerHTML = `
     <div class="hero-card" onclick="window.location.href='detalle-noticia/index.html?id=${noticia.id}'">
@@ -195,7 +195,7 @@ function createHeroSection() {
 function renderFeatures(noticias) {
     const grid = document.getElementById('featureGrid') || createFeatureGrid();
     grid.innerHTML = noticias.map(n => {
-        const categoria = n.categoria_nombre || n.categoria || 'General';
+        const categoria = n.categoria.nombre || n.categoria || 'General';
         return `
       <div class="feature-card" onclick="window.location.href='detalle-noticia/index.html?id=${n.id}'">
         <div class="news-card-image">
@@ -228,7 +228,7 @@ function createFeatureGrid() {
 // Render: Single News Card (for the grid)
 // ==============================
 function renderNewsCard(noticia) {
-    const categoria = noticia.categoria_nombre || noticia.categoria || 'General';
+    const categoria = noticia.categoria.nombre || noticia.categoria || 'General';
     return `
     <article class="news-card" onclick="window.location.href='detalle-noticia/index.html?id=${noticia.id}'">
       <div class="news-card-image">
@@ -268,7 +268,7 @@ async function cargarNoticias() {
         );
 
         const data = await res.json();
-
+        console.log(data.noticias)
         totalPages = data.total_pages;
         const noticias = data.noticias || [];
 
