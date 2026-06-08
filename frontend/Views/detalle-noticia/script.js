@@ -1,6 +1,12 @@
 import { API_BASE_URL } from "/config/config.js";
 import { verificarSesion, cerrarSesion } from "../auth/auth.js";
 
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('es-PA', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
 let usuarioId = sessionStorage.getItem("usuario_id");
 
 const likeBtn = document.getElementById("likeBtn");
@@ -16,20 +22,28 @@ document.addEventListener("DOMContentLoaded", async () => {
     const session = await verificarSesion();
     if (session) {
         usuarioId = String(session.id);
-        document.querySelector(".user-info").style.display = "flex";
-        document.querySelector(".nav-auth").style.display = "none";
+        document.getElementById("navbarUser").classList.add("show");
+        document.getElementById("navbarAuth").style.display = "none";
         const usernameDisplay = document.getElementById("usernameDisplay");
         if (usernameDisplay) usernameDisplay.textContent = `Hola, ${session.usuario}`;
-        const logoutBtn = document.getElementById("logoutBtn");
-        if (logoutBtn) logoutBtn.style.display = "block";
         mostrarBotonesPorRol(session.rol);
     } else {
-        document.querySelector(".user-info").style.display = "none";
-        document.querySelector(".nav-auth").style.display = "flex";
+        document.getElementById("navbarUser").classList.remove("show");
+        document.getElementById("navbarAuth").style.display = "flex";
         usuarioId = null;
     }
 
     cargarComentarios();
+
+    // Hamburger menu toggle
+    const hamburger = document.getElementById('hamburgerBtn');
+    const navbarMenu = document.getElementById('navbarMenu');
+    if (hamburger && navbarMenu) {
+        hamburger.addEventListener('click', () => {
+            hamburger.classList.toggle('active');
+            navbarMenu.classList.toggle('active');
+        });
+    }
 
     function mostrarBotonesPorRol(rol) {
         const botones = ["btn-editar", "adminBtn", "supervisorPanelBtn", "publicarBtn"];
@@ -65,13 +79,22 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     function cargarComentarios() {
         if (!noticiaId) return;
+        const commentsContainer = document.getElementById("commentsContainer");
+        if (commentsContainer) {
+            commentsContainer.innerHTML = '<div class="spinner"></div>';
+        }
         fetch(`${API_BASE_URL}/comentarios/${noticiaId}`)
             .then(res => res.json())
             .then(data => {
                 const comentarios = data.usuarios || [];
                 commentCount.textContent = data.total || 0;
-                const commentsContainer = document.getElementById("commentsContainer");
-                commentsContainer.innerHTML = "";
+                if (commentsContainer) commentsContainer.innerHTML = "";
+                if (comentarios.length === 0) {
+                    if (commentsContainer) {
+                        commentsContainer.innerHTML = '<p class="text-muted text-center">No hay comentarios aún. ¡Sé el primero en comentar!</p>';
+                    }
+                    return;
+                }
                 const comentariosMap = {};
                 comentarios.forEach(c => { c.children = []; comentariosMap[c.id] = c; });
                 const comentariosRaiz = [];
@@ -89,60 +112,59 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     function renderComentario(comentario) {
         const div = document.createElement("div");
-        div.className = "comentario";
+        div.className = "comment";
 
-        if (String(comentario.usuario?.id || comentario.usuario_id) === String(usuarioId)) {
-            div.classList.add("comentario-propio");
-        }
+        const initial = (comentario.usuario?.username || comentario.usuario || 'A')[0].toUpperCase();
+        
+        const avatar = document.createElement("div");
+        avatar.className = "comment-avatar";
+        avatar.textContent = initial;
+        div.appendChild(avatar);
 
-        const fechaObj = new Date(comentario.fecha_creacion);
-        const fecha = fechaObj.toLocaleDateString("es-ES");
-        const hora = fechaObj.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", hour12: true });
+        const body = document.createElement("div");
+        body.className = "comment-body";
 
         const header = document.createElement("div");
-        header.className = "comentario-header";
+        header.className = "comment-header";
 
-        const userDiv = document.createElement("div");
-        const strong = document.createElement("strong");
-        strong.textContent = comentario.usuario?.username || comentario.usuario || "Anonimo";
-        userDiv.appendChild(strong);
-        header.appendChild(userDiv);
+        const author = document.createElement("span");
+        author.className = "comment-author";
+        author.textContent = comentario.usuario?.username || comentario.usuario || "Anónimo";
+        header.appendChild(author);
 
-        const fechaDiv = document.createElement("div");
-        fechaDiv.className = "comentario-fecha-hora";
-        const fp = document.createElement("p");
-        fp.className = "comentario-fecha";
-        fp.textContent = fecha;
-        fechaDiv.appendChild(fp);
-        const hp = document.createElement("p");
-        hp.className = "comentario-hora";
-        hp.textContent = hora;
-        fechaDiv.appendChild(hp);
-        header.appendChild(fechaDiv);
+        const dateSpan = document.createElement("span");
+        dateSpan.className = "comment-date";
+        dateSpan.textContent = formatDate(comentario.fecha_creacion);
+        header.appendChild(dateSpan);
 
-        div.appendChild(header);
+        body.appendChild(header);
 
         const texto = document.createElement("p");
-        texto.className = "comentario-texto";
-        texto.textContent = comentario.contenido;
-        div.appendChild(texto);
+        texto.className = "comment-text";
+        texto.textContent = comentario.contenido || comentario.texto;
+        body.appendChild(texto);
+
+        const actions = document.createElement("div");
+        actions.className = "comment-actions";
 
         const responderBtn = document.createElement("button");
-        responderBtn.className = "responder-btn";
+        responderBtn.className = "comment-action-btn";
         responderBtn.dataset.id = comentario.id;
         responderBtn.textContent = "Responder";
         responderBtn.addEventListener("click", () => {
             const contenedorRespuestas = div.querySelector(".respuestas");
-            contenedorRespuestas.innerHTML = "";
-            contenedorRespuestas.appendChild(crearFormularioRespuesta(comentario.id));
+            if (contenedorRespuestas) {
+                contenedorRespuestas.innerHTML = "";
+                contenedorRespuestas.appendChild(crearFormularioRespuesta(comentario.id));
+            }
         });
-        div.appendChild(responderBtn);
+        actions.appendChild(responderBtn);
 
         const rol = sessionStorage.getItem("rol");
         if (rol === "admin" || String(comentario.usuario?.id || comentario.usuario_id) === String(usuarioId)) {
             const btnEliminar = document.createElement("button");
             btnEliminar.textContent = "Eliminar";
-            btnEliminar.className = "eliminar-btn";
+            btnEliminar.className = "comment-action-btn danger";
             btnEliminar.addEventListener("click", () => {
                 Swal.fire({
                     title: "Eliminar comentario?",
@@ -155,11 +177,14 @@ document.addEventListener("DOMContentLoaded", async () => {
                     cancelButtonText: "Cancelar",
                 }).then(result => { if (result.isConfirmed) eliminarComentario(comentario.id); });
             });
-            div.appendChild(btnEliminar);
+            actions.appendChild(btnEliminar);
         }
 
+        body.appendChild(actions);
+        div.appendChild(body);
+
         const contenedorRespuestas = document.createElement("div");
-        contenedorRespuestas.className = "respuestas";
+        contenedorRespuestas.className = "comment-nested respuestas";
         div.appendChild(contenedorRespuestas);
 
         if (comentario.children) {
@@ -180,12 +205,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         const btnEnviar = document.createElement("button");
         btnEnviar.type = "submit";
         btnEnviar.textContent = "Enviar respuesta";
-        btnEnviar.className = "submit-comment";
+        btnEnviar.className = "comment-submit-btn";
         const btnCancelar = document.createElement("button");
         btnCancelar.type = "button";
         btnCancelar.textContent = "Cancelar";
-        btnCancelar.className = "submit-comment";
-        btnCancelar.style.backgroundColor = "#888";
+        btnCancelar.className = "comment-submit-btn";
+        // Button inherits styles from .comment-submit-btn
         btnCancelar.addEventListener("click", () => form.remove());
         botones.appendChild(btnEnviar);
         botones.appendChild(btnCancelar);
@@ -248,10 +273,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         let yaDioLike = false;
 
         function actualizarBotonLike() {
-            likeBtn.innerHTML = yaDioLike
-                ? `<i class="fas fa-thumbs-up"></i> Ya te gusta <span class="like-count">${likeCount.textContent}</span>`
-                : `<i class="fas fa-thumbs-up"></i> Like <span class="like-count">${likeCount.textContent}</span>`;
-            likeBtn.style.backgroundColor = yaDioLike ? "#6c757d" : "#28a745";
+            likeBtn.classList.toggle("liked", yaDioLike);
         }
 
         async function darLike() {
@@ -291,11 +313,26 @@ document.addEventListener("DOMContentLoaded", async () => {
         document.getElementById("titulo").innerText = noticia.titulo;
         document.getElementById("contenido").innerText = noticia.contenido;
         document.getElementById("autor").innerText = noticia.autor;
-        if (noticia.usuario) {
-            document.getElementById("publicador").innerText = noticia.usuario.usuario || "";
-        }
+
         const fecha = new Date(noticia.fecha_creacion || noticia.fecha);
-        document.getElementById("fecha_creacion").innerText = fecha.toLocaleDateString("es-ES");
+        document.getElementById("fecha_creacion").innerText = fecha.toLocaleDateString("es-ES", {
+            year: "numeric", month: "long", day: "numeric"
+        });
+
+        // Category badge
+        const categoriaBadge = document.getElementById("categoriaBadge");
+        if (categoriaBadge && noticia.categoria) {
+            categoriaBadge.textContent = noticia.categoria;
+        }
+
+        // Reading time
+        const readingTime = document.getElementById("readingTime");
+        if (readingTime && noticia.contenido) {
+            const wordsPerMinute = 200;
+            const wordCount = noticia.contenido.split(/\s+/).length;
+            const minutes = Math.ceil(wordCount / wordsPerMinute);
+            readingTime.textContent = `${minutes} min de lectura`;
+        }
 
         const defaultImg = `${API_BASE_URL}/static/imagenesdb/DEFAULT.png`;
         if (noticia.imagenes && noticia.imagenes.length > 0) {
@@ -303,14 +340,19 @@ document.addEventListener("DOMContentLoaded", async () => {
             ids.forEach((id, i) => {
                 const img = document.getElementById(id);
                 if (img) {
-                    img.src = noticia.imagenes[i] ? `${API_BASE_URL}/${noticia.imagenes[i].imagen}` : defaultImg;
+                    const src = noticia.imagenes[i] ? `${API_BASE_URL}/${noticia.imagenes[i].imagen}` : defaultImg;
+                    img.src = src;
+                    img.style.display = "";
                     img.onerror = () => { img.src = defaultImg; };
                 }
             });
         } else {
             ["imagen1", "imagen2", "imagen3"].forEach(id => {
                 const img = document.getElementById(id);
-                if (img) img.src = defaultImg;
+                if (img) {
+                    img.src = defaultImg;
+                    if (id !== "imagen1") img.style.display = "none";
+                }
             });
         }
     } else {

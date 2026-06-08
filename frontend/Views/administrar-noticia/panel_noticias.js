@@ -33,6 +33,10 @@ function redirigir(mensaje) {
 }
 
 function cargarNoticias(pagina = 1, filtro = "todas") {
+  const tbody = document.querySelector("#noticiasTable tbody");
+  if (tbody) {
+    tbody.innerHTML = '<tr><td colspan="9"><div class="spinner"></div></td></tr>';
+  }
   const endpoint = `${API_BASE_URL}/noticia/all?filtro=${filtro}&page=${pagina}&size=10`;
   fetch(endpoint)
     .then(res => res.json())
@@ -75,29 +79,33 @@ function mostrarNoticias(noticias) {
   noticias.forEach(noticia => {
     const tr = document.createElement("tr");
 
-    function addCell(text) {
+    function addCell(text, label) {
       const td = document.createElement("td");
       td.textContent = text;
+      if (label) td.setAttribute('data-label', label);
       return td;
     }
 
-    tr.appendChild(addCell(noticia.id));
+    tr.appendChild(addCell(noticia.id, 'ID'));
 
     const tdTitulo = document.createElement("td");
     tdTitulo.textContent = noticia.titulo;
+    tdTitulo.setAttribute('data-label', 'Título');
     tr.appendChild(tdTitulo);
 
     const tdContenido = document.createElement("td");
     tdContenido.className = "contenido-celda";
     tdContenido.dataset.contenido = noticia.contenido;
     tdContenido.textContent = (noticia.contenido || "").slice(0, 100) + "...";
+    tdContenido.setAttribute('data-label', 'Contenido');
     tr.appendChild(tdContenido);
 
-    tr.appendChild(addCell(noticia.categoria?.nombre || "Sin categoria"));
-    tr.appendChild(addCell(noticia.autor));
+    tr.appendChild(addCell(noticia.categoria?.nombre || "Sin categoria", 'Categoría'));
+    tr.appendChild(addCell(noticia.autor, 'Autor'));
 
     const tdImg = document.createElement("td");
     tdImg.className = "imagenes-container";
+    tdImg.setAttribute('data-label', 'Imagen');
     if (noticia.imagenes) {
       noticia.imagenes.forEach(obj => {
         const img = document.createElement("img");
@@ -112,10 +120,11 @@ function mostrarNoticias(noticias) {
     }
     tr.appendChild(tdImg);
 
-    tr.appendChild(addCell(noticia.fecha_creacion));
-    tr.appendChild(addCell(noticia.activo ? "Activa" : "Inactiva"));
+    tr.appendChild(addCell(noticia.fecha_creacion, 'Fecha'));
+    tr.appendChild(addCell(noticia.activo ? "Activa" : "Inactiva", 'Estado'));
 
     const tdAcciones = document.createElement("td");
+    tdAcciones.setAttribute('data-label', 'Acciones');
 
     const btnEstado = document.createElement("button");
     btnEstado.className = "btn-estado";

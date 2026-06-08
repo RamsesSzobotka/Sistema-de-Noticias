@@ -3,8 +3,9 @@
 
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=1200"/>
-    <link rel="stylesheet" href="style.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <link rel="stylesheet" href="../../css/design-system.css" />
+    <link rel="stylesheet" href="../../css/detail.css" />
     <link
         rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
@@ -17,106 +18,106 @@
 </head>
 
 <body>
-    <!-- Menú horizontal superior -->
-    <nav class="top-nav">
-        <div class="nav-brand">
-            <a href="../index.html">NoticiaPTY</a>
-        </div>
-        <div class="username">
-            <p id="usernameDisplay" class="username-text"></p>
-        </div>
-
-        <div class="user-info" style="display: none">
-            <!-- Botón para supervisores -->
-            <button id="supervisorPanelBtn" style="display: none">
-                <i class="fas fa-chart-line"></i> Panel de Noticias
-            </button>
-            <!-- Mostrar nombre de usuario y rol -->
-            <button id="publicarBtn" style="display: none">
-                <i class="fas fa-newspaper"></i> Publicar Noticia
-            </button>
-
-            <!-- Botón solo visible si el usuario es admin (se controla por JS) -->
-            <button id="adminBtn" style="display: none">
-                <i class="fas fa-users-cog"></i> Administrar Usuarios
-            </button>
-
-            <button id="btn-editar" style="display: none;">
-                <i class="fa-solid fa-user"></i> Perfil</button>
-                
-            <button id="logoutBtn">
-                <i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión
-            </button>
-        </div>
-
-        <div class="nav-auth">
-            <a
-                href="../auth/iniciar-sesion/index.html"
-                class="auth-btn login-btn">
+    <!-- Unified Navbar -->
+    <nav class="navbar">
+      <div class="navbar-inner">
+        <a class="navbar-brand" href="../index.html">NoticiaPTY</a>
+        
+        <button class="hamburger" id="hamburgerBtn" aria-label="Menú de navegación">
+          <span></span><span></span><span></span>
+        </button>
+        
+        <div class="navbar-menu" id="navbarMenu">
+          <ul class="navbar-categories" id="categoryList">
+            <li><a href="#" data-category="todas" class="active">Todas</a></li>
+            <li><a href="#" data-category="deporte">Deportes</a></li>
+            <li><a href="#" data-category="politica">Política</a></li>
+            <li><a href="#" data-category="tecnologia">Tecnología</a></li>
+            <li><a href="#" data-category="entretenimiento">Entretenimiento</a></li>
+          </ul>
+          
+          <div class="navbar-actions">
+            <div class="navbar-search">
+              <input type="text" id="searchInput" placeholder="Buscar noticias..." />
+              <button id="searchBtn"><i class="fas fa-search"></i></button>
+            </div>
+            
+            <div class="navbar-user" id="navbarUser">
+              <span class="navbar-user-name" id="usernameDisplay"></span>
+              <button class="navbar-user-btn" id="publicarBtn" style="display:none;">
+                <i class="fas fa-newspaper"></i> Publicar
+              </button>
+              <button class="navbar-user-btn" id="supervisorPanelBtn" style="display:none;">
+                <i class="fas fa-chart-line"></i> Panel
+              </button>
+              <button class="navbar-user-btn" id="adminBtn" style="display:none;">
+                <i class="fas fa-users-cog"></i> Admin
+              </button>
+              <button class="navbar-user-btn" id="btn-editar" style="display:none;">
+                <i class="fa-solid fa-user"></i> Perfil
+              </button>
+              <button class="navbar-user-btn navbar-user-btn-danger" id="logoutBtn">
+                <i class="fa-solid fa-right-from-bracket"></i> Salir
+              </button>
+            </div>
+            
+            <div class="navbar-auth" id="navbarAuth">
+              <a href="../auth/iniciar-sesion/index.html" class="navbar-auth-btn">
                 <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
-            </a>
-            <a
-                href="../auth/registro/index.html"
-                class="auth-btn register-btn">
+              </a>
+              <a href="../auth/registro/index.html" class="navbar-auth-btn navbar-auth-btn-register">
                 <i class="fas fa-user-plus"></i> Registrarse
-            </a>
+              </a>
+            </div>
+          </div>
         </div>
+      </div>
     </nav>
 
-    <!-- Contenedor de la noticia -->
-    <div class="noticia-detalle">
-        <h1 id="titulo"></h1>
-        <div class="meta-info">
-            <p><strong>Autor:</strong> <span id="autor"></span></p>
-            <p>
-                <strong>Publicado por:</strong>
-                <span id="publicador"></span>
-            </p>
-            <p><strong>Fecha:</strong> <span id="fecha_creacion"></span></p>
+    <article class="article-page">
+      <div class="article-hero">
+        <img id="imagen1" class="article-hero-image" alt="Imagen principal" />
+        <span class="category-badge" id="categoriaBadge"></span>
+      </div>
+      
+      <div class="article-body">
+        <h1 class="article-title" id="titulo"></h1>
+        
+        <div class="article-meta-bar">
+          <span><i class="far fa-user"></i> <span id="autor"></span></span>
+          <span><i class="far fa-calendar-alt"></i> <span id="fecha_creacion"></span></span>
+          <span><i class="far fa-clock"></i> <span id="readingTime"></span></span>
         </div>
-
-        <div class="imagen1-container">
-            <img id="imagen1" class="noticia-imagen" alt="Imagen 1" />
+        
+        <div class="article-content" id="contenido"></div>
+        
+        <div class="article-images" id="imagenesAdicionales">
+          <img id="imagen2" class="article-image-full" alt="Imagen 2" style="display:none" />
+          <img id="imagen3" class="article-image-full" alt="Imagen 3" style="display:none" />
         </div>
-        <p id="contenido"></p>
-
-        <div class="imagenes">
-            <img id="imagen2" class="noticia-imagen" alt="Imagen 2" />
-            <img id="imagen3" class="noticia-imagen" alt="Imagen 3" />
+      </div>
+      
+      <div class="article-footer">
+        <button id="likeBtn" class="like-btn">
+          <i class="fas fa-thumbs-up"></i> <span id="likeCount">0</span> Me gusta
+        </button>
+        <div class="comment-count-bar">
+          <i class="far fa-comment"></i> <span id="commentCount">0</span> comentarios
         </div>
-
-        <!-- Interacciones del post -->
-        <div class="post-interactions">
-            <button id="likeBtn" class="like-btn">
-                <i class="fas fa-thumbs-up"></i> Like (<span id="likeCount">0</span>)
-            </button>
-            <div class="comment-count">
-                <p>
-                    <strong><span id="commentCount">0</span>
-                        Comentarios</strong>
-                </p>
-            </div>
-        </div>
-
-        <!-- Sección de comentarios -->
-
-        <div class="comment-section">
-            <h2>Comentarios</h2>
-
-            <div id="commentsContainer" class="comments-list">
-                <!-- Comentarios aparecerán aquí -->
-            </div>
-            <form id="commentForm">
-                <textarea
-                    id="commentText"
-                    placeholder="Escribe tu comentario..."
-                    required></textarea>
-                <button class="submit-comment" type="submit">
-                    <i class="fas fa-paper-plane"></i> Enviar
-                </button>
-            </form>
-        </div>
-    </div>
+      </div>
+      
+      <div class="comments-section">
+        <h2>Comentarios</h2>
+        <div id="commentsContainer" class="comments-list"></div>
+        
+        <form id="commentForm" class="comment-form">
+          <textarea id="commentText" placeholder="Escribe tu comentario..." required></textarea>
+          <button class="comment-submit-btn" type="submit">
+            <i class="fas fa-paper-plane"></i> Enviar comentario
+          </button>
+        </form>
+      </div>
+    </article>
 
     <script type="module" src="script.js"></script>
 </body>

@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "../../config/config.js";
+import { API_BASE_URL } from "/config/config.js";
 
 export async function verificarSesion() {
   try {
@@ -19,7 +19,16 @@ export async function verificarSesion() {
   }
 }
 
-export function mostrarBotonesPorRol(rol) {
+export function mostrarBotonesPorRol(rol, nombre) {
+  const navbarUser = document.getElementById('navbarUser');
+  const navbarAuth = document.getElementById('navbarAuth');
+
+  if (navbarUser) navbarUser.classList.toggle('show', !!rol);
+  if (navbarAuth) navbarAuth.style.display = rol ? 'none' : 'flex';
+
+  const usernameDisplay = document.getElementById('usernameDisplay');
+  if (usernameDisplay && nombre) usernameDisplay.textContent = nombre;
+
   const adminItems = document.querySelectorAll(".admin-only, [data-rol='admin']");
   const editorItems = document.querySelectorAll(".editor-only, [data-rol='editor']");
   const supervisorItems = document.querySelectorAll(".supervisor-only, [data-rol='supervisor']");
@@ -62,6 +71,13 @@ export function cerrarSesion() {
     if (result.isConfirmed) {
       fetch(`${API_BASE_URL}/auth/logout`, { method: "POST" }).catch(() => {});
       sessionStorage.clear();
+
+      // Reset navbar to guest (logged-out) state
+      const navbarUser = document.getElementById('navbarUser');
+      const navbarAuth = document.getElementById('navbarAuth');
+      if (navbarUser) navbarUser.classList.remove('show');
+      if (navbarAuth) navbarAuth.style.display = 'flex';
+
       Swal.fire({ icon: "success", title: "Sesion cerrada", timer: 2000, showConfirmButton: false })
         .then(() => { window.location.href = "/"; });
     }

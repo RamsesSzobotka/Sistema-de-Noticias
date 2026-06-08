@@ -4,10 +4,10 @@ form {
   max-width: 600px;
   margin: 2rem auto;
   padding: 2rem;
-  background-color: #ffffff;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
 }
 
 /* Etiquetas */
@@ -25,8 +25,8 @@ select {
   width: 100%;
   padding: 10px;
   margin-top: 4px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
   font-size: 14px;
 }
 
@@ -39,10 +39,10 @@ button[type="submit"] {
   display: block;
   width: 100%;
   padding: 0.75rem;
-  background-color: #3498db;
-  color: white;
+  background-color: var(--color-accent);
+  color: var(--color-white);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-size: 1rem;
   font-weight: bold;
   cursor: pointer;
@@ -50,30 +50,30 @@ button[type="submit"] {
 }
 
 button[type="submit"]:hover {
-  background-color: #2980b9;
+  background-color: var(--color-accent-dark);
 }
 
 /* Botones generales */
 button {
   margin-top: 15px;
   padding: 10px 15px;
-  background-color: #2980b9;
-  color: #fff;
+  background-color: var(--color-accent);
+  color: var(--color-white);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
 
 button:hover {
-  background-color: #1c5980;
+  background-color: var(--color-accent-dark);
 }
 /* Estiliza el input de tipo file */
 #imagen {
   padding: 12px;
-  border: 2px dashed #ccc;
-  background-color: #f8f8f8;
-  border-radius: 10px;
+  border: 2px dashed var(--color-border);
+  background-color: var(--color-bg);
+  border-radius: var(--radius-lg);
   cursor: pointer;
   transition: border-color 0.3s, background-color 0.3s;
   width: 100%;
@@ -83,24 +83,24 @@ button:hover {
 }
 
 #imagen:hover {
-  background-color: #f0f0f0;
-  border-color: #999;
+  background-color: var(--color-border-light);
+  border-color: var(--color-text-muted);
 }
 
 /* Estilo para ocultar el texto feo por defecto (solo icono de subir) */
 #imagen::file-selector-button {
-  background-color: #007bff;
-  color: white;
+  background-color: var(--color-accent);
+  color: var(--color-white);
   padding: 8px 16px;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   cursor: pointer;
   font-weight: bold;
   transition: background-color 0.3s ease;
 }
 
 #imagen::file-selector-button:hover {
-  background-color: #0056b3;
+  background-color: var(--color-accent-dark);
 }
 
 /* Previsualización de imagen */
@@ -116,13 +116,13 @@ button:hover {
   width: 120px;
   height: 120px;
   object-fit: cover;
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-  border: 2px solid #ddd;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  border: 2px solid var(--color-border);
   transition: transform 0.3s ease;
 }
 
 .imagen-preview:hover {
   transform: scale(1.05);
-  border-color: #007bff;
+  border-color: var(--color-accent);
 }

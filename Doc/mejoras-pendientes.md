@@ -72,15 +72,16 @@
 
 ## 🟢 UX/UI (baja prioridad)
 
-### 6. Loading states faltantes
+### 6. Loading states faltantes ✅ COMPLETADO
 
-**Archivos**: `index.js`, `detalle-noticia/script.js`
+**Archivos**: `frontend/css/design-system.css`, `frontend/Views/index.js`, `frontend/Views/detalle-noticia/script.js`, paneles admin
 
-**Problema**: La carga de noticias y comentarios no muestra indicadores visuales de carga. En conexiones lentas, el usuario ve una pantalla vacía sin retroalimentación.
-
-**Solución propuesta**: Agregar spinners CSS o skeletons mientras se complete el fetch. Usar el patrón ya existente de Swal.showLoading() en formularios.
-
-**Esfuerzo**: Bajo
+**Qué se hizo**: 
+- Skeletons CSS con 300ms debounce en home
+- Spinner en carga de comentarios
+- Spinner en tablas admin
+- Error state con botón reintentar
+- Empty state para comentarios
 
 ---
 

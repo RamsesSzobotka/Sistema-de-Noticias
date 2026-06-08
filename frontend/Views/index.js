@@ -11,9 +11,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         mostrarBotonesPorRol(data.rol);
         const usernameDisplay = document.getElementById("usernameDisplay");
         if (usernameDisplay) usernameDisplay.textContent = `Hola, ${data.usuario}`;
-        document.querySelector(".user-info").style.display = "flex";
-        document.querySelector(".nav-auth").style.display = "none";
-        document.getElementById("logoutBtn").style.display = "block";
+        document.getElementById("navbarUser").classList.add("show");
+        document.getElementById("navbarAuth").style.display = "none";
     } else {
         mostrarBotonesPorRol(null);
     }
@@ -34,10 +33,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     document.getElementById("loadMore").addEventListener("click", loadMoreNews);
 
-    document.querySelector(".main-nav").addEventListener("click", (e) => {
+    document.querySelector(".navbar-categories").addEventListener("click", (e) => {
         if (e.target.tagName === "A") {
             e.preventDefault();
+            // Remove active class from all categories
+            document.querySelectorAll(".navbar-categories a").forEach(a => a.classList.remove("active"));
+            e.target.classList.add("active");
             currentCategory = e.target.dataset.category.toLowerCase();
+            // Clear hero, features, and grid before reloading
+            document.getElementById("heroSection")?.remove();
+            document.getElementById("featureGrid")?.remove();
             document.getElementById("newsGrid").innerHTML = "";
             currentPage = 1;
             cargarNoticias();
@@ -45,6 +50,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     document.getElementById("logoutBtn").addEventListener("click", cerrarSesion);
+
+    // Hamburger toggle
+    const hamburger = document.getElementById("hamburgerBtn");
+    const navbarMenu = document.getElementById("navbarMenu");
+    if (hamburger && navbarMenu) {
+        hamburger.addEventListener("click", () => {
+            hamburger.classList.toggle("active");
+            navbarMenu.classList.toggle("active");
+        });
+    }
 });
 
 // ==============================
@@ -120,11 +135,134 @@ async function actualizarVisitas() {
 }
 
 // ==============================
+// Helper: Obtener URL de imagen
+// ==============================
+function getImageUrl(noticia) {
+    if (noticia.imagen1) return noticia.imagen1;
+    if (noticia.imagenes && noticia.imagenes.length > 0 && noticia.imagenes[0].imagen) {
+        return `${API_BASE_URL}/${noticia.imagenes[0].imagen}`;
+    }
+    return '../assets/placeholder.jpg';
+}
+
+// ==============================
+// Helper: Formatear fecha
+// ==============================
+function formatDate(dateStr) {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('es-PA', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+// ==============================
+// Render: Hero Section (first news item)
+// ==============================
+function renderHero(noticia) {
+    const heroSection = document.getElementById('heroSection') || createHeroSection();
+    const categoria = noticia.categoria_nombre || noticia.categoria || 'General';
+
+    heroSection.innerHTML = `
+    <div class="hero-card" onclick="window.location.href='detalle-noticia/index.html?id=${noticia.id}'">
+      <div class="news-card-image">
+        <img src="${getImageUrl(noticia)}" alt="${noticia.titulo}" loading="lazy">
+        <span class="category-badge">${categoria}</span>
+      </div>
+      <div class="hero-overlay">
+        <h1 class="hero-title">${noticia.titulo}</h1>
+        <p class="hero-excerpt">${noticia.descripcion_corta || (noticia.contenido ? noticia.contenido.substring(0, 150) : '')}...</p>
+        <div class="hero-meta">
+          <span><i class="far fa-user"></i> ${noticia.autor || 'Redacción'}</span>
+          <span><i class="far fa-calendar-alt"></i> ${formatDate(noticia.fecha_creacion)}</span>
+          <span><i class="far fa-comment"></i> ${noticia.comentarios_count || 0}</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function createHeroSection() {
+    const container = document.querySelector('.home-container');
+    const section = document.createElement('section');
+    section.id = 'heroSection';
+    section.className = 'hero-section';
+    container.insertBefore(section, container.querySelector('.feature-grid') || container.querySelector('.section-header'));
+    return section;
+}
+
+// ==============================
+// Render: Feature Grid (2nd and 3rd news items)
+// ==============================
+function renderFeatures(noticias) {
+    const grid = document.getElementById('featureGrid') || createFeatureGrid();
+    grid.innerHTML = noticias.map(n => {
+        const categoria = n.categoria_nombre || n.categoria || 'General';
+        return `
+      <div class="feature-card" onclick="window.location.href='detalle-noticia/index.html?id=${n.id}'">
+        <div class="news-card-image">
+          <img src="${getImageUrl(n)}" alt="${n.titulo}" loading="lazy">
+        </div>
+        <div class="feature-card-body">
+          <span class="category-badge">${categoria}</span>
+          <h2 class="feature-card-title">${n.titulo}</h2>
+          <p class="feature-card-excerpt">${n.descripcion_corta || (n.contenido ? n.contenido.substring(0, 120) : '')}...</p>
+          <div class="feature-card-meta">
+            <span><i class="far fa-user"></i> ${n.autor || 'Redacción'}</span>
+            <span><i class="far fa-calendar-alt"></i> ${formatDate(n.fecha_creacion)}</span>
+          </div>
+        </div>
+      </div>
+    `;
+    }).join('');
+}
+
+function createFeatureGrid() {
+    const container = document.querySelector('.home-container');
+    const section = document.createElement('div');
+    section.id = 'featureGrid';
+    section.className = 'feature-grid';
+    container.insertBefore(section, container.querySelector('.section-header') || container.querySelector('.news-grid'));
+    return section;
+}
+
+// ==============================
+// Render: Single News Card (for the grid)
+// ==============================
+function renderNewsCard(noticia) {
+    const categoria = noticia.categoria_nombre || noticia.categoria || 'General';
+    return `
+    <article class="news-card" onclick="window.location.href='detalle-noticia/index.html?id=${noticia.id}'">
+      <div class="news-card-image">
+        <img src="${getImageUrl(noticia)}" alt="${noticia.titulo}" loading="lazy">
+        <span class="category-badge">${categoria}</span>
+      </div>
+      <div class="news-card-body">
+        <h3 class="news-card-title">${noticia.titulo}</h3>
+        <p class="news-card-excerpt">${noticia.descripcion_corta || (noticia.contenido ? noticia.contenido.substring(0, 100) : '')}...</p>
+        <div class="news-card-meta">
+          <span><i class="far fa-user"></i> ${noticia.autor || 'Redacción'}</span>
+          <span><i class="far fa-calendar-alt"></i> ${formatDate(noticia.fecha_creacion)}</span>
+          <span><i class="far fa-comment"></i> ${noticia.comentarios_count || 0}</span>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+// ==============================
+// Render: News Grid (4+ items or append)
+// ==============================
+function renderNewsGrid(noticias, append = false) {
+    const grid = document.getElementById('newsGrid');
+    if (!append) grid.innerHTML = '';
+    grid.innerHTML += noticias.map(n => renderNewsCard(n)).join('');
+}
+
+// ==============================
 // Cargar noticias (con filtro)
 // ==============================
 async function cargarNoticias() {
+    iniciarSkeleton();
     try {
-        // 🟢 Se incluye el parámetro "filtro" en la URL
         const res = await fetch(
             `${API_BASE_URL}/noticia/?filtro=${encodeURIComponent(currentCategory)}&page=${currentPage}&size=10`
         );
@@ -135,22 +273,57 @@ async function cargarNoticias() {
         const noticias = data.noticias || [];
 
         if (noticias.length === 0 && currentPage === 1) {
-            document.getElementById("wrapper").style.minHeight = "100vh";
-            const grid = document.getElementById("newsGrid");
-            grid.innerHTML = "";
-            const msg = document.createElement("p");
+            ocultarSkeleton();
+            // Clear hero and features
+            document.getElementById('heroSection')?.remove();
+            document.getElementById('featureGrid')?.remove();
+            const grid = document.getElementById('newsGrid');
+            grid.innerHTML = '';
+            const msg = document.createElement('p');
             msg.style.cssText = "text-align:center;font-size:18px;color:#2c3e50;";
             msg.textContent = "No hay noticias disponibles.";
             grid.appendChild(msg);
-            document.getElementById("loadMore").style.display = "none";
+            document.getElementById('loadMore').style.display = "none";
             return;
         }
 
-        renderNews(noticias);
-        document.getElementById("loadMore").style.display =
+        if (currentPage === 1) {
+            // Full render: hero + features + grid
+            if (noticias.length >= 1) renderHero(noticias[0]);
+            if (noticias.length >= 2) {
+                renderFeatures(noticias.slice(1, Math.min(3, noticias.length)));
+            }
+            if (noticias.length > 3) {
+                renderNewsGrid(noticias.slice(3), false);
+            }
+        } else {
+            // Append mode (load more)
+            renderNewsGrid(noticias, true);
+        }
+
+        document.getElementById('loadMore').style.display =
             currentPage < totalPages ? "block" : "none";
     } catch (error) {
         console.error("Error al cargar noticias:", error);
+        ocultarSkeleton();
+        // Clear hero and features on error
+        document.getElementById('heroSection')?.remove();
+        document.getElementById('featureGrid')?.remove();
+        const grid = document.getElementById('newsGrid');
+        if (grid) {
+            grid.innerHTML = `
+                <div class="error-state">
+                    <div class="error-state-icon"><i class="fas fa-exclamation-circle"></i></div>
+                    <h3>Error al cargar noticias</h3>
+                    <p>${error.message || "Intenta de nuevo más tarde"}</p>
+                    <button class="error-retry-btn" onclick="cargarNoticias()">
+                        <i class="fas fa-redo"></i> Reintentar
+                    </button>
+                </div>
+            `;
+        }
+    } finally {
+        ocultarSkeleton();
     }
 }
 
@@ -165,82 +338,64 @@ async function loadMoreNews() {
 }
 
 // ==============================
-// Renderizar noticias
+// Skeleton loading helpers
 // ==============================
-function renderNews(noticias) {
-    const newsGrid = document.getElementById("newsGrid");
+let skeletonTimer = null;
 
-    noticias.forEach((article, index) => {
-        const card = createFeaturedNewsCard(article, "secondary-news-card");
-        if (currentPage === 1 && index === 0 && newsGrid.querySelectorAll(".news-card").length === 0) {
-            newsGrid.appendChild(createFeaturedNewsCard(article, "main-news"));
-        } else {
-            let container = newsGrid.lastElementChild;
-            if (!container || !container.classList.contains("secondary-news")) {
-                container = document.createElement("div");
-                container.className = "secondary-news";
-                newsGrid.appendChild(container);
-            }
-            container.appendChild(card);
-        }
-    });
+function mostrarSkeleton() {
+    // Handled by iniciarSkeleton timer in cargarNoticias
 }
 
-// ==============================
-// Crear tarjeta de noticia
-// ==============================
-function createFeaturedNewsCard(article, className) {
-    const card = document.createElement("a");
-    card.className = `news-card ${className}`;
-    card.href = "#";
-    card.addEventListener("click", () => {
-        localStorage.setItem("noticia", JSON.stringify(article));
-        window.location.href = "detalle-noticia/index.html";
-    });
+function iniciarSkeleton() {
+    if (skeletonTimer) clearTimeout(skeletonTimer);
+    skeletonTimer = setTimeout(() => {
+        const grid = document.getElementById('newsGrid');
+        if (!grid) return;
+        // Only show skeleton if grid is empty (initial load, not load-more)
+        if (grid.children.length > 0) return;
 
-    let imageUrl = `${API_BASE_URL}/static/imagenesdb/defaultT.png`;
-    if (article.imagenes && article.imagenes.length > 0 && article.imagenes[0].imagen) {
-        imageUrl = `${API_BASE_URL}/${article.imagenes[0].imagen}`;
+        // Remove existing skeletons
+        document.getElementById('newsGrid-skeleton')?.remove();
+        document.getElementById('heroSkeleton')?.remove();
+
+        // Hero skeleton (only on page 1)
+        if (currentPage === 1) {
+            const container = document.querySelector('.home-container');
+            const heroSkeleton = document.createElement('div');
+            heroSkeleton.id = 'heroSkeleton';
+            heroSkeleton.className = 'skeleton skeleton-hero';
+            container.insertBefore(heroSkeleton, container.querySelector('.section-header'));
+        }
+
+        // Grid skeleton
+        const skeletonContainer = document.createElement('div');
+        skeletonContainer.id = 'newsGrid-skeleton';
+        skeletonContainer.className = 'skeleton-grid';
+
+        for (let i = 0; i < 6; i++) {
+            const card = document.createElement('div');
+            card.className = 'skeleton skeleton-card';
+            skeletonContainer.appendChild(card);
+        }
+
+        grid.parentNode.insertBefore(skeletonContainer, grid);
+        grid.style.display = 'none';
+    }, 300);
+}
+
+function ocultarSkeleton() {
+    if (skeletonTimer) {
+        clearTimeout(skeletonTimer);
+        skeletonTimer = null;
     }
+    const heroSkeleton = document.getElementById('heroSkeleton');
+    if (heroSkeleton) heroSkeleton.remove();
 
-    const img = document.createElement("img");
-    img.className = "news-image";
-    img.alt = article.titulo;
-    img.src = imageUrl;
-    img.onerror = function () { this.src = `${API_BASE_URL}/static/imagenesdb/default.png`; };
-    card.appendChild(img);
+    const skeleton = document.getElementById('newsGrid-skeleton');
+    if (skeleton) skeleton.remove();
 
-    const content = document.createElement("div");
-    content.className = "news-content";
-
-    const title = document.createElement("h3");
-    title.className = "news-title";
-    title.textContent = article.titulo;
-    content.appendChild(title);
-
-    const excerpt = document.createElement("p");
-    excerpt.className = "news-excerpt";
-    excerpt.textContent = article.contenido.substring(0, className === "main-news" ? 500 : 100) + "...";
-    content.appendChild(excerpt);
-
-    const meta = document.createElement("div");
-    meta.className = "news-meta";
-
-    const author = document.createElement("span");
-    const authorStrong = document.createElement("strong");
-    authorStrong.textContent = "Autor: ";
-    author.appendChild(authorStrong);
-    author.append(article.autor);
-    meta.appendChild(author);
-
-    const date = document.createElement("span");
-    date.textContent = new Date(article.fecha_creacion).toLocaleDateString();
-    meta.appendChild(date);
-
-    content.appendChild(meta);
-    card.appendChild(content);
-
-    return card;
+    const grid = document.getElementById('newsGrid');
+    if (grid) grid.style.display = '';
 }
 
 // ==============================
@@ -260,32 +415,25 @@ async function buscarNoticias(query) {
         const data = await res.json();
         const noticias = data.noticias || [];
 
-        const grid = document.getElementById("newsGrid");
-        grid.innerHTML = ""; // limpiar grid
+        const grid = document.getElementById('newsGrid');
+        grid.innerHTML = ''; // limpiar grid
+
+        // Hide hero and features when showing search results
+        document.getElementById('heroSection')?.remove();
+        document.getElementById('featureGrid')?.remove();
 
         if (noticias.length === 0) {
-            grid.innerHTML = "";
-            const msg = document.createElement("p");
+            const msg = document.createElement('p');
             msg.style.cssText = "text-align:center;font-size:18px;color:#2c3e50;";
             msg.textContent = `No se encontraron noticias para "${query}".`;
             grid.appendChild(msg);
-            document.getElementById("loadMore").style.display = "none";
+            document.getElementById('loadMore').style.display = "none";
             return;
         }
 
-        // 🟩 Crear contenedor igual que en renderNews()
-        const container = document.createElement("div");
-        container.className = "secondary-news";
-        grid.appendChild(container);
-
-        // 🟧 Renderizar cards
-        noticias.forEach((article) => {
-            const card = createFeaturedNewsCard(article, "secondary-news-card");
-            container.appendChild(card);
-        });
-
-        // 🟦 Ocultar botón "Cargar más" mientras se está buscando
-        document.getElementById("loadMore").style.display = "none";
+        // Render search results using the new card template
+        grid.innerHTML = noticias.map(n => renderNewsCard(n)).join('');
+        document.getElementById('loadMore').style.display = "none";
 
     } catch (error) {
         console.error("Error en buscarNoticias:", error);

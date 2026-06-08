@@ -3,7 +3,8 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link rel="stylesheet" href="../auth.css" />
+        <link rel="stylesheet" href="../../css/design-system.css" />
+        <link rel="stylesheet" href="../../css/auth.css" />
         <link
             rel="stylesheet"
             href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
@@ -17,11 +18,26 @@
         <title>NoticiaPTY - Registro</title>
     </head>
     <body>
-        <!-- Menú horizontal superior -->
-        <nav class="top-nav">
-            <div class="nav-brand">
-                <a href="../../index.php">NoticiaPTY</a>
+        <!-- Unified Navbar -->
+        <nav class="navbar">
+          <div class="navbar-inner">
+            <a class="navbar-brand" href="../../index.html">NoticiaPTY</a>
+            <button class="hamburger" id="hamburgerBtn" aria-label="Menú de navegación">
+              <span></span><span></span><span></span>
+            </button>
+            <div class="navbar-menu" id="navbarMenu">
+              <div class="navbar-actions" style="margin-left:0;width:100%;justify-content:flex-end;">
+                <div class="navbar-auth" id="navbarAuth">
+                  <a href="../../auth/iniciar-sesion/index.html" class="navbar-auth-btn">
+                    <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+                  </a>
+                  <a href="../../auth/registro/index.html" class="navbar-auth-btn navbar-auth-btn-register">
+                    <i class="fas fa-user-plus"></i> Registrarse
+                  </a>
+                </div>
+              </div>
             </div>
+          </div>
         </nav>
         <div class="auth-container" style="margin-top: 4rem">
             <form id="registerForm" class="auth-form">
@@ -52,9 +68,9 @@
                     />
                     <small
                         style="
-                            color: #555;
+                            color: var(--color-text-light);
                             font-size: 0.9rem;
-                            margin-top: 4px;
+                            margin-top: var(--space-xs);
                             display: block;
                         "
                     >

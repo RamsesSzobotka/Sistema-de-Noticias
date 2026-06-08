@@ -59,19 +59,21 @@ function renderizarUsuarios(usuarios) {
     const tr = document.createElement("tr");
     tr.className = user.activo == 1 ? "active" : "inactive";
 
-    function addCell(text) {
+    function addCell(text, label) {
       const td = document.createElement("td");
       td.textContent = text;
+      if (label) td.setAttribute('data-label', label);
       return td;
     }
 
-    tr.appendChild(addCell(user.id));
+    tr.appendChild(addCell(user.id, 'ID'));
 
     const tdNombre = document.createElement("td");
     tdNombre.contentEditable = true;
     tdNombre.dataset.field = "nombre";
     tdNombre.dataset.id = user.id;
     tdNombre.textContent = user.nombre;
+    tdNombre.setAttribute('data-label', 'Nombre');
     tr.appendChild(tdNombre);
 
     const tdApellido = document.createElement("td");
@@ -79,6 +81,7 @@ function renderizarUsuarios(usuarios) {
     tdApellido.dataset.field = "apellido";
     tdApellido.dataset.id = user.id;
     tdApellido.textContent = user.apellido;
+    tdApellido.setAttribute('data-label', 'Apellido');
     tr.appendChild(tdApellido);
 
     const tdUsuario = document.createElement("td");
@@ -86,9 +89,11 @@ function renderizarUsuarios(usuarios) {
     tdUsuario.dataset.field = "usuario";
     tdUsuario.dataset.id = user.id;
     tdUsuario.textContent = user.usuario;
+    tdUsuario.setAttribute('data-label', 'Usuario');
     tr.appendChild(tdUsuario);
 
     const tdRol = document.createElement("td");
+    tdRol.setAttribute('data-label', 'Rol');
     const select = document.createElement("select");
     select.dataset.field = "rol";
     select.dataset.id = user.id;
@@ -102,9 +107,10 @@ function renderizarUsuarios(usuarios) {
     tdRol.appendChild(select);
     tr.appendChild(tdRol);
 
-    tr.appendChild(addCell(user.activo == 1 ? "Si" : "No"));
+    tr.appendChild(addCell(user.activo == 1 ? "Si" : "No", 'Activo'));
 
     const tdAcciones = document.createElement("td");
+    tdAcciones.setAttribute('data-label', 'Acciones');
     const btnToggle = document.createElement("button");
     btnToggle.dataset.action = "toggle";
     btnToggle.dataset.id = user.id;
@@ -123,6 +129,10 @@ function renderizarUsuarios(usuarios) {
 }
 
 async function cargarUsuarios(filtro = "todos", page = 1, size = 10) {
+  const tbody = document.querySelector("#usersTable tbody");
+  if (tbody) {
+    tbody.innerHTML = '<tr><td colspan="7"><div class="spinner"></div></td></tr>';
+  }
   Swal.fire({ title: "Cargando usuarios...", text: "Por favor espera.", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
   try {
     const res = await fetch(`${apiUrl}?filtro=${filtro}&page=${page}&size=${size}`);

@@ -1,0 +1,131 @@
+form {
+  background-color: var(--color-bg-card);
+  padding: 20px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  margin-bottom: 30px;
+  box-shadow: var(--shadow-sm);
+}
+
+label {
+  display: block;
+  margin-top: 12px;
+  font-weight: bold;
+}
+
+input[type="text"],
+input[type="password"],
+select {
+  width: 100%;
+  padding: 10px;
+  margin-top: 4px;
+  box-sizing: border-box;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+}
+
+button {
+  margin-top: 15px;
+  padding: 10px 15px;
+  background-color: var(--color-accent);
+  color: var(--color-white);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+button:hover {
+  background-color: var(--color-accent-dark);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: var(--color-bg-card);
+  box-shadow: var(--shadow-sm);
+}
+
+th, td {
+  border: 1px solid var(--color-border);
+  padding: 10px;
+  text-align: left;
+  font-size: 14px;
+}
+
+th {
+  background-color: var(--color-bg);
+  color: var(--color-text-secondary);
+}
+
+tr.active {
+  background-color: rgba(5, 150, 99, 0.08);
+}
+
+tr.inactive {
+  background-color: rgba(220, 38, 38, 0.08);
+}
+
+td[contenteditable="true"] {
+  background-color: rgba(217, 119, 6, 0.08);
+  outline: none;
+}
+
+select[data-field="rol"] {
+  padding: 5px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+}
+
+button[data-action="toggle"] {
+  background-color: var(--color-warning);
+}
+
+button[data-action="guardar"] {
+  background-color: var(--color-success);
+  margin-left: 5px;
+}
+
+button[data-action="toggle"]:hover {
+  background-color: var(--color-warning-dark);
+}
+
+button[data-action="guardar"]:hover {
+  background-color: var(--color-success-dark);
+}
+
+#filtrosUsuarios button {
+  padding: 0.5rem 1rem;
+  margin-right: 0.5rem;
+  background-color: var(--color-accent);
+  color: var(--color-white);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-weight: bold;
+}
+
+#filtrosUsuarios button:hover {
+  background-color: var(--color-accent-dark);
+}
+
+.paginacion-container {
+  text-align: center;
+  margin-top: 10px;
+}
+
+.pagina-btn {
+  margin: 0 5px;
+  padding: 5px 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-accent);
+  cursor: pointer;
+}
+
+.pagina-btn.activa {
+  background-color: var(--color-accent);
+  color: var(--color-white);
+  border-color: var(--color-accent);
+}

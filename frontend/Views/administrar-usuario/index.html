@@ -2,19 +2,58 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NoticiaPTY - Administrar Usuarios</title>
-  <link rel="stylesheet" href="../css/paneles-comunes.css" />
-  <link rel="stylesheet" href="../css/panel_usuarios.css" />
+  <link rel="stylesheet" href="../../css/design-system.css" />
+  <link rel="stylesheet" href="../../css/admin-common.css" />
+  <link rel="stylesheet" href="../../css/admin-users.css" />
   <link
         rel="icon"
         type="image/png"
         sizes="16x16"
         href="../assets/logo.png" />
 </head>
-<header>
-  <h1>Administrar Usuarios</h1>
-</header>
 <body>
+  <!-- Unified Navbar -->
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a class="navbar-brand" href="../index.html">NoticiaPTY</a>
+      <button class="hamburger" id="hamburgerBtn" aria-label="Menú de navegación">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="navbar-menu" id="navbarMenu">
+        <div class="navbar-actions" style="margin-left:0;width:100%;justify-content:flex-end;">
+          <div class="navbar-user" id="navbarUser">
+            <span class="navbar-user-name" id="usernameDisplay"></span>
+            <button class="navbar-user-btn" id="publicarBtn" style="display:none;">
+              <i class="fas fa-newspaper"></i> Publicar
+            </button>
+            <button class="navbar-user-btn" id="supervisorPanelBtn" style="display:none;">
+              <i class="fas fa-chart-line"></i> Panel
+            </button>
+            <button class="navbar-user-btn" id="adminBtn" style="display:none;">
+              <i class="fas fa-users-cog"></i> Admin
+            </button>
+            <button class="navbar-user-btn" id="btn-editar" style="display:none;">
+              <i class="fa-solid fa-user"></i> Perfil
+            </button>
+            <button class="navbar-user-btn navbar-user-btn-danger" id="logoutBtn">
+              <i class="fa-solid fa-right-from-bracket"></i> Salir
+            </button>
+          </div>
+          <div class="navbar-auth" id="navbarAuth">
+            <a href="../auth/iniciar-sesion/index.html" class="navbar-auth-btn">
+              <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+            </a>
+            <a href="../auth/registro/index.html" class="navbar-auth-btn navbar-auth-btn-register">
+              <i class="fas fa-user-plus"></i> Registrarse
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
   <!-- Botón de regreso -->

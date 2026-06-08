@@ -3,9 +3,11 @@
 
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NoticiaPTY - Administrar Noticias</title>
-  <link rel="stylesheet" href="../css/paneles-comunes.css" />
-  <link rel="stylesheet" href="../css/panel_aprobacion.css" />
+  <link rel="stylesheet" href="../../css/design-system.css" />
+  <link rel="stylesheet" href="../../css/admin-common.css" />
+  <link rel="stylesheet" href="../../css/admin-approval.css" />
   <link
     rel="icon"
     type="image/png"
@@ -18,9 +20,45 @@
 </head>
 
 <body>
-  <header>
-    <h1>Administrar Noticias</h1>
-  </header>
+  <!-- Unified Navbar -->
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a class="navbar-brand" href="../index.html">NoticiaPTY</a>
+      <button class="hamburger" id="hamburgerBtn" aria-label="Menú de navegación">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="navbar-menu" id="navbarMenu">
+        <div class="navbar-actions" style="margin-left:0;width:100%;justify-content:flex-end;">
+          <div class="navbar-user" id="navbarUser">
+            <span class="navbar-user-name" id="usernameDisplay"></span>
+            <button class="navbar-user-btn" id="publicarBtn" style="display:none;">
+              <i class="fas fa-newspaper"></i> Publicar
+            </button>
+            <button class="navbar-user-btn" id="supervisorPanelBtn" style="display:none;">
+              <i class="fas fa-chart-line"></i> Panel
+            </button>
+            <button class="navbar-user-btn" id="adminBtn" style="display:none;">
+              <i class="fas fa-users-cog"></i> Admin
+            </button>
+            <button class="navbar-user-btn" id="btn-editar" style="display:none;">
+              <i class="fa-solid fa-user"></i> Perfil
+            </button>
+            <button class="navbar-user-btn navbar-user-btn-danger" id="logoutBtn">
+              <i class="fa-solid fa-right-from-bracket"></i> Salir
+            </button>
+          </div>
+          <div class="navbar-auth" id="navbarAuth">
+            <a href="../auth/iniciar-sesion/index.html" class="navbar-auth-btn">
+              <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+            </a>
+            <a href="../auth/registro/index.html" class="navbar-auth-btn navbar-auth-btn-register">
+              <i class="fas fa-user-plus"></i> Registrarse
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
 
   <!-- Botón de regreso -->
   <div style="margin-bottom: 20px;">
@@ -76,12 +114,6 @@
       <span id="cerrarModal" class="cerrar-modal">&times;</span>
       <img class="contenido-modal" id="imagenGrande" src="" alt="Imagen ampliada">
     </div>
-    <!-- Modal de imagen (ya tienes este, déjalo igual) -->
-<div id="modalImagen" class="modal-imagen" style="display: none;">
-  <span id="cerrarModal" class="cerrar-modal">&times;</span>
-  <img class="contenido-modal" id="imagenGrande" src="" alt="Imagen ampliada">
-</div>
-
 <!-- 🧾 Modal para contenido de noticia -->
 <div id="modalContenido" class="modal-contenido" style="display: none;">
   <div class="contenido-modal-texto">

@@ -4,7 +4,8 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <link rel="stylesheet" href="index.css" />
+    <link rel="stylesheet" href="../css/design-system.css" />
+    <link rel="stylesheet" href="../css/home.css" />
     <link
         rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
@@ -21,97 +22,81 @@
 </head>
 
 <body>
-    <!-- Menú horizontal superior -->
-    <nav class="top-nav">
-        <div class="nav-brand"><a href="index.html">NoticiaPTY</a></div>
-        <div class="visitor-count">
-    <i class="fas fa-users"></i>
-    <span id="visitorCount">0 visitas</span>
-</div>
-
-        <div class="username">
-            <p id="usernameDisplay" class="username-text"></p>
-
-
-        </div>
-
-
-        <div class="user-info" style="display: none;">
-
-
-            <!-- Botón para supervisores/editor/admin -->
-            <button id="supervisorPanelBtn" style="display: none;">
-                <i class="fas fa-chart-line"></i> Panel de Noticias</button>
-
-            <!-- Mostrar nombre de usuario y rol -->
-            <button id="publicarBtn" style="display: none; ">
-                <i class="fas fa-newspaper"></i> Publicar Noticia</button>
-
-            <!-- Botón solo visible si el usuario es admin -->
-            <button id="adminBtn" style="display: none;">
-                <i class="fas fa-users-cog"></i> Administrar Usuarios</button>
+    <!-- Unified Navbar -->
+    <nav class="navbar">
+      <div class="navbar-inner">
+        <a class="navbar-brand" href="index.html">NoticiaPTY</a>
+        <span class="visitor-count" style="color: rgba(255,255,255,0.6); font-size: 0.8rem; margin-left: var(--space-md);">
+          <i class="fas fa-users"></i>
+          <span id="visitorCount">0 visitas</span>
+        </span>
+        
+        <button class="hamburger" id="hamburgerBtn" aria-label="Menú de navegación">
+          <span></span><span></span><span></span>
+        </button>
+        
+        <div class="navbar-menu" id="navbarMenu">
+          <ul class="navbar-categories" id="categoryList">
+            <li><a href="#" data-category="todas" class="active">Todas</a></li>
+            <li><a href="#" data-category="deporte">Deportes</a></li>
+            <li><a href="#" data-category="politica">Política</a></li>
+            <li><a href="#" data-category="tecnologia">Tecnología</a></li>
+            <li><a href="#" data-category="entretenimiento">Entretenimiento</a></li>
+          </ul>
+          
+          <div class="navbar-actions">
+            <div class="navbar-search">
+              <input type="text" id="searchInput" placeholder="Buscar noticias..." />
+              <button id="searchBtn"><i class="fas fa-search"></i></button>
+            </div>
             
-            <button id="btn-editar" style="display: none;">
-                <i class="fa-solid fa-user"></i> Perfil</button>
-
-            <button id="logoutBtn">
-                <i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión
-            </button>
-        </div>
-
-        <div class="nav-auth">
-            <div class="auth-btn-container">
-                <a href="auth/iniciar-sesion/index.html" class="auth-btn login-btn">
-                    <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
-                </a>
-                <a href="auth/registro/index.html" class="auth-btn register-btn">
-                    <i class="fas fa-user-plus"></i> Registrarse
-                </a>
-
-
+            <div class="navbar-user" id="navbarUser">
+              <span class="navbar-user-name" id="usernameDisplay"></span>
+              <button class="navbar-user-btn" id="publicarBtn" style="display:none;">
+                <i class="fas fa-newspaper"></i> Publicar
+              </button>
+              <button class="navbar-user-btn" id="supervisorPanelBtn" style="display:none;">
+                <i class="fas fa-chart-line"></i> Panel
+              </button>
+              <button class="navbar-user-btn" id="adminBtn" style="display:none;">
+                <i class="fas fa-users-cog"></i> Admin
+              </button>
+              <button class="navbar-user-btn" id="btn-editar" style="display:none;">
+                <i class="fa-solid fa-user"></i> Perfil
+              </button>
+              <button class="navbar-user-btn navbar-user-btn-danger" id="logoutBtn">
+                <i class="fa-solid fa-right-from-bracket"></i> Salir
+              </button>
             </div>
-
-        </div>
-    </nav>
-
-    <!-- Menú central de categorías -->
-    <nav class="main-nav">
-        <div class="main-nav-content">
-             <!-- Barra de búsqueda -->
-            <div class="search-container">
-                <input 
-                    type="text" 
-                    id="searchInput" 
-                    placeholder="Buscar noticias..." 
-                    class="search-box"
-                >
-                <button id="searchBtn" class="search-btn">
-                    <i class="fas fa-search"></i>
-                </button>
+            
+            <div class="navbar-auth" id="navbarAuth">
+              <a href="auth/iniciar-sesion/index.html" class="navbar-auth-btn">
+                <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+              </a>
+              <a href="auth/registro/index.html" class="navbar-auth-btn navbar-auth-btn-register">
+                <i class="fas fa-user-plus"></i> Registrarse
+              </a>
             </div>
-            <!-- Categorías -->
-            <ul class="category-menu">
-                <li><p>Filtros: </p></li>
-                <li><a href="#" data-category="todas">Todas</a></li>
-                <li><a href="#" data-category="deporte">Deportes</a></li>
-                <li><a href="#" data-category="politica">Política</a></li>
-                <li><a href="#" data-category="tecnologia">Tecnología</a></li>
-                <li><a href="#" data-category="entretenimiento">Entretenimiento</a></li>
-            </ul>
+          </div>
         </div>
+      </div>
     </nav>
 
 
-    <div id="wrapper">
-        <!-- Contenedor principal de noticias -->
-        <main class="news-container">
-            <div id="newsGrid" class="news-grid"></div>
+    <div class="home-container">
+        <!-- hero-section is created by JS -->
+
+        <div class="section-header">
+            <h2>Últimas Noticias</h2>
+        </div>
+
+        <div id="newsGrid" class="news-grid"></div>
+
+        <div class="load-more-container">
             <button id="loadMore" class="load-more-btn">
                 <i class="fas fa-sync"></i> Cargar más noticias
             </button>
-        </main>
-
-
+        </div>
     </div>
     
     <script type="module" src="index.js"></script>
