@@ -1,18 +1,25 @@
-// Variables globales
 import { API_BASE_URL } from "/config/config.js";
-
-console.log("API cargada desde:", API_BASE_URL);
+import { verificarSesion, cerrarSesion } from "./auth/auth.js";
 
 let currentPage = 1;
 let totalPages = 1;
-let currentCategory = "todas"; // categoría actual (texto)
+let currentCategory = "todas";
 
-// Función de inicialización
 document.addEventListener("DOMContentLoaded", async () => {
-    await verificarSesion();
+    const data = await verificarSesion();
+    if (data) {
+        mostrarBotonesPorRol(data.rol);
+        const usernameDisplay = document.getElementById("usernameDisplay");
+        if (usernameDisplay) usernameDisplay.textContent = `Hola, ${data.usuario}`;
+        document.querySelector(".user-info").style.display = "flex";
+        document.querySelector(".nav-auth").style.display = "none";
+        document.getElementById("logoutBtn").style.display = "block";
+    } else {
+        mostrarBotonesPorRol(null);
+    }
     await actualizarVisitas();
     await cargarNoticias();
-    // Eventos para búsqueda
+
     document.getElementById("searchBtn").addEventListener("click", () => {
         const query = document.getElementById("searchInput").value.trim();
         if (query) buscarNoticias(query);
@@ -25,78 +32,37 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
-
-    // Eventos
     document.getElementById("loadMore").addEventListener("click", loadMoreNews);
 
-    // Manejar clicks en el menú de categorías
     document.querySelector(".main-nav").addEventListener("click", (e) => {
         if (e.target.tagName === "A") {
             e.preventDefault();
-            currentCategory = e.target.dataset.category.toLowerCase(); // ejemplo: 'deportes', 'politica', 'todas'
+            currentCategory = e.target.dataset.category.toLowerCase();
             document.getElementById("newsGrid").innerHTML = "";
             currentPage = 1;
             cargarNoticias();
         }
     });
 
-    document.getElementById("logoutBtn").addEventListener("click", logout);
+    document.getElementById("logoutBtn").addEventListener("click", cerrarSesion);
 });
 
 // ==============================
-// Verificar sesión y roles
+// Mostrar botones por rol (por ID para evitar conflictos CSS)
 // ==============================
-async function verificarSesion() {
-    const access_token = sessionStorage.getItem("access_token");
-    if (!access_token) return;
-
-    try {
-        const res = await fetch(`${API_BASE_URL}/usuarios/me`, {
-            method: "GET",
-            headers: {
-                "Authorization": `Bearer ${access_token}`,
-                "Content-Type": "application/json",
-            },
-        });
-
-        if (!res.ok) {
-            sessionStorage.clear();
-            document.querySelector(".user-info").style.display = "none";
-            document.querySelector(".nav-auth").style.display = "flex";
-            return;
-        }
-
-        const data = await res.json();
-        sessionStorage.setItem("usuario_id", data.id);
-        sessionStorage.setItem("rol", data.rol);
-        sessionStorage.setItem("usuario", data.usuario);
-
-        const usernameDisplay = document.getElementById("usernameDisplay");
-        if (usernameDisplay) usernameDisplay.textContent = `Hola, ${data.usuario}`;
-
-        document.querySelector(".user-info").style.display = "flex";
-        document.querySelector(".nav-auth").style.display = "none";
-        document.getElementById("logoutBtn").style.display = "block";
-
-        mostrarBotonesPorRol(data.rol);
-
-    } catch (error) {
-        console.error("Error al verificar sesión:", error);
-    }
-}
-
 function mostrarBotonesPorRol(rol) {
-    // Limpiar listeners existentes
-    const botones = ["btn-editar", "adminBtn", "supervisorPanelBtn", "publicarBtn"];
-    botones.forEach(id => {
+    // Ocultar todos primero
+    ["btn-editar", "adminBtn", "supervisorPanelBtn", "publicarBtn"].forEach(id => {
         const btn = document.getElementById(id);
         if (btn) {
             btn.style.display = "none";
-            btn.replaceWith(btn.cloneNode(true)); // limpia event listeners previos
+            btn.replaceWith(btn.cloneNode(true));
         }
     });
 
-    // Botón de perfil
+    if (!rol) return;
+
+    // Perfil: visible para cualquier autenticado
     const perfilBtn = document.getElementById("btn-editar");
     if (perfilBtn) {
         perfilBtn.style.display = "inline-block";
@@ -105,8 +71,8 @@ function mostrarBotonesPorRol(rol) {
         });
     }
 
-    // Botón admin
-    if (["admin"].includes(rol)) {
+    // Admin: solo admin
+    if (rol === "admin") {
         const adminBtn = document.getElementById("adminBtn");
         if (adminBtn) {
             adminBtn.style.display = "inline-block";
@@ -116,7 +82,7 @@ function mostrarBotonesPorRol(rol) {
         }
     }
 
-    // Botones supervisor/editor
+    // Editor+ (admin, supervisor, editor): panel y publicar
     if (["admin", "supervisor", "editor"].includes(rol)) {
         const supervisorBtn = document.getElementById("supervisorPanelBtn");
         if (supervisorBtn) {
@@ -135,36 +101,8 @@ function mostrarBotonesPorRol(rol) {
         }
     }
 }
-// ==============================
-// Cerrar sesión
-// ==============================
-function logout() {
-    Swal.fire({
-        title: "¿Estás seguro?",
-        text: "¿Deseas cerrar sesión?",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonColor: "#3085d6",
-        cancelButtonColor: "#d33",
-        confirmButtonText: "Sí, cerrar sesión",
-        cancelButtonText: "Cancelar",
-    }).then((result) => {
-        if (result.isConfirmed) {
-            sessionStorage.clear();
-            document.querySelector(".user-info").style.display = "none";
-            document.querySelector(".nav-auth").style.display = "flex";
-            Swal.fire({
-                icon: "success",
-                title: "Sesión cerrada",
-                text: "Has cerrado sesión correctamente.",
-                timer: 2000,
-                showConfirmButton: false,
-            }).then(() => {
-                window.location.href = "index.html";
-            });
-        }
-    });
-}
+
+
 
 // ==============================
 // Actualizar visitas
@@ -198,8 +136,12 @@ async function cargarNoticias() {
 
         if (noticias.length === 0 && currentPage === 1) {
             document.getElementById("wrapper").style.minHeight = "100vh";
-            document.getElementById("newsGrid").innerHTML =
-                "<p style='text-align: center; font-size: 18px; color: #2c3e50;'>No hay noticias disponibles.</p>";
+            const grid = document.getElementById("newsGrid");
+            grid.innerHTML = "";
+            const msg = document.createElement("p");
+            msg.style.cssText = "text-align:center;font-size:18px;color:#2c3e50;";
+            msg.textContent = "No hay noticias disponibles.";
+            grid.appendChild(msg);
             document.getElementById("loadMore").style.display = "none";
             return;
         }
@@ -257,25 +199,47 @@ function createFeaturedNewsCard(article, className) {
     });
 
     let imageUrl = `${API_BASE_URL}/static/imagenesdb/defaultT.png`;
-
     if (article.imagenes && article.imagenes.length > 0 && article.imagenes[0].imagen) {
         imageUrl = `${API_BASE_URL}/${article.imagenes[0].imagen}`;
     }
 
-    card.innerHTML = `
-        <img src="${imageUrl}" 
-             alt="${article.titulo}" 
-             class="news-image"
-             onerror="this.onerror=null; this.src='${API_BASE_URL}/static/imagenesdb/default.png';">
-        <div class="news-content">
-            <h3 class="news-title">${article.titulo}</h3>
-            <p class="news-excerpt">${article.contenido.substring(0, className === "main-news" ? 500 : 100)}...</p>
-            <div class="news-meta">
-                <span><strong>Autor:</strong> ${article.autor}</span>
-                <span>${new Date(article.fecha_creacion).toLocaleDateString()}</span>
-            </div>
-        </div>
-    `;
+    const img = document.createElement("img");
+    img.className = "news-image";
+    img.alt = article.titulo;
+    img.src = imageUrl;
+    img.onerror = function () { this.src = `${API_BASE_URL}/static/imagenesdb/default.png`; };
+    card.appendChild(img);
+
+    const content = document.createElement("div");
+    content.className = "news-content";
+
+    const title = document.createElement("h3");
+    title.className = "news-title";
+    title.textContent = article.titulo;
+    content.appendChild(title);
+
+    const excerpt = document.createElement("p");
+    excerpt.className = "news-excerpt";
+    excerpt.textContent = article.contenido.substring(0, className === "main-news" ? 500 : 100) + "...";
+    content.appendChild(excerpt);
+
+    const meta = document.createElement("div");
+    meta.className = "news-meta";
+
+    const author = document.createElement("span");
+    const authorStrong = document.createElement("strong");
+    authorStrong.textContent = "Autor: ";
+    author.appendChild(authorStrong);
+    author.append(article.autor);
+    meta.appendChild(author);
+
+    const date = document.createElement("span");
+    date.textContent = new Date(article.fecha_creacion).toLocaleDateString();
+    meta.appendChild(date);
+
+    content.appendChild(meta);
+    card.appendChild(content);
+
     return card;
 }
 
@@ -299,13 +263,12 @@ async function buscarNoticias(query) {
         const grid = document.getElementById("newsGrid");
         grid.innerHTML = ""; // limpiar grid
 
-        // 🟥 Si no hay resultados
         if (noticias.length === 0) {
-            grid.innerHTML = `
-                <p style="text-align:center;font-size:18px;color:#2c3e50;">
-                    No se encontraron noticias para "${query}".
-                </p>
-            `;
+            grid.innerHTML = "";
+            const msg = document.createElement("p");
+            msg.style.cssText = "text-align:center;font-size:18px;color:#2c3e50;";
+            msg.textContent = `No se encontraron noticias para "${query}".`;
+            grid.appendChild(msg);
             document.getElementById("loadMore").style.display = "none";
             return;
         }

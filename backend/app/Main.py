@@ -56,7 +56,6 @@ app.mount("/config", StaticFiles(directory=CONFIG_DIR), name="config")
 app.mount("/", StaticFiles(directory=VIEWS_DIR, html=True), name="app")
 
 #   Ruta raíz
-
 @app.get("/api")
 async def root():
     return {"message": "Bienvenido a NoticiaPTY"}

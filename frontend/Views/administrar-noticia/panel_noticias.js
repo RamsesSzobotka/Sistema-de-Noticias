@@ -2,35 +2,16 @@ import { API_BASE_URL } from "/config/config.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   verificarSesion();
-  document.getElementById("btnMostrarTodas").addEventListener("click", () => {
-  cargarNoticias(1, "todas");
-  });
-
-  document.getElementById("btnFiltrarActivas").addEventListener("click", () => {
-    cargarNoticias(1, "activa");
-  });
-
-  document.getElementById("btnFiltrarInactivas").addEventListener("click", () => {
-    cargarNoticias(1, "inactiva");
-  });
+  document.getElementById("btnMostrarTodas").addEventListener("click", () => cargarNoticias(1, "todas"));
+  document.getElementById("btnFiltrarActivas").addEventListener("click", () => cargarNoticias(1, "activa"));
+  document.getElementById("btnFiltrarInactivas").addEventListener("click", () => cargarNoticias(1, "inactiva"));
 });
 
 let noticiasCargadas = [];
 let rolUsuario = "";
 
-// Verifica sesión con el token JWT
 function verificarSesion() {
-  const token = sessionStorage.getItem("access_token");
-  if (!token) {
-    return redirigir("No hay sesión activa.");
-  }
-
-  fetch(`${API_BASE_URL}/usuarios/me`, {
-    method: "GET",
-    headers: {
-      "Authorization": `Bearer ${token}`
-    }
-  })
+  fetch(`${API_BASE_URL}/usuarios/me`)
     .then(res => {
       if (!res.ok) throw new Error("No autorizado");
       return res.json();
@@ -43,299 +24,200 @@ function verificarSesion() {
         redirigir("Acceso denegado. Rol insuficiente.");
       }
     })
-    .catch(() => {
-      redirigir("Error al verificar sesión.");
-    });
+    .catch(() => redirigir("Error al verificar sesion."));
 }
 
-// Redirige al login con alerta
 function redirigir(mensaje) {
-  Swal.fire({
-    icon: "error",
-    title: "Acceso denegado",
-    text: mensaje
-  }).then(() => {
-    window.location.href = "../auth/iniciar-sesion/index.html";
-  });
+  Swal.fire({ icon: "error", title: "Acceso denegado", text: mensaje })
+    .then(() => window.location.href = "../auth/iniciar-sesion/index.html");
 }
 
-// Cargar noticias según el rol
 function cargarNoticias(pagina = 1, filtro = "todas") {
-  const token = sessionStorage.getItem("access_token");
   const endpoint = `${API_BASE_URL}/noticia/all?filtro=${filtro}&page=${pagina}&size=10`;
-
-  fetch(endpoint, {
-    headers: { "Authorization": `Bearer ${token}` }
-  })
+  fetch(endpoint)
     .then(res => res.json())
     .then(data => {
       noticiasCargadas = data.noticias || [];
       mostrarNoticias(noticiasCargadas);
       generarPaginacion(data.total_pages || 1, pagina, filtro);
     })
-    .catch(() => {
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: "No se pudieron cargar las noticias."
-      });
-    });
+    .catch(() => Swal.fire({ icon: "error", title: "Error", text: "No se pudieron cargar las noticias." }));
 }
 
 function generarPaginacion(totalPaginas, paginaActual, filtro = "todas") {
   const contenedor = document.getElementById("paginacion");
   contenedor.innerHTML = "";
-
   for (let i = 1; i <= totalPaginas; i++) {
     const boton = document.createElement("button");
     boton.textContent = i;
     boton.classList.add("pagina-btn");
     if (i === paginaActual) boton.classList.add("activa");
-
     boton.addEventListener("click", () => cargarNoticias(i, filtro));
-
     contenedor.appendChild(boton);
   }
 }
 
-// Mostrar noticias en la tabla
 function mostrarNoticias(noticias) {
   const tbody = document.querySelector("#noticiasTable tbody");
   tbody.innerHTML = "";
 
   if (!noticias || noticias.length === 0) {
     const filaVacia = document.createElement("tr");
-    filaVacia.innerHTML = `
-      <td colspan="10" style="text-align: center; font-weight: bold; padding: 20px;">
-        No hay noticias disponibles.
-      </td>
-    `;
+    const td = document.createElement("td");
+    td.colSpan = 10;
+    td.style.cssText = "text-align:center;font-weight:bold;padding:20px;";
+    td.textContent = "No hay noticias disponibles.";
+    filaVacia.appendChild(td);
     tbody.appendChild(filaVacia);
     return;
   }
 
   noticias.forEach(noticia => {
-    const fila = document.createElement("tr");
+    const tr = document.createElement("tr");
 
-    // Estado textual
-    const estadoTexto = noticia.activo ? "Activa" : "Inactiva";
+    function addCell(text) {
+      const td = document.createElement("td");
+      td.textContent = text;
+      return td;
+    }
 
-    fila.innerHTML = `
-      <td>${noticia.id}</td>
-      <td>${noticia.titulo}</td>
-      <td class="contenido-celda" data-contenido="${noticia.contenido.replace(/"/g, '&quot;')}">
-        ${noticia.contenido.slice(0, 100)}...
-      </td>
-      <td>${noticia.categoria?.nombre || "Sin categoría"}</td>
-      <td>${noticia.autor}</td>
-      <td class="imagenes-container">
-        ${(noticia.imagenes || [])
-          .map(
-            obj =>
-              `<img src="${API_BASE_URL}/${obj.imagen}" 
-                alt="Imagen noticia" 
-                class="imagen-noticia"
-                style="cursor: pointer;"
-                onerror="this.src='/static/imagenesdb/default.png'; this.onerror=null;">
-            `
-          )
-          .join("")}
-      </td>
-      <td>${noticia.fecha_creacion}</td>
-      <td>${estadoTexto}</td> <!-- ✅ Estado visible -->
-      <td>
-        <button class="btn-estado" data-id="${noticia.id}">
-          ${noticia.activo ? "Desactivar" : "Activar"}
-        </button>
-        <button class="btn-editar" data-id="${noticia.id}">Editar</button>
-        <button class="btn-eliminar" data-id="${noticia.id}">Eliminar</button>
-      </td>
-    `;
-    tbody.appendChild(fila);
+    tr.appendChild(addCell(noticia.id));
+
+    const tdTitulo = document.createElement("td");
+    tdTitulo.textContent = noticia.titulo;
+    tr.appendChild(tdTitulo);
+
+    const tdContenido = document.createElement("td");
+    tdContenido.className = "contenido-celda";
+    tdContenido.dataset.contenido = noticia.contenido;
+    tdContenido.textContent = (noticia.contenido || "").slice(0, 100) + "...";
+    tr.appendChild(tdContenido);
+
+    tr.appendChild(addCell(noticia.categoria?.nombre || "Sin categoria"));
+    tr.appendChild(addCell(noticia.autor));
+
+    const tdImg = document.createElement("td");
+    tdImg.className = "imagenes-container";
+    if (noticia.imagenes) {
+      noticia.imagenes.forEach(obj => {
+        const img = document.createElement("img");
+        img.className = "imagen-noticia";
+        img.src = `${API_BASE_URL}/${obj.imagen}`;
+        img.alt = "Imagen noticia";
+        img.style.cursor = "pointer";
+        img.onerror = function () { this.src = "/static/imagenesdb/default.png"; };
+        img.addEventListener("click", () => mostrarImagenModal(img.src));
+        tdImg.appendChild(img);
+      });
+    }
+    tr.appendChild(tdImg);
+
+    tr.appendChild(addCell(noticia.fecha_creacion));
+    tr.appendChild(addCell(noticia.activo ? "Activa" : "Inactiva"));
+
+    const tdAcciones = document.createElement("td");
+
+    const btnEstado = document.createElement("button");
+    btnEstado.className = "btn-estado";
+    btnEstado.dataset.id = noticia.id;
+    btnEstado.textContent = noticia.activo ? "Desactivar" : "Activar";
+    tdAcciones.appendChild(btnEstado);
+
+    const btnEditar = document.createElement("button");
+    btnEditar.className = "btn-editar";
+    btnEditar.dataset.id = noticia.id;
+    btnEditar.textContent = "Editar";
+    tdAcciones.appendChild(btnEditar);
+
+    const btnEliminar = document.createElement("button");
+    btnEliminar.className = "btn-eliminar";
+    btnEliminar.dataset.id = noticia.id;
+    btnEliminar.textContent = "Eliminar";
+    tdAcciones.appendChild(btnEliminar);
+
+    tr.appendChild(tdAcciones);
+    tbody.appendChild(tr);
   });
-  
-  document.querySelectorAll(".imagen-noticia").forEach(img => {
-  img.addEventListener("click", () => {
-    mostrarImagenModal(img.src);
-  });
-});
 
-  // Botón activar/desactivar
   document.querySelectorAll(".btn-estado").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const id = btn.dataset.id;
-      actualizarEstado(id);
-    });
+    btn.addEventListener("click", () => actualizarEstado(btn.dataset.id));
   });
-
-  // Botón editar
   document.querySelectorAll(".btn-editar").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const id = btn.dataset.id;
-      window.location.href = `../editar-noticia/index.html?id=${id}`;
-    });
+    btn.addEventListener("click", () => window.location.href = `../editar-noticia/index.html?id=${btn.dataset.id}`);
   });
-
-  // Botón eliminar
   document.querySelectorAll(".btn-eliminar").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const id = btn.dataset.id;
-      confirmarEliminacion(id);
-    });
+    btn.addEventListener("click", () => confirmarEliminacion(btn.dataset.id));
   });
 }
 
-// Confirmar eliminación
 function confirmarEliminacion(id) {
   Swal.fire({
-    title: "¿Eliminar noticia?",
-    text: "Esta acción no se puede deshacer.",
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonColor: "#d33",
-    cancelButtonColor: "#3085d6",
-    confirmButtonText: "Sí, eliminar",
-    cancelButtonText: "Cancelar"
-  }).then((result) => {
-    if (result.isConfirmed) {
-      eliminarNoticia(id);
-    }
-  });
+    title: "Eliminar noticia?", text: "Esta accion no se puede deshacer.", icon: "warning",
+    showCancelButton: true, confirmButtonColor: "#d33", cancelButtonColor: "#3085d6",
+    confirmButtonText: "Si, eliminar", cancelButtonText: "Cancelar"
+  }).then(result => { if (result.isConfirmed) eliminarNoticia(id); });
 }
 
-// DELETE noticia
 function eliminarNoticia(id) {
-  const token = sessionStorage.getItem("access_token");
-
-  fetch(`${API_BASE_URL}/noticia/?id=${id}`, {
-    method: "DELETE",
-    headers: {
-      "Authorization": `Bearer ${token}`
-    }
-  })
+  fetch(`${API_BASE_URL}/noticia/?id=${id}`, { method: "DELETE" })
     .then(res => {
-      if (!res.ok) {
-        return res.json().then(err => { throw new Error(err.detail || "Error al eliminar."); });
-      }
+      if (!res.ok) return res.json().then(err => { throw new Error(err.detail || "Error al eliminar."); });
       return res.json();
     })
-    .then(data => {
-      Swal.fire({
-        icon: "success",
-        title: "Eliminada",
-        text: data.detail
-      });
-      cargarNoticias();
-    })
-    .catch(err => {
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: err.message || "No se pudo eliminar la noticia."
-      });
-    });
+    .then(data => { Swal.fire({ icon: "success", title: "Eliminada", text: data.detail }); cargarNoticias(); })
+    .catch(err => Swal.fire({ icon: "error", title: "Error", text: err.message || "No se pudo eliminar." }));
 }
 
-// PATCH estado (activar/desactivar)
 function actualizarEstado(id) {
-  const token = sessionStorage.getItem("access_token");
-
-  fetch(`${API_BASE_URL}/noticia/activo/${id}`, {
-    method: "PATCH",
-    headers: {
-      "Authorization": `Bearer ${token}`
-    }
-  })
+  fetch(`${API_BASE_URL}/noticia/activo/${id}`, { method: "PATCH" })
     .then(res => res.json())
-    .then(data => {
-      Swal.fire({
-        icon: "success",
-        title: "Actualizado",
-        text: data.detail
-      });
-      cargarNoticias(); // recarga para reflejar cambio
-    })
-    .catch(() => {
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: "No se pudo actualizar el estado."
-      });
-    });
+    .then(data => { Swal.fire({ icon: "success", title: "Actualizado", text: data.detail }); cargarNoticias(); })
+    .catch(() => Swal.fire({ icon: "error", title: "Error", text: "No se pudo actualizar el estado." }));
 }
 
-// 🖼️ Mostrar imagen en modal
 function mostrarImagenModal(src) {
-  const modal = document.getElementById("modalImagen");
-  const imagenGrande = document.getElementById("imagenGrande");
-
-  imagenGrande.src = src;
-  modal.style.display = "flex"; // se muestra el modal
+  document.getElementById("imagenGrande").src = src;
+  document.getElementById("modalImagen").style.display = "flex";
 }
 
-// Cerrar modal de imagen
 document.getElementById("cerrarModal").addEventListener("click", () => {
   document.getElementById("modalImagen").style.display = "none";
 });
 
-// Cerrar modal si se hace clic fuera de la imagen
-document.getElementById("modalImagen").addEventListener("click", (e) => {
-  if (e.target.id === "modalImagen") {
-    e.currentTarget.style.display = "none";
-  }
+document.getElementById("modalImagen").addEventListener("click", e => {
+  if (e.target.id === "modalImagen") e.currentTarget.style.display = "none";
 });
 
-// 🧾 Mostrar contenido completo en modal de texto
 function mostrarContenidoModal(contenido) {
-  const modal = document.getElementById("modalContenido");
-  const texto = document.getElementById("textoCompleto");
-
-  texto.textContent = contenido;
-  modal.style.display = "flex";
+  document.getElementById("textoCompleto").textContent = contenido;
+  document.getElementById("modalContenido").style.display = "flex";
 }
 
-// Cerrar modal de contenido
 document.getElementById("cerrarModalContenido").addEventListener("click", () => {
   document.getElementById("modalContenido").style.display = "none";
 });
 
-// Cerrar modal si se hace clic fuera del cuadro de texto
-document.getElementById("modalContenido").addEventListener("click", (e) => {
-  if (e.target.id === "modalContenido") {
-    e.currentTarget.style.display = "none";
-  }
+document.getElementById("modalContenido").addEventListener("click", e => {
+  if (e.target.id === "modalContenido") e.currentTarget.style.display = "none";
 });
 
-// 🧩 Asignar evento a las celdas de contenido (para ver texto completo)
-document.addEventListener("click", (e) => {
+document.addEventListener("click", e => {
   if (e.target.classList.contains("contenido-celda")) {
-    const contenido = e.target.dataset.contenido;
-    mostrarContenidoModal(contenido);
+    mostrarContenidoModal(e.target.dataset.contenido);
   }
 });
 
-// 🔍 --- BÚSQUEDA DE NOTICIAS ---
 const buscador = document.getElementById("buscadorNoticias");
 let temporizadorBusqueda = null;
 
 buscador.addEventListener("input", () => {
   clearTimeout(temporizadorBusqueda);
   const texto = buscador.value.trim();
-
-  // Si no hay texto, recarga todas las noticias
-  if (texto === "") {
-    cargarNoticias(1);
-    return;
-  }
-
-  // Espera 500ms después de dejar de escribir
-  temporizadorBusqueda = setTimeout(() => {
-    buscarNoticias(texto);
-  }, 500);
+  if (texto === "") { cargarNoticias(1); return; }
+  temporizadorBusqueda = setTimeout(() => buscarNoticias(texto), 500);
 });
 
-// Ejecutar búsqueda manual con Enter
-buscador.addEventListener("keypress", (e) => {
+buscador.addEventListener("keypress", e => {
   if (e.key === "Enter") {
     e.preventDefault();
     const texto = buscador.value.trim();
@@ -343,49 +225,18 @@ buscador.addEventListener("keypress", (e) => {
   }
 });
 
-// Llamada al endpoint de búsqueda
 function buscarNoticias(texto, pagina = 1) {
-  const token = sessionStorage.getItem("access_token");
   const url = `${API_BASE_URL}/noticia/buscar/admin?query=${encodeURIComponent(texto)}&page=${pagina}&size=10`;
-
-  console.log("📤 Enviando búsqueda a:", url); // 🔍 Verificar query enviada
-
-  fetch(url, {
-    method: "GET",
-    headers: {
-      "Authorization": `Bearer ${token}`
-    }
-  })
-    .then(res => {
-      console.log("📥 Respuesta del servidor:", res.status);
-      if (!res.ok) throw new Error("Error al buscar noticias");
-      return res.json();
-    })
+  fetch(url)
+    .then(res => { if (!res.ok) throw new Error("Error al buscar"); return res.json(); })
     .then(data => {
-      console.log("📦 Datos recibidos:", data); // 🔍 Verificar contenido
-
-      if (!data.noticias || data.noticias.length === 0) {
-        mostrarNoticias([]);
-        return;
-      }
-
+      if (!data.noticias || data.noticias.length === 0) { mostrarNoticias([]); return; }
       noticiasCargadas = data.noticias;
       mostrarNoticias(noticiasCargadas);
       generarPaginacion(data.total_pages || 1, pagina);
-
-      // Reasigna paginación para la búsqueda
-      const contenedor = document.getElementById("paginacion");
-      contenedor.querySelectorAll(".pagina-btn").forEach(btn => {
-        btn.addEventListener("click", () => {
-          buscarNoticias(texto, parseInt(btn.textContent));
-        });
+      document.getElementById("paginacion").querySelectorAll(".pagina-btn").forEach(btn => {
+        btn.addEventListener("click", () => buscarNoticias(texto, parseInt(btn.textContent)));
       });
     })
-    .catch(err => {
-      Swal.fire({
-        icon: "error",
-        title: "Error en búsqueda",
-        text: err.message
-      });
-    });
+    .catch(err => Swal.fire({ icon: "error", title: "Error en busqueda", text: err.message }));
 }

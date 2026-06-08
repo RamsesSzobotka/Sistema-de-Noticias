@@ -1,26 +1,9 @@
 import { API_BASE_URL } from "/config/config.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
-    const access_token = sessionStorage.getItem("access_token");
-    if (!access_token) {
-        Swal.fire({
-            icon: "error",
-            title: "Acceso denegado",
-            text: "Debes iniciar sesión primero.",
-        }).then(() => window.location.href = "../index.html");
-        return;
-    }
-
-    // Verificar sesión y rol con JWT
     try {
-        const res = await fetch(`${API_BASE_URL}/usuarios/me`, {
-            method: "GET",
-            headers: {
-                "Authorization": `Bearer ${access_token}`,
-                "Content-Type": "application/json"
-            }
-        });
-        if (!res.ok) throw new Error("Token inválido o expirado");
+        const res = await fetch(`${API_BASE_URL}/usuarios/me`);
+        if (!res.ok) throw new Error("No autenticado");
         const data = await res.json();
 
         if (!["admin","supervisor","editor"].includes(data.rol)) {
@@ -34,12 +17,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         document.getElementById("usuario_id").value = data.id;
     } catch (err) {
-        console.error(err);
-        sessionStorage.clear();
         Swal.fire({
             icon: "error",
             title: "Acceso denegado",
-            text: "Debes iniciar sesión.",
+            text: "Debes iniciar sesion.",
         }).then(() => window.location.href = "../index.html");
         return;
     }
@@ -106,9 +87,6 @@ form.addEventListener("submit", async (e) => {
     try {
         const res = await fetch(`${API_BASE_URL}/noticia/`, {
             method: "POST",
-            headers: {
-                "Authorization": `Bearer ${access_token}`
-            },
             body: formData
         });
 

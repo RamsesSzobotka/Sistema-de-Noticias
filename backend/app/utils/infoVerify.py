@@ -7,7 +7,7 @@ from utils.HttpError import errorInterno
 
 load_dotenv()
 
-VALID_ROL = os.getenv("VALID_ROL", "").strip().split(",")
+VALID_ROL = [r for r in os.getenv("VALID_ROL", "").strip().split(",") if r]
 
 
 async def validUsername(username: str):

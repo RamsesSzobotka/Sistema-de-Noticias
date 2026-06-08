@@ -204,8 +204,8 @@ async def updateRol(id:int,rol:str):
     except HTTPException:
         raise
     except Exception:
-        errorInterno()
-    
+        raise errorInterno()
+
 # Buscar usuarios (admin o supervisor)
 async def buscarUsuarios(query: str, page: int, size: int):
     try:

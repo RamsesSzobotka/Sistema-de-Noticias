@@ -1,69 +1,38 @@
 import { API_BASE_URL } from "/config/config.js";
-document
-    .getElementById("loginForm")
-    .addEventListener("submit", function (event) {
-        event.preventDefault();
+import { guardarSesion } from "../auth.js";
 
-        const usuario = document.getElementById("usuario").value;
-        const password = document.getElementById("password").value;
+document.getElementById("loginForm").addEventListener("submit", async function (event) {
+    event.preventDefault();
 
-        if (!usuario || !password) {
-            Swal.fire({
-                icon: "warning",
-                title: "Campos incompletos",
-                text: "Por favor, completa todos los campos.",
-            });
-            return;
-        }
+    const usuario = document.getElementById("usuario").value.trim();
+    const password = document.getElementById("password").value;
 
-        // Mostrar SweetAlert cargando
-        Swal.fire({
-            title: "Iniciando sesión...",
-            html: "Por favor, espera",
-            allowOutsideClick: false,
-            didOpen: () => {
-                Swal.showLoading(); // Muestra el spinner
-            },
-        });
+    if (!usuario || !password) {
+        Swal.fire({ icon: "warning", title: "Campos incompletos", text: "Por favor, completa todos los campos." });
+        return;
+    }
 
+    Swal.fire({ title: "Iniciando sesion...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+    try {
         const formData = new URLSearchParams();
         formData.append("username", usuario);
         formData.append("password", password);
 
-        fetch(`${API_BASE_URL}/auth/login`, {
+        const res = await fetch(`${API_BASE_URL}/auth/login`, {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
             body: formData.toString(),
-        })
-            .then((response) => {
-                if (!response.ok) {
-                    return response.json().then((err) => {
-                        throw new Error(err.detail || "Error en el login");
-                    });
-                }
-                return response.json();
-            })
-            .then((data) => {
-                sessionStorage.setItem("access_token", data.access_token);
-                sessionStorage.setItem("refresh_token", data.refresh_token);
+        });
 
-                Swal.fire({
-                    icon: "success",
-                    title: "¡Bienvenido!",
-                    text: "Has iniciado sesión correctamente.",
-                    timer: 2000,
-                    timerProgressBar: true,
-                    showConfirmButton: false,
-                }).then(() => {
-                    window.location.href = "../../index.html";
-                });
-            })
-            .catch((error) => {
-                Swal.fire({
-                    icon: "error",
-                    title: "Error",
-                    text: error.message,
-                    confirmButtonText: "Intentar de nuevo",
-                });
-            });
-    });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Error en el login");
+
+        guardarSesion(data.id, data.usuario, data.rol);
+
+        Swal.fire({ icon: "success", title: "Bienvenido!", timer: 2000, showConfirmButton: false })
+            .then(() => { window.location.href = "../../index.html"; });
+    } catch (error) {
+        Swal.fire({ icon: "error", title: "Error", text: error.message, confirmButtonText: "Intentar de nuevo" });
+    }
+});
