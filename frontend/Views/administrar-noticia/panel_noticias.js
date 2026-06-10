@@ -191,9 +191,16 @@ function mostrarNoticias(noticias) {
     btnImg.className = "btn-icon btn-image";
     btnImg.innerHTML = '<i class="fas fa-image"></i>';
     btnImg.title = "Ver imagen";
+    const placeholderSVG = 'data:image/svg+xml,' + encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">' +
+      '<rect fill="#F3F4F6" width="800" height="450"/>' +
+      '<text fill="#9CA3AF" font-family="Arial,sans-serif" font-size="18" text-anchor="middle" x="400" y="210">Sin imagen disponible</text>' +
+      '<text fill="#D1D5DB" font-family="Arial,sans-serif" font-size="13" text-anchor="middle" x="400" y="240">La imagen no pudo cargarse</text>' +
+      '</svg>'
+    );
     const imgSrc = noticia.imagenes?.[0]?.imagen
       ? `${API_BASE_URL}/${noticia.imagenes[0].imagen}`
-      : "/static/imagenesdb/default.png";
+      : placeholderSVG;
     btnImg.addEventListener("click", () => mostrarImagenModal(imgSrc));
     btnGroup.appendChild(btnImg);
 
@@ -233,8 +240,15 @@ function actualizarEstado(id) {
 
 function mostrarImagenModal(src) {
   const img = document.getElementById("imagenGrande");
+  const placeholderSVG = 'data:image/svg+xml,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">' +
+    '<rect fill="#F3F4F6" width="800" height="450"/>' +
+    '<text fill="#9CA3AF" font-family="Arial,sans-serif" font-size="18" text-anchor="middle" x="400" y="210">Sin imagen disponible</text>' +
+    '<text fill="#D1D5DB" font-family="Arial,sans-serif" font-size="13" text-anchor="middle" x="400" y="240">La imagen no pudo cargarse</text>' +
+    '</svg>'
+  );
   img.src = src;
-  img.onerror = function () { this.src = "/static/imagenesdb/default.png"; };
+  img.onerror = function () { this.src = placeholderSVG; };
   document.getElementById("modalImagen").classList.add("open");
 }
 

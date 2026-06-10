@@ -72,6 +72,17 @@ async function actualizarVisitas() {
 }
 
 // ==============================
+// Placeholder SVG cuando una imagen no carga
+// ==============================
+const PLACEHOLDER_SVG = 'data:image/svg+xml,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">' +
+    '<rect fill="#F3F4F6" width="800" height="450"/>' +
+    '<text fill="#9CA3AF" font-family="Arial,sans-serif" font-size="18" text-anchor="middle" x="400" y="210">Sin imagen disponible</text>' +
+    '<text fill="#D1D5DB" font-family="Arial,sans-serif" font-size="13" text-anchor="middle" x="400" y="240">La imagen no pudo cargarse</text>' +
+    '</svg>'
+);
+
+// ==============================
 // Helper: Obtener URL de imagen
 // ==============================
 function getImageUrl(noticia) {
@@ -79,12 +90,7 @@ function getImageUrl(noticia) {
     if (noticia.imagenes && noticia.imagenes.length > 0 && noticia.imagenes[0].imagen) {
         return `${API_BASE_URL}/${noticia.imagenes[0].imagen}`;
     }
-    return 'data:image/svg+xml,' + encodeURIComponent(
-        '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="225" viewBox="0 0 400 225">' +
-        '<rect fill="#E5E7EB" width="400" height="225"/>' +
-        '<text fill="#9CA3AF" font-family="Arial,sans-serif" font-size="14" text-anchor="middle" x="200" y="118">Sin imagen</text>' +
-        '</svg>'
-    );
+    return PLACEHOLDER_SVG;
 }
 
 // ==============================
@@ -106,7 +112,7 @@ function renderHero(noticia) {
     heroSection.innerHTML = `
     <div class="hero-card" onclick="window.location.href='detalle-noticia/index.html?id=${noticia.id}'">
       <div class="news-card-image">
-        <img src="${getImageUrl(noticia)}" alt="${noticia.titulo}" loading="lazy">
+        <img src="${getImageUrl(noticia)}" alt="${noticia.titulo}" loading="lazy" onerror="this.src='${PLACEHOLDER_SVG}'">
         <span class="category-badge">${categoria}</span>
       </div>
       <div class="hero-overlay">
@@ -141,7 +147,7 @@ function renderFeatures(noticias) {
         return `
       <div class="feature-card" onclick="window.location.href='detalle-noticia/index.html?id=${n.id}'">
         <div class="news-card-image">
-          <img src="${getImageUrl(n)}" alt="${n.titulo}" loading="lazy">
+          <img src="${getImageUrl(n)}" alt="${n.titulo}" loading="lazy" onerror="this.src='${PLACEHOLDER_SVG}'">
         </div>
         <div class="feature-card-body">
           <span class="category-badge">${categoria}</span>
@@ -174,7 +180,7 @@ function renderNewsCard(noticia) {
     return `
     <article class="news-card" onclick="window.location.href='detalle-noticia/index.html?id=${noticia.id}'">
       <div class="news-card-image">
-        <img src="${getImageUrl(noticia)}" alt="${noticia.titulo}" loading="lazy">
+        <img src="${getImageUrl(noticia)}" alt="${noticia.titulo}" loading="lazy" onerror="this.src='${PLACEHOLDER_SVG}'">
         <span class="category-badge">${categoria}</span>
       </div>
       <div class="news-card-body">
