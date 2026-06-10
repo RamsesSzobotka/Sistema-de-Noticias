@@ -110,76 +110,148 @@
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-  <!-- Botón de regreso -->
-  <div style="margin-bottom: 20px;">
-    <button class="volver-btn" onclick="window.location.href='/'">
-      ← Volver al Inicio
-    </button>
-  </div>
   <div class="container">
-    <!-- Formulario para agregar usuario -->
-  <form id="formAddUser">
-    <h2>Agregar Nuevo Usuario</h2>
-    <label>Nombre:
-      <input type="text" id="nombre" required />
-    </label>
-    <label>Apellido:
-      <input type="text" id="apellido" required />
-    </label>
-    <label>Usuario:
-      <input type="text" id="usuario" required />
-    </label>
-    <label>Contraseña:
-      <input type="password" id="contrasena" required />
-    </label>
-    <label>Rol:
-      <select id="rol" required>
-        <option value="">Seleccione</option>
-        <option value="editor">Editor</option>
-        <option value="global">Global</option>
-        <option value="admin">Admin</option>
-        <option value="supervisor">Supervisor</option>
-      </select>
-    </label>
-    <button id =btnRegistrar type="submit">Agregar Usuario</button>
-  </form>
-  <input
-    type="text"
-    id="buscadorUsuarios"
-    placeholder="Buscar usuario por nombre, apellido o nombre de usuario..."
-    style="margin: 1rem 0; padding: 0.5rem; width: 100%; max-width: 400px;"
-  />
-  <div id="filtrosUsuarios" style="margin-bottom: 1rem;">
-    <button data-filtro="todos">Todos</button>
-    <button data-filtro="activos">Activos</button>
-    <button data-filtro="inactivos">Inactivos</button>
-    <button data-filtro="supervisor">supervisores</button>
-    <button data-filtro="editor">Editores</button>
-    <button data-filtro="admin">Admin</button>
+  <!-- Header -->
+  <div class="admin-header">
+    <div>
+      <h2><i class="fas fa-users-cog"></i> Administrar Usuarios</h2>
+      <p>Gestiona los usuarios del sistema: crea, edita, activa o desactiva cuentas.</p>
+    </div>
   </div>
 
-  <!-- Tabla con usuarios -->
-  <h2>Lista de Usuarios</h2>
-  <table id="usersTable">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Nombre</th>
-        <th>Apellido</th>
-        <th>Usuario</th>
-        <th>Rol</th>
-        <th>Activo</th>
-        <th>Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-      <!-- Aquí se llenarán los usuarios -->
-    </tbody>
-  </table>
-  <div id="paginacionUsuarios" class="paginacion-container"></div>
+  <!-- Accordion: Formulario para agregar usuario -->
+  <div class="accordion" id="accordionAddUser">
+    <div class="accordion-header" id="accordionToggle">
+      <div class="accordion-header-left">
+        <i class="fas fa-user-plus"></i>
+        <span>Nuevo Usuario</span>
+      </div>
+      <i class="fas fa-chevron-down accordion-icon" id="accordionIcon"></i>
+    </div>
+    <div class="accordion-body" id="accordionBody">
+      <div class="accordion-content">
+        <form id="formAddUser" class="user-form">
+          <div class="form-group">
+            <label for="nombre">Nombre</label>
+            <input type="text" id="nombre" placeholder="Nombre del usuario" required />
+          </div>
+          <div class="form-group">
+            <label for="apellido">Apellido</label>
+            <input type="text" id="apellido" placeholder="Apellido del usuario" required />
+          </div>
+          <div class="form-group">
+            <label for="usuario">Usuario</label>
+            <input type="text" id="usuario" placeholder="Nombre de usuario" required />
+          </div>
+          <div class="form-group">
+            <label for="contrasena">Contraseña</label>
+            <input type="password" id="contrasena" placeholder="Contraseña segura" required />
+          </div>
+          <div class="form-group full-width">
+            <label for="rol">Rol</label>
+            <select id="rol" required>
+              <option value="">Seleccione un rol</option>
+              <option value="editor">Editor</option>
+              <option value="global">Global</option>
+              <option value="admin">Admin</option>
+              <option value="supervisor">Supervisor</option>
+            </select>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save"></i> Crear Usuario
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
-  
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <!-- Search & Filters -->
+  <div class="search-filters-bar">
+    <div class="search-wrapper">
+      <i class="fas fa-search search-icon"></i>
+      <input
+        type="text"
+        id="buscadorUsuarios"
+        placeholder="Buscar por nombre, apellido o usuario..."
+      />
+    </div>
+    <div class="filter-pills" id="filtrosUsuarios">
+      <button class="filter-pill active" data-filtro="todos">Todos</button>
+      <button class="filter-pill" data-filtro="activos">Activos</button>
+      <button class="filter-pill" data-filtro="inactivos">Inactivos</button>
+      <button class="filter-pill" data-filtro="supervisor">Supervisores</button>
+      <button class="filter-pill" data-filtro="editor">Editores</button>
+      <button class="filter-pill" data-filtro="admin">Admin</button>
+    </div>
+  </div>
+
+  <!-- Users Table -->
+  <div class="table-container">
+    <table id="usersTable">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nombre</th>
+          <th>Apellido</th>
+          <th>Usuario</th>
+          <th>Rol</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Poblado por JS -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div id="paginacionUsuarios" class="paginacion-container"></div>
+</div>
+
+<!-- Modal de edición -->
+<div class="modal-overlay" id="editModalOverlay">
+  <div class="modal" id="editModal">
+    <div class="modal-header">
+      <h3><i class="fas fa-user-edit"></i> Editar Usuario</h3>
+      <button class="modal-close" id="editModalClose">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="editUserForm" class="modal-form">
+        <input type="hidden" id="editUserId" />
+        <div class="form-group">
+          <label for="editNombre">Nombre</label>
+          <input type="text" id="editNombre" required />
+        </div>
+        <div class="form-group">
+          <label for="editApellido">Apellido</label>
+          <input type="text" id="editApellido" required />
+        </div>
+        <div class="form-group">
+          <label for="editUsuario">Usuario</label>
+          <input type="text" id="editUsuario" required />
+        </div>
+        <div class="form-group">
+          <label for="editRol">Rol</label>
+          <select id="editRol" required>
+            <option value="editor">Editor</option>
+            <option value="global">Global</option>
+            <option value="admin">Admin</option>
+            <option value="supervisor">Supervisor</option>
+          </select>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="editModalCancel">Cancelar</button>
+      <button class="btn btn-primary" id="editModalSave">
+        <i class="fas fa-save"></i> Guardar Cambios
+      </button>
+    </div>
+  </div>
+</div>
   <script type="module" src="panel_usuarios.js"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function(){
