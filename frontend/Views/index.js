@@ -1,11 +1,19 @@
 import { API_BASE_URL } from "/config/config.js";
-import { verificarSesion, cerrarSesion } from "./auth/auth.js";
+import { verificarSesion, cerrarSesion } from "/js/auth.js";
 
 let currentPage = 1;
 let totalPages = 1;
 let currentCategory = "todas";
 
 document.addEventListener("DOMContentLoaded", async () => {
+    // Restore category from localStorage (set by detalle-noticia dropdown)
+    const savedCategory = localStorage.getItem("selectedCategory");
+    if (savedCategory) {
+        currentCategory = savedCategory;
+        document.getElementById("categorySelect").value = savedCategory;
+        localStorage.removeItem("selectedCategory");
+    }
+
     const data = await verificarSesion();
     if (data) {
         mostrarBotonesPorRol(data.rol);
@@ -33,20 +41,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     document.getElementById("loadMore").addEventListener("click", loadMoreNews);
 
-    document.querySelector(".navbar-categories").addEventListener("click", (e) => {
-        if (e.target.tagName === "A") {
-            e.preventDefault();
-            // Remove active class from all categories
-            document.querySelectorAll(".navbar-categories a").forEach(a => a.classList.remove("active"));
-            e.target.classList.add("active");
-            currentCategory = e.target.dataset.category.toLowerCase();
-            // Clear hero, features, and grid before reloading
-            document.getElementById("heroSection")?.remove();
-            document.getElementById("featureGrid")?.remove();
-            document.getElementById("newsGrid").innerHTML = "";
-            currentPage = 1;
-            cargarNoticias();
-        }
+    document.getElementById("categorySelect").addEventListener("change", (e) => {
+        currentCategory = e.target.value;
+        document.getElementById("heroSection")?.remove();
+        document.getElementById("featureGrid")?.remove();
+        document.getElementById("newsGrid").innerHTML = "";
+        currentPage = 1;
+        cargarNoticias();
     });
 
     document.getElementById("logoutBtn").addEventListener("click", cerrarSesion);
@@ -142,7 +143,12 @@ function getImageUrl(noticia) {
     if (noticia.imagenes && noticia.imagenes.length > 0 && noticia.imagenes[0].imagen) {
         return `${API_BASE_URL}/${noticia.imagenes[0].imagen}`;
     }
-    return '../assets/placeholder.jpg';
+    return 'data:image/svg+xml,' + encodeURIComponent(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="225" viewBox="0 0 400 225">' +
+        '<rect fill="#E5E7EB" width="400" height="225"/>' +
+        '<text fill="#9CA3AF" font-family="Arial,sans-serif" font-size="14" text-anchor="middle" x="200" y="118">Sin imagen</text>' +
+        '</svg>'
+    );
 }
 
 // ==============================

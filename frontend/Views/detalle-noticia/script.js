@@ -1,5 +1,5 @@
 import { API_BASE_URL } from "/config/config.js";
-import { verificarSesion, cerrarSesion } from "../auth/auth.js";
+import { verificarSesion, cerrarSesion, mostrarBotonesPorRol } from "/js/auth.js";
 
 function formatDate(dateStr) {
   if (!dateStr) return '';
@@ -334,7 +334,12 @@ document.addEventListener("DOMContentLoaded", async () => {
             readingTime.textContent = `${minutes} min de lectura`;
         }
 
-        const defaultImg = `${API_BASE_URL}/static/imagenesdb/DEFAULT.png`;
+        const defaultImg = 'data:image/svg+xml,' + encodeURIComponent(
+            '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">' +
+            '<rect fill="#F3F4F6" width="800" height="450"/>' +
+            '<text fill="#9CA3AF" font-family="Arial,sans-serif" font-size="18" text-anchor="middle" x="400" y="225">Sin imagen disponible</text>' +
+            '</svg>'
+        );
         if (noticia.imagenes && noticia.imagenes.length > 0) {
             const ids = ["imagen1", "imagen2", "imagen3"];
             ids.forEach((id, i) => {
@@ -363,4 +368,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 document.addEventListener("DOMContentLoaded", () => {
     const logoutBtn = document.getElementById("logoutBtn");
     if (logoutBtn) logoutBtn.addEventListener("click", cerrarSesion);
+
+    // Category dropdown navigates to home with filter
+    const categorySelect = document.getElementById("categorySelect");
+    if (categorySelect) {
+        categorySelect.addEventListener("change", (e) => {
+            localStorage.setItem("selectedCategory", e.target.value);
+            window.location.href = "../index.html";
+        });
+    }
 });

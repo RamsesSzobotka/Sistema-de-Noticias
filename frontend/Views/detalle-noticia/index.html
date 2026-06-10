@@ -28,15 +28,14 @@
         </button>
         
         <div class="navbar-menu" id="navbarMenu">
-          <ul class="navbar-categories" id="categoryList">
-            <li><a href="#" data-category="todas" class="active">Todas</a></li>
-            <li><a href="#" data-category="deporte">Deportes</a></li>
-            <li><a href="#" data-category="politica">Política</a></li>
-            <li><a href="#" data-category="tecnologia">Tecnología</a></li>
-            <li><a href="#" data-category="entretenimiento">Entretenimiento</a></li>
-          </ul>
-          
           <div class="navbar-actions">
+            <select class="navbar-categories-dropdown" id="categorySelect" aria-label="Filtrar por categoría">
+              <option value="todas">Todas</option>
+              <option value="deporte">Deportes</option>
+              <option value="politica">Política</option>
+              <option value="tecnologia">Tecnología</option>
+              <option value="entretenimiento">Entretenimiento</option>
+            </select>
             <div class="navbar-search">
               <input type="text" id="searchInput" placeholder="Buscar noticias..." />
               <button id="searchBtn"><i class="fas fa-search"></i></button>

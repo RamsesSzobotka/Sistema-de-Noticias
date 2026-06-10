@@ -1,5 +1,5 @@
 import { API_BASE_URL } from "/config/config.js";
-import { guardarSesion } from "../auth.js";
+import { guardarSesion } from "/js/auth.js";
 
 document.getElementById("loginForm").addEventListener("submit", async function (event) {
     event.preventDefault();

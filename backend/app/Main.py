@@ -55,10 +55,10 @@ app.mount("/assets", StaticFiles(directory=ASSETS_DIR), name="assets")
 # Config.js (importable desde /config/config.js)
 app.mount("/config", StaticFiles(directory=CONFIG_DIR), name="config")
 
-#Js
-app.mount("/auth", StaticFiles(directory=JS_DIR), name="js")
+# Js compartido (auth.js, etc.)
+app.mount("/js", StaticFiles(directory=JS_DIR), name="js")
 
-#Css
+# Css
 app.mount("/css", StaticFiles(directory=CSS_DIR), name="css")
 # Vistas del frontend (sirve index.html automáticamente)
 app.mount("/", StaticFiles(directory=VIEWS_DIR, html=True), name="app")
