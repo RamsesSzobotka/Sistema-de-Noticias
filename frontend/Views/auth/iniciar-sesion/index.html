@@ -3,7 +3,8 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link rel="stylesheet" href="../auth.css" />
+        <link rel="stylesheet" href="../../css/design-system.css" />
+        <link rel="stylesheet" href="../../css/auth.css" />
         <link
             rel="stylesheet"
             href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
@@ -12,18 +13,12 @@
         <title>NoticiaPTY - Iniciar Sesión</title>
     </head>
     <body>
-        <!-- Menú horizontal superior -->
-        <nav class="top-nav">
-            <div class="nav-brand">
-                <a href="../../index.html">NoticiaPTY</a>
-            </div>
+        <!-- Navbar simplificado: solo logo -->
+        <nav class="navbar">
+          <div class="navbar-inner" style="justify-content: center;">
+            <a class="navbar-brand" href="/">NoticiaPTY</a>
+          </div>
         </nav>
-        <!-- Cargador oculto por defecto -->
-        <div id="loginLoader" style="display:none; text-align:center; margin-top:10px;">
-            <img src="spinner.gif" alt="Cargando..." width="50">
-            <p>Iniciando sesión...</p>
-        </div>
-
         <div class="auth-container">
             <form id="loginForm" class="auth-form">
                 <h2><i class="fas fa-sign-in-alt"></i> Iniciar Sesión</h2>
@@ -50,12 +45,13 @@
                 <div class="auth-links">
                     <p>
                         ¿No tienes una cuenta?
-                        <a href="../registro/index.html">Regístrate aquí</a>
+                        <a href="/auth/registro/">Regístrate aquí</a>
                     </p>
                 </div>
             </form>
         </div>
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
         <script type="module" src="script.js"></script>
-    </body>
+
+</body>
 </html>

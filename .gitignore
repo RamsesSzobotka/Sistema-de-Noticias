@@ -1,2 +1,7 @@
 .env
 referencias/
+venv
+__pycache__/
+.atl
+docs
+Doc

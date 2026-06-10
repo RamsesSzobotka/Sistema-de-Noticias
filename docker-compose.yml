@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+  backend:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      SECRET_KEY: ${SECRET_KEY}
+      ACCESS_TOKEN_EXPIRED_MINUTES: ${ACCESS_TOKEN_EXPIRED_MINUTES:-60}
+      REFRESH_TOKEN_EXPIRED_MINUTES: ${REFRESH_TOKEN_EXPIRED_MINUTES:-1440}
+      ALGORITHM: ${ALGORITHM:-HS256}
+      VALID_ROL: ${VALID_ROL:-admin,supervisor,editor,global}
+      UPLOAD_DIR: static/imagenesdb
+      cors_origins: ${cors_origins:-*}
+    depends_on:
+      - db
+    volumes:
+      - uploads:/app/app/static/imagenesdb
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  uploads:

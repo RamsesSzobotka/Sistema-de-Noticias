@@ -11,10 +11,10 @@ async def getVisitasController():
 async def updateVisitasController():
     try:
         async with db.transaction():
-            visitas = await obtainVisitas()
-            nueva_cantidad = visitas + 1
-            query = "UPDATE visitas SET cantidad = :cantidad WHERE id = '1'"
-            await db.execute(query, {"cantidad": nueva_cantidad})
+            query = "UPDATE visitas SET cantidad = cantidad + 1 WHERE id = 1 RETURNING cantidad"
+            result = await db.fetch_val(query)
+            if result is None:
+                await db.execute("INSERT INTO visitas (cantidad) VALUES (1)")
     except Exception as e:
         raise errorInterno(e)
 

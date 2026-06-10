@@ -1,157 +1,149 @@
 import { API_BASE_URL } from "/config/config.js";
+import { verificarSesion, cerrarSesion, initNavbar, cargarVisitas } from "/js/auth.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
-    const access_token = sessionStorage.getItem("access_token");
-    if (!access_token) {
-        Swal.fire({
-            icon: "error",
-            title: "Acceso denegado",
-            text: "Debes iniciar sesión primero.",
-        }).then(() => window.location.href = "../index.html");
-        return;
-    }
-
-    // Verificar sesión y rol con JWT
     try {
-        const res = await fetch(`${API_BASE_URL}/usuarios/me`, {
-            method: "GET",
-            headers: {
-                "Authorization": `Bearer ${access_token}`,
-                "Content-Type": "application/json"
-            }
-        });
-        if (!res.ok) throw new Error("Token inválido o expirado");
-        const data = await res.json();
-
-        if (!["admin","supervisor","editor"].includes(data.rol)) {
+        const session = await verificarSesion();
+        if (!session || !["admin","supervisor","editor"].includes(session.rol)) {
             Swal.fire({
                 icon: "error",
                 title: "Acceso denegado",
                 text: "Solo supervisores, administradores y editores pueden crear noticias.",
-            }).then(() => window.location.href = "../index.html");
+            }).then(() => window.location.href = "/");
             return;
         }
-
-        document.getElementById("usuario_id").value = data.id;
+        document.getElementById("usuario_id").value = session.id;
+        initNavbar(session);
+        cargarVisitas();
     } catch (err) {
-        console.error(err);
-        sessionStorage.clear();
         Swal.fire({
             icon: "error",
             title: "Acceso denegado",
-            text: "Debes iniciar sesión.",
-        }).then(() => window.location.href = "../index.html");
+            text: "Debes iniciar sesion.",
+        }).then(() => window.location.href = "/");
         return;
     }
 
     const form = document.getElementById("formNoticia");
-    const inputImagen = document.getElementById("imagen");
+    const inputFile = document.getElementById("imagen");
+    const uploadArea = document.querySelector(".file-upload-area");
+    const fileCountEl = uploadArea.querySelector(".file-count");
 
-    // Contenedor para previsualización de imágenes
+    const MAX_IMAGES = 3;
+    let selectedFiles = [];
+
+    // ── Crear contenedor de preview ──
     const previewContainer = document.createElement("div");
     previewContainer.id = "previewContainer";
-    previewContainer.style.display = "flex";
-    previewContainer.style.gap = "10px";
-    previewContainer.style.marginTop = "10px";
-    inputImagen.parentNode.insertBefore(previewContainer, inputImagen.nextSibling);
+    inputFile.parentNode.insertBefore(previewContainer, inputFile.nextSibling);
 
-    inputImagen.addEventListener("change", () => {
+    // ── Renderizar lista de archivos seleccionados ──
+    function renderFileList() {
         previewContainer.innerHTML = "";
-        Array.from(inputImagen.files).forEach(file => {
-            const reader = new FileReader();
-            reader.onload = e => {
-                const img = document.createElement("img");
-                img.src = e.target.result;
-                img.style.width = "100px";
-                img.style.height = "100px";
-                img.style.objectFit = "cover";
-                img.style.border = "1px solid #ccc";
-                img.style.borderRadius = "4px";
-                previewContainer.appendChild(img);
-            };
-            reader.readAsDataURL(file);
-        });
-    });
-// Envío del formulario
-form.addEventListener("submit", async (e) => {
-    e.preventDefault();
+        selectedFiles.forEach((file, index) => {
+            const item = document.createElement("div");
+            item.className = "file-item";
 
-    if (inputImagen.files.length !== 3) {
-        Swal.fire({
-            icon: "warning",
-            title: "Cantidad de imágenes",
-            text: "Por favor, selecciona exactamente 3 imágenes.",
+            const img = document.createElement("img");
+            img.src = URL.createObjectURL(file);
+
+            const nameEl = document.createElement("span");
+            nameEl.className = "file-name";
+            nameEl.textContent = file.name;
+
+            const removeBtn = document.createElement("button");
+            removeBtn.className = "remove-btn";
+            removeBtn.type = "button";
+            removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+            removeBtn.title = "Quitar imagen";
+            removeBtn.addEventListener("click", () => {
+                URL.revokeObjectURL(img.src);
+                selectedFiles.splice(index, 1);
+                renderFileList();
+            });
+
+            item.appendChild(img);
+            item.appendChild(nameEl);
+            item.appendChild(removeBtn);
+            previewContainer.appendChild(item);
         });
-        return;
+
+        // Actualizar contador y visibilidad de la zona de upload
+        const count = selectedFiles.length;
+        fileCountEl.textContent = `${count} de ${MAX_IMAGES} imágenes seleccionadas`;
+        uploadArea.style.display = count >= MAX_IMAGES ? "none" : "block";
     }
 
-    const formData = new FormData();
+    // ── Click en uploadArea → abrir selector de archivos ──
+    uploadArea.addEventListener("click", () => inputFile.click());
 
-    formData.append("titulo", document.getElementById("titulo").value);
-    formData.append("contenido", document.getElementById("contenido").value);
-    formData.append("categoria_id", document.getElementById("categoria").value);
-    formData.append("autor", document.getElementById("autor").value);
+    // ── Manejar selección de archivos ──
+    inputFile.addEventListener("change", () => {
+        const newFiles = Array.from(inputFile.files).filter(
+            f => !selectedFiles.some(s => s.name === f.name && s.size === f.size)
+        );
 
-    Array.from(inputImagen.files).forEach(file => {
-        formData.append("imagenes", file);
-    });
-
-    Swal.fire({
-        title: "Publicando noticia...",
-        text: "Por favor, espera",
-        allowOutsideClick: false,
-        didOpen: () => Swal.showLoading()
-    });
-
-    try {
-        const res = await fetch(`${API_BASE_URL}/noticia/`, {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${access_token}`
-            },
-            body: formData
-        });
-
-        let data;
-        try {
-            data = await res.json();
-        } catch {
-            data = null;
+        if (newFiles.length === 0) {
+            inputFile.value = "";
+            return;
         }
 
-        Swal.close();
-
-        if (!res.ok) {
-            let mensaje = "Ocurrió un error al enviar los datos.";
-            if (res.status === 422) {
-                mensaje = "Error en los datos enviados: revisa los campos obligatorios y el formato.";
-            } else if (data && data.detail) {
-                mensaje = data.detail;
-            }
-
+        if (selectedFiles.length + newFiles.length > MAX_IMAGES) {
+            const permitidas = MAX_IMAGES - selectedFiles.length;
             Swal.fire({
-                icon: "error",
-                title: "Error",
-                text: mensaje,
+                icon: "warning",
+                title: "Límite de imágenes",
+                text: `Máximo ${MAX_IMAGES} imágenes. Puedes agregar ${permitidas} más.`,
+            });
+            inputFile.value = "";
+            return;
+        }
+
+        newFiles.forEach(f => selectedFiles.push(f));
+        inputFile.value = ""; // reset para permitir seleccionar de nuevo
+        renderFileList();
+    });
+
+    // ── Estado inicial ──
+    renderFileList();
+
+    // ── Envío del formulario ──
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        if (selectedFiles.length !== MAX_IMAGES) {
+            Swal.fire({
+                icon: "warning",
+                title: "Imágenes requeridas",
+                text: `Debes seleccionar exactamente ${MAX_IMAGES} imágenes.`,
             });
             return;
         }
 
-        Swal.fire({
-            icon: "success",
-            title: "Noticia creada",
-            text: data.detail || "La noticia fue creada correctamente.",
-        }).then(() => window.location.href = "../index.html");
+        const formData = new FormData(form);
+        formData.delete("imagenes");
+        selectedFiles.forEach(f => formData.append("imagenes", f));
 
-    } catch (error) {
-        Swal.close();
-        console.error("Error al crear noticia:", error);
-        Swal.fire({
-            icon: "error",
-            title: "Error",
-            text: "Ocurrió un error al crear la noticia.",
-        });
-    }
-});
-
+        try {
+            const response = await fetch(`${API_BASE_URL}/noticia/`, {
+                method: "POST",
+                body: formData,
+            });
+            if (!response.ok) {
+                const errData = await response.json();
+                Swal.fire("Error", errData.detail || "Error al crear noticia", "error");
+                return;
+            }
+            await response.json();
+            Swal.fire({
+                icon: "success",
+                title: "Noticia creada",
+                text: "La noticia se ha creado correctamente.",
+            }).then(() => window.location.href = "/");
+            form.reset();
+            previewContainer.innerHTML = "";
+        } catch (err) {
+            Swal.fire("Error", "Error de conexión", "error");
+        }
+    });
 });

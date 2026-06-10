@@ -1,14 +1,10 @@
 from fastapi import APIRouter, Query, status, Depends
-from passlib.context import CryptContext
 from models.userModel import Usuarios
 from core.security import getTokenId, isAdmin
 from controllers import userController as User
 
 # Router
 router = APIRouter(prefix="/usuarios", tags=["Usuarios"])
-
-# Cifrado de contraseñas
-crypt = CryptContext(schemes=["bcrypt"])
 
 @router.get("/", status_code=status.HTTP_200_OK)
 async def getUsers(
@@ -36,6 +32,11 @@ async def updateUser(user: Usuarios, userId: int = Depends(getTokenId)):
 @router.patch("/activo/{id}", status_code=status.HTTP_200_OK)
 async def updateActivo(id: int, _: bool = Depends(isAdmin)):
    return await User.updateActivo(id)
+
+# Actualizar datos de un usuario por ID (solo administradores)
+@router.patch("/{id}", status_code=status.HTTP_200_OK)
+async def updateUserById(id: int, user: Usuarios, _: bool = Depends(isAdmin)):
+    return await User.updateUserById(id, user)
 
 # Actualizar contraseña del usuario logueado
 @router.patch("/me/pass", status_code=status.HTTP_200_OK)

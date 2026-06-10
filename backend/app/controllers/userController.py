@@ -1,14 +1,11 @@
 from fastapi import HTTPException, status
 from core.ConnectDB import db
-from passlib.context import CryptContext
 from schemas.userSchema import admin_user_schema, global_user_schema
 from models.userModel import Usuarios
 from utils.infoVerify import searchUser, validContrasena, validRol, validUser
 from utils.DbHelper import paginar, totalPages
 from utils.HttpError import errorInterno  
-
-# Cifrado de contraseñas
-crypt = CryptContext(schemes=["bcrypt"])
+from core.security import pwd_context
 
 async def getUsers(filtro: str,page: int,size: int,):
     try:
@@ -120,6 +117,48 @@ async def updateUser(user: Usuarios, userId: int):
     except Exception:
         raise errorInterno()
 
+# Actualizar usuario por ID (solo administradores)
+async def updateUserById(id: int, user: Usuarios):
+    try:
+        async with db.transaction():
+            existing = await searchUser(id, 1)
+            if not existing:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Usuario inexistente"
+                )
+
+            existingUser = await searchUser(user.usuario, 2)
+            if existingUser and existingUser["id"] != id:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="El nombre de usuario ya está en uso"
+                )
+
+            query = """
+                UPDATE usuarios 
+                SET nombre = :nombre, apellido = :apellido, usuario = :usuario 
+                WHERE id = :id 
+                RETURNING id
+            """
+            values = {
+                "id": id,
+                "nombre": user.nombre,
+                "apellido": user.apellido,
+                "usuario": user.usuario
+            }
+
+            result = await db.fetch_val(query, values)
+
+            if not result:
+                raise errorInterno()
+
+            return {"detail": "Usuario actualizado exitosamente"}
+    except HTTPException:
+        raise
+    except Exception:
+        raise errorInterno()
+
 
 # Activar/Desactivar usuario (admin)
 async def updateActivo(id: int):
@@ -159,7 +198,7 @@ async def updatePassword(password: str, newPassword: str, userId: int):
         async with db.transaction():
             user = await validUser(userId,1)
 
-            if not crypt.verify(password, user["contrasena"]):
+            if not pwd_context.verify(password, user["contrasena"]):
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="La contraseña actual no coincide"
@@ -167,7 +206,7 @@ async def updatePassword(password: str, newPassword: str, userId: int):
 
             query = "UPDATE usuarios SET contrasena = :contrasena WHERE id = :id RETURNING id"
             result = await db.fetch_val(
-                query, {"contrasena": crypt.hash(newPassword), "id": userId}
+                query, {"contrasena": pwd_context.hash(newPassword), "id": userId}
             )
 
             if not result:
@@ -204,8 +243,8 @@ async def updateRol(id:int,rol:str):
     except HTTPException:
         raise
     except Exception:
-        errorInterno()
-    
+        raise errorInterno()
+
 # Buscar usuarios (admin o supervisor)
 async def buscarUsuarios(query: str, page: int, size: int):
     try:

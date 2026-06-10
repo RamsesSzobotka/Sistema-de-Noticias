@@ -99,16 +99,17 @@ async def borrarComentario(id: int, userId: int):
                                     detail="Comentario no encontrado")
 
             # Validar permisos
-            if not (userId == comentario_usuario["usuario_id"] or getRol(userId) != "admin"):
+            if not (userId == comentario_usuario["usuario_id"] or (await getRol(userId))["rol"] == "admin"):
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
                                     detail="No tienes acceso a esta acción")
 
-            # Armar query para borrar comentario (y sus hijos si aplica)
+            hijos = await db.fetch_val(
+                "SELECT COUNT(*) FROM comentarios WHERE comentario_padre_id = :id", {"id": id}
+            )
             query = "DELETE FROM comentarios WHERE id = :id"
-            if await validComentarioPadre(id) is None:
+            if hijos > 0:
                 query += " OR comentario_padre_id = :id"
 
-            # Usar RETURNING con fetch_one
             query += " RETURNING id"
             result = await db.fetch_one(query, {"id": id})
 

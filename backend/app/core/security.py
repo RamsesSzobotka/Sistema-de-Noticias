@@ -1,23 +1,23 @@
-from fastapi import HTTPException, status, Depends
+from fastapi import HTTPException, status, Depends, Request
 from fastapi.security import OAuth2PasswordBearer
 from dotenv import load_dotenv
 from datetime import datetime, timezone, timedelta
 from utils.infoVerify import searchUser
 from utils.HttpError import errorInterno
 from typing import cast, Dict
+from passlib.context import CryptContext
 import jwt
 from jwt import PyJWTError, ExpiredSignatureError, InvalidTokenError
 from core.ConnectDB import db
 import os
-import bcrypt
 
 oauth2 = OAuth2PasswordBearer(tokenUrl="auth/login")
-
 load_dotenv()
+pwd_context = CryptContext(schemes=["bcrypt"])
+
 try:
     SECRET_KEY = os.getenv("SECRET_KEY")
     ACCESS_TOKEN_EXPIRED_MINUTES = int(cast(str, os.getenv("ACCESS_TOKEN_EXPIRED_MINUTES")))
-    REFRESH_TOKEN_EXPIRED_MINUTES = int(cast(str, os.getenv("REFRESH_TOKEN_EXPIRED_MINUTES")))
     ALGORITHM = cast(str, os.getenv("ALGORITHM"))
 except ValueError:
     raise HTTPException(
@@ -26,19 +26,18 @@ except ValueError:
     )
 
 
-async def authToken(token: str = Depends(oauth2)):
-    """
-    Verifica y decodifica el token JWT de autenticación.
-
-    Parámetros:
-        token (str): Token JWT enviado en el encabezado Authorization.
-
-    Retorna:
-        dict: Información contenida en el token (payload).
-
-    Lanza:
-        HTTPException: Si el token ha expirado, es inválido o el usuario no existe.
-    """
+async def authToken(request: Request) -> Dict:
+    token = request.cookies.get("access_token")
+    if not token:
+        auth = request.headers.get("Authorization")
+        if auth and auth.startswith("Bearer "):
+            token = auth[7:]
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="No autenticado",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     try:
         tokenData = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         tokenData["sub"] = int(tokenData.get("sub", 0))
@@ -72,109 +71,12 @@ async def authToken(token: str = Depends(oauth2)):
             headers={"WWW-Authenticate": "Bearer"}
         )
 
-
-def generateJWT(id: int) -> str:
-    """
-    Genera un token JWT de acceso.
-
-    Parámetros:
-        id (int): ID del usuario autenticado.
-
-    Retorna:
-        str: Token JWT codificado.
-    """
+def generateJWT(id: int, days: int = 7) -> str:
     playload = {
         "sub": str(id),
-        "type": "access",
-        "exp": datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRED_MINUTES)
+        "exp": datetime.now(timezone.utc) + timedelta(days=days)
     }
     return jwt.encode(playload, SECRET_KEY, algorithm=ALGORITHM)
-
-
-def generateRefreshJWT(id: int) -> str:
-    """
-    Genera un token JWT de tipo 'refresh'.
-
-    Parámetros:
-        id (int): ID del usuario autenticado.
-
-    Retorna:
-        str: Token JWT de actualización codificado.
-    """
-    playload = {
-        "sub": str(id),
-        "type": "refresh",
-        "exp": datetime.now(timezone.utc) + timedelta(minutes=REFRESH_TOKEN_EXPIRED_MINUTES)
-    }
-    return jwt.encode(playload, SECRET_KEY, algorithm=ALGORITHM)
-
-
-def refreshJWT(refreshToken: str) -> Dict:
-    """
-    Valida un refresh token y genera un nuevo access token.
-
-    Parámetros:
-        refresh_token (str): Token JWT tipo refresh enviado por el cliente.
-
-    Retorna:
-        Dict: { "access_token": ..., "token_type": "bearer" }
-
-    Lanza:
-        HTTPException: Si el token no es válido o no es de tipo refresh.
-    """
-    try:
-        # Decodificar el token
-        payload = jwt.decode(refreshToken, SECRET_KEY, algorithms=[ALGORITHM])
-
-        # Verificar ID de usuario
-        userId = payload["sub"]
-        if not userId:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token inválido: no contiene ID de usuario",
-                headers={"WWW-Authenticate": "Bearer"}
-            )
-
-        # Asegurar que sea un refresh token
-        if payload["type"] != "refresh":
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="El token proporcionado no es un refresh token",
-                headers={"WWW-Authenticate": "Bearer"}
-            )
-
-        return {
-            "access_token": generateJWT(int(userId)),
-            "token_type": "bearer"
-        }
-
-    except ExpiredSignatureError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Refresh token expirado, inicie sesión de nuevo",
-            headers={"WWW-Authenticate": "Bearer"}
-        )
-
-    except InvalidTokenError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Refresh token inválido",
-            headers={"WWW-Authenticate": "Bearer"}
-        )
-
-def hashPassword(password: str) -> str:
-    """
-    Hashea una contraseña usando bcrypt.
-
-    Parámetros:
-        password (str): Contraseña en texto plano.
-
-    Retorna:
-        str: Contraseña hasheada.
-    """
-    hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
-    return hashed.decode()
-
 
 async def isAdmin(token: Dict = Depends(authToken)) -> bool:
     """

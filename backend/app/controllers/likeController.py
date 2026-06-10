@@ -16,7 +16,7 @@ async def getLikesController(noticiaId:int):
     except HTTPException:
         raise
     except Exception:
-        errorInterno()
+        raise errorInterno()
 
 async def likeVerifyController(noticiaId: int, userId: int):
     try:
@@ -50,13 +50,13 @@ async def postLikeController(noticiaId:int,userId: int ):
             
             result = await db.execute(query,{"usuario_id":userId,"noticia_id":noticiaId})
             if not result:
-                errorInterno()
-            
+                raise errorInterno()
+
             return {"detail": "Like agregado"}
     except HTTPException:
         raise
     except Exception:
-        errorInterno()
+        raise errorInterno()
 
 async def deleteLikeController(noticiaId:int, userId: int):
     try:

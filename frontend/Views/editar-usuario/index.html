@@ -10,167 +10,224 @@
     type="image/png"
     sizes="16x16"
     href="../assets/logo.png"/>
-  <link rel="stylesheet" href="../css/paneles-comunes.css" />
+  <link rel="stylesheet" href="../../css/design-system.css" />
+  <link rel="stylesheet" href="../../css/admin-common.css" />
+  <link rel="stylesheet" href="../../css/profile.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
   <style>
-    html,
     body {
-      height: 100vh;
+      min-height: 100vh;
       margin: 0;
       padding: 0;
       display: flex;
       flex-direction: column;
-    }
-
-    /* Estilo para el contenedor */
-    .container {
-      width: 400px;
-      padding: 30px;
-      background-color: #ffffff;
-      border-radius: 12px;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
-    }
-
-    /* Título de sección */
-    .container h2 {
-      font-size: 1.8rem;
-      margin-bottom: 25px;
-      color: #2c3e50;
-      text-align: center;
-    }
-
-    /* Formulario */
-    .form-usuario {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    .form-group {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .form-group label {
-      font-weight: 600;
-      margin-bottom: 8px;
-      color: #34495e;
-      font-size: 1rem;
-    }
-
-    .form-group input {
-      padding: 12px;
-      font-size: 1rem;
-      border: 1px solid #ccd1d9;
-      border-radius: 8px;
-      transition: all 0.25s ease-in-out;
-    }
-
-    .form-group input:focus {
-      border-color: #3498db;
-      box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
-      outline: none;
-    }
-
-    .form-group input[disabled] {
-      background-color: #f2f2f2;
-      color: #7f8c8d;
-      cursor: not-allowed;
-    }
-
-    /* Botones */
-    .botones {
-      display: flex;
-      justify-content: flex-end;
-      gap: 15px;
-      margin-top: 20px;
-    }
-
-    .btn {
-      font-family: inherit;
-      font-size: 1rem;
-      padding: 10px 18px;
-      border-radius: 8px;
-      border: none;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    /* Botón Editar */
-    .btn-editar {
-      background-color: #3498db;
-      color: #fff;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-
-    .btn-editar:hover {
-      background-color: #2980b9;
-      transform: scale(1.03);
-    }
-
-    .btn-editar:active {
-      background-color: #2471a3;
-      transform: scale(0.97);
-    }
-
-    /* Botón Guardar */
-    .btn-guardar {
-      background-color: #27ae60;
-      color: #fff;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      display: none;
-    }
-
-    .btn-guardar:hover {
-      background-color: #219150;
-      transform: scale(1.03);
-    }
-
-    .btn-guardar:active {
-      background-color: #1e8449;
-      transform: scale(0.97);
     }
   </style>
 </head>
 
 <body>
 
-  <header>
-    <h1>Perfil</h1>
-  </header>
+  <!-- Unified Navbar -->
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <!-- LEFT: brand + visits + greeting -->
+      <div class="navbar-left">
+        <a class="navbar-brand" href="/">NoticiaPTY</a>
+        <span class="visitor-count">
+          <i class="fas fa-users"></i>
+          <span id="visitorCount">0 visitas</span>
+        </span>
+        <span class="navbar-greeting" id="navbarGreeting" style="display:none;">
+          <i class="fa-solid fa-user"></i>
+          Hola, <span id="usernameDisplay"></span>
+        </span>
+      </div>
+
+      <!-- HAMBURGER (mobile only) -->
+      <button class="hamburger" id="hamburgerBtn" aria-label="Menú de navegación">
+        <span></span><span></span><span></span>
+      </button>
+
+      <!-- COLLAPSIBLE MENU (center + right) -->
+      <div class="navbar-menu" id="navbarMenu">
+        <div class="navbar-center">
+          <div class="navbar-search">
+            <input type="text" id="searchInput" placeholder="Buscar noticias..." />
+            <button id="searchBtn"><i class="fas fa-search"></i></button>
+          </div>
+          <select class="navbar-categories-dropdown" id="categorySelect" aria-label="Filtrar por categoría">
+            <option value="todas">Todas</option>
+            <option value="deporte">Deportes</option>
+            <option value="politica">Política</option>
+            <option value="tecnologia">Tecnología</option>
+            <option value="entretenimiento">Entretenimiento</option>
+          </select>
+        </div>
+
+        <div class="navbar-right">
+            <div class="navbar-user" id="navbarUser">
+            </div>
+            <div class="navbar-auth" id="navbarAuth">
+            </div>
+        </div>
+      </div>
+    </div>
+
+      <!-- Drawer Overlay -->
+      <div class="drawer-overlay" id="drawerOverlay"></div>
+
+      <!-- Side Drawer -->
+      <div class="side-drawer" id="sideDrawer">
+        <!-- User info (logged in) -->
+        <div class="drawer-user-info" id="drawerUserInfo" style="display:none;">
+          <i class="fa-solid fa-user"></i>
+          <span id="drawerUsername"></span>
+        </div>
+
+        <!-- Action buttons (logged in users) -->
+        <div class="drawer-user" id="drawerUser">
+          <button class="drawer-btn" id="publicarBtn" style="display:none;">
+            <i class="fas fa-newspaper"></i> Publicar
+          </button>
+          <button class="drawer-btn" id="supervisorPanelBtn" style="display:none;">
+            <i class="fas fa-chart-line"></i> Panel
+          </button>
+          <button class="drawer-btn" id="adminBtn" style="display:none;">
+            <i class="fas fa-users-cog"></i> Admin
+          </button>
+          <button class="drawer-btn" id="btn-editar" style="display:none;">
+            <i class="fa-solid fa-user"></i> Perfil
+          </button>
+        </div>
+
+        <!-- Auth buttons (guest users) -->
+        <div class="drawer-auth" id="drawerAuth">
+          <a href="/auth/iniciar-sesion/" class="drawer-btn">
+            <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+          </a>
+          <a href="/auth/registro/" class="drawer-btn drawer-btn-register">
+            <i class="fas fa-user-plus"></i> Registrarse
+          </a>
+        </div>
+
+        <div class="drawer-spacer"></div>
+        <div class="drawer-divider"></div>
+
+        <!-- Logout at bottom -->
+        <button class="drawer-btn drawer-btn-danger" id="logoutBtn">
+          <i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión
+        </button>
+      </div>
+    </nav>
+
   <!-- Botón de regreso -->
-  <div style="margin-bottom: 20px">
+  <div style="margin-bottom: var(--space-lg)">
     <button
       class="volver-btn"
-      onclick="window.location.href='../'"
-      style="background-color: #6c757d">
+      onclick="window.location.href='/'"
+      style="background-color: var(--color-text-muted)">
       ← Volver al Panel de Noticias
     </button>
   </div>
-  <div class="container">
-    <h2>Editar mis datos</h2>
-    <form id="formEditarSesion" class="form-usuario">
-      <div class="form-group">
-        <label>Nombre</label>
-        <input type="text" name="nombre" disabled>
+  <div class="profile-page">
+
+    <!-- Profile Card -->
+    <div class="profile-card">
+      <div class="profile-card-body">
+        <div class="profile-avatar-section">
+          <div class="avatar-circle" id="avatarCircle">AB</div>
+          <div class="profile-info">
+            <h3 id="profileDisplayName">Nombre Apellido</h3>
+            <p class="profile-username" id="profileDisplayUser">@usuario</p>
+            <div class="profile-meta">
+              <span class="profile-meta-item">
+                <i class="fas fa-user-tag"></i>
+                <span id="profileDisplayRole" class="profile-role-badge">Rol</span>
+              </span>
+              <span class="profile-meta-item">
+                <i class="fas fa-calendar-alt"></i>
+                Miembro desde <span id="profileDisplayDate">fecha</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <form id="formEditarSesion" class="profile-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="editNombre">Nombre</label>
+              <input type="text" id="editNombre" disabled />
+            </div>
+            <div class="form-group">
+              <label for="editApellido">Apellido</label>
+              <input type="text" id="editApellido" disabled />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="editUsuario">Usuario</label>
+            <input type="text" id="editUsuario" disabled />
+          </div>
+          <div class="profile-actions" id="profileActions">
+            <button type="button" id="btnEditar" class="btn btn-primary">
+              <i class="fas fa-pen"></i> Editar Perfil
+            </button>
+            <button type="submit" id="btnGuardar" class="btn btn-success" style="display:none;">
+              <i class="fas fa-save"></i> Guardar Cambios
+            </button>
+            <button type="button" id="btnCancelar" class="btn btn-secondary" style="display:none;">
+              Cancelar
+            </button>
+          </div>
+        </form>
       </div>
-      <div class="form-group">
-        <label>Apellido</label>
-        <input type="text" name="apellido" disabled>
+    </div>
+
+    <!-- Security Card -->
+    <div class="profile-card">
+      <div class="profile-card-header">
+        <i class="fas fa-lock"></i>
+        <span>Cambiar Contraseña</span>
       </div>
-      <div class="form-group">
-        <label>Usuario</label>
-        <input type="text" name="usuario" disabled>
+      <div class="profile-card-body">
+        <form id="formCambiarPassword" class="password-form">
+          <div class="form-group">
+            <label for="passwordActual">Contraseña actual</label>
+            <input type="password" id="passwordActual" placeholder="Tu contraseña actual" required />
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="passwordNueva">Nueva contraseña</label>
+              <input type="password" id="passwordNueva" placeholder="Mín. 8 caracteres" required />
+            </div>
+            <div class="form-group">
+              <label for="passwordConfirmar">Confirmar</label>
+              <input type="password" id="passwordConfirmar" placeholder="Repite la contraseña" required />
+            </div>
+          </div>
+          <div class="profile-actions">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-key"></i> Actualizar Contraseña
+            </button>
+          </div>
+        </form>
       </div>
-      <div class="botones">
-        <button type="button" id="btnEditar" class="btn btn-editar">Editar</button>
-        <button type="submit" id="btnGuardar" class="btn btn-guardar" style="display: none;">Guardar cambios</button>
-      </div>
-    </form>
+    </div>
 
   </div>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
   <script type="module" src="editar_usuario.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+  var hp="/";
+  var cs=document.getElementById("categorySelect");
+  if(cs) cs.addEventListener("change",function(e){localStorage.setItem("selectedCategory",e.target.value);window.location.href=hp;});
+  function ds(){var q=document.getElementById("searchInput");if(q&&q.value.trim()){localStorage.setItem("searchQuery",q.value.trim());window.location.href=hp;}}
+  var sb=document.getElementById("searchBtn");if(sb)sb.addEventListener("click",ds);
+  var si=document.getElementById("searchInput");if(si)si.addEventListener("keyup",function(e){if(e.key==="Enter")ds();});
+  // Drawer toggle handled by setupDrawer() in editar_usuario.js
+});
+</script>
 </body>
 
 </html>
