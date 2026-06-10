@@ -227,12 +227,12 @@
   box-shadow: var(--shadow-sm);
 }
 
-table {
+.table-container table {
   width: 100%;
   border-collapse: collapse;
 }
 
-thead th {
+.table-container thead th {
   background: var(--color-bg);
   color: var(--color-text-secondary);
   font-weight: var(--font-weight-semibold);
@@ -244,38 +244,38 @@ thead th {
   border-bottom: 2px solid var(--color-border);
 }
 
-tbody td {
+.table-container tbody td {
   padding: 12px var(--space-md);
   font-size: var(--font-size-sm);
   border-bottom: 1px solid var(--color-border-light);
   vertical-align: middle;
 }
 
-tbody tr:last-child td {
+.table-container tbody tr:last-child td {
   border-bottom: none;
 }
 
-tbody tr {
+.table-container tbody tr {
   transition: background var(--transition-fast);
 }
 
-tbody tr:hover {
+.table-container tbody tr:hover {
   background: rgba(0, 0, 0, 0.02);
 }
 
-tbody tr.active {
+.table-container tbody tr.active {
   background: rgba(5, 150, 99, 0.04);
 }
 
-tbody tr.active:hover {
+.table-container tbody tr.active:hover {
   background: rgba(5, 150, 99, 0.08);
 }
 
-tbody tr.inactive {
+.table-container tbody tr.inactive {
   background: rgba(220, 38, 38, 0.04);
 }
 
-tbody tr.inactive:hover {
+.table-container tbody tr.inactive:hover {
   background: rgba(220, 38, 38, 0.08);
 }
 
