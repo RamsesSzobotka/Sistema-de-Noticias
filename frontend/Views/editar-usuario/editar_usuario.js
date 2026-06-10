@@ -1,11 +1,18 @@
 import { API_BASE_URL } from "/config/config.js";
+import { verificarSesion, cerrarSesion, initNavbar, cargarVisitas } from "/js/auth.js";
 
 const apiBaseUrl = `${API_BASE_URL}/usuarios`;
 
 async function verificarSesionYObtenerDatos() {
   try {
+    const session = await verificarSesion();
+    if (!session) throw new Error("Sesion no valida");
+
+    initNavbar(session);
+    cargarVisitas();
+
     const res = await fetch(`${apiBaseUrl}/me`);
-    if (!res.ok) throw new Error("Sesion no valida");
+    if (!res.ok) throw new Error("Error al obtener datos");
     const usuario = await res.json();
     document.querySelector('input[name="nombre"]').value = usuario.nombre;
     document.querySelector('input[name="apellido"]').value = usuario.apellido;
@@ -13,7 +20,7 @@ async function verificarSesionYObtenerDatos() {
     return true;
   } catch (error) {
     Swal.fire({ icon: "error", title: "Sesion no valida", text: "Debes iniciar sesion para acceder.", confirmButtonText: "Ir al inicio" })
-      .then(() => window.location.href = "../index.html");
+      .then(() => window.location.href = "/");
     return false;
   }
 }

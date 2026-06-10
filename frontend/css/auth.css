@@ -7,9 +7,7 @@
 body {
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
   min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  margin: 0;
   padding: 0;
   font-family: var(--font-family-body);
   color: var(--color-text);
@@ -20,10 +18,9 @@ body {
   max-width: 420px;
   background: var(--color-bg-card);
   padding: var(--space-xl);
-  margin: var(--space-xl) auto;
+  margin: 80px auto var(--space-xl);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
-  min-height: 400px;
   box-sizing: border-box;
 }
 

@@ -1,12 +1,12 @@
 import { API_BASE_URL } from "/config/config.js";
-import { verificarSesion, cerrarSesion } from "/js/auth.js";
+import { verificarSesion, initNavbar, cargarVisitas } from "/js/auth.js";
 
 let currentPage = 1;
 let totalPages = 1;
 let currentCategory = "todas";
 
 document.addEventListener("DOMContentLoaded", async () => {
-    // Restore category from localStorage (set by detalle-noticia dropdown)
+    // Restore category from localStorage (set by other pages)
     const savedCategory = localStorage.getItem("selectedCategory");
     if (savedCategory) {
         currentCategory = savedCategory;
@@ -14,18 +14,21 @@ document.addEventListener("DOMContentLoaded", async () => {
         localStorage.removeItem("selectedCategory");
     }
 
-    const data = await verificarSesion();
-    if (data) {
-        mostrarBotonesPorRol(data.rol);
-        const usernameDisplay = document.getElementById("usernameDisplay");
-        if (usernameDisplay) usernameDisplay.textContent = `Hola, ${data.usuario}`;
-        document.getElementById("navbarUser").classList.add("show");
-        document.getElementById("navbarAuth").style.display = "none";
-    } else {
-        mostrarBotonesPorRol(null);
+    // Restore search query from localStorage (set by other pages)
+    const savedQuery = localStorage.getItem("searchQuery");
+    if (savedQuery) {
+        localStorage.removeItem("searchQuery");
+        document.getElementById("searchInput").value = savedQuery;
     }
+
+    const data = await verificarSesion();
+    initNavbar(data);
     await actualizarVisitas();
-    await cargarNoticias();
+    if (savedQuery) {
+        buscarNoticias(savedQuery);
+    } else {
+        await cargarNoticias();
+    }
 
     document.getElementById("searchBtn").addEventListener("click", () => {
         const query = document.getElementById("searchInput").value.trim();
@@ -50,73 +53,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         cargarNoticias();
     });
 
-    document.getElementById("logoutBtn").addEventListener("click", cerrarSesion);
-
-    // Hamburger toggle
-    const hamburger = document.getElementById("hamburgerBtn");
-    const navbarMenu = document.getElementById("navbarMenu");
-    if (hamburger && navbarMenu) {
-        hamburger.addEventListener("click", () => {
-            hamburger.classList.toggle("active");
-            navbarMenu.classList.toggle("active");
-        });
-    }
 });
 
-// ==============================
-// Mostrar botones por rol (por ID para evitar conflictos CSS)
-// ==============================
-function mostrarBotonesPorRol(rol) {
-    // Ocultar todos primero
-    ["btn-editar", "adminBtn", "supervisorPanelBtn", "publicarBtn"].forEach(id => {
-        const btn = document.getElementById(id);
-        if (btn) {
-            btn.style.display = "none";
-            btn.replaceWith(btn.cloneNode(true));
-        }
-    });
 
-    if (!rol) return;
-
-    // Perfil: visible para cualquier autenticado
-    const perfilBtn = document.getElementById("btn-editar");
-    if (perfilBtn) {
-        perfilBtn.style.display = "inline-block";
-        perfilBtn.addEventListener("click", () => {
-            window.location.href = "editar-usuario/index.html";
-        });
-    }
-
-    // Admin: solo admin
-    if (rol === "admin") {
-        const adminBtn = document.getElementById("adminBtn");
-        if (adminBtn) {
-            adminBtn.style.display = "inline-block";
-            adminBtn.addEventListener("click", () => {
-                window.location.href = "administrar-usuario/index.html";
-            });
-        }
-    }
-
-    // Editor+ (admin, supervisor, editor): panel y publicar
-    if (["admin", "supervisor", "editor"].includes(rol)) {
-        const supervisorBtn = document.getElementById("supervisorPanelBtn");
-        if (supervisorBtn) {
-            supervisorBtn.style.display = "inline-block";
-            supervisorBtn.addEventListener("click", () => {
-                window.location.href = "administrar-noticia/index.html";
-            });
-        }
-
-        const publicarBtn = document.getElementById("publicarBtn");
-        if (publicarBtn) {
-            publicarBtn.style.display = "inline-block";
-            publicarBtn.addEventListener("click", () => {
-                window.location.href = "crear-noticia/index.html";
-            });
-        }
-    }
-}
 
 
 
@@ -126,10 +65,7 @@ function mostrarBotonesPorRol(rol) {
 async function actualizarVisitas() {
     try {
         await fetch(`${API_BASE_URL}/vistas/update`, { method: "PUT" });
-        const res = await fetch(`${API_BASE_URL}/vistas/`, { method: "GET" });
-        const data = await res.json();
-        const visitorCountEl = document.getElementById("visitorCount");
-        if (visitorCountEl) visitorCountEl.textContent = `${data.cantidad} visitas`;
+        await cargarVisitas();
     } catch (error) {
         console.error("Error al actualizar visitas:", error);
     }

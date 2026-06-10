@@ -12,6 +12,7 @@
     href="../assets/logo.png"/>
   <link rel="stylesheet" href="../../css/design-system.css" />
   <link rel="stylesheet" href="../../css/admin-common.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
   <style>
     html,
     body {
@@ -139,48 +140,101 @@
   <!-- Unified Navbar -->
   <nav class="navbar">
     <div class="navbar-inner">
-      <a class="navbar-brand" href="../index.html">NoticiaPTY</a>
+      <!-- LEFT: brand + visits + greeting -->
+      <div class="navbar-left">
+        <a class="navbar-brand" href="/">NoticiaPTY</a>
+        <span class="visitor-count">
+          <i class="fas fa-users"></i>
+          <span id="visitorCount">0 visitas</span>
+        </span>
+        <span class="navbar-greeting" id="navbarGreeting" style="display:none;">
+          <i class="fa-solid fa-user"></i>
+          Hola, <span id="usernameDisplay"></span>
+        </span>
+      </div>
+
+      <!-- HAMBURGER (mobile only) -->
       <button class="hamburger" id="hamburgerBtn" aria-label="Menú de navegación">
         <span></span><span></span><span></span>
       </button>
+
+      <!-- COLLAPSIBLE MENU (center + right) -->
       <div class="navbar-menu" id="navbarMenu">
-        <div class="navbar-actions" style="margin-left:0;width:100%;justify-content:flex-end;">
-          <div class="navbar-user" id="navbarUser">
-            <span class="navbar-user-name" id="usernameDisplay"></span>
-            <button class="navbar-user-btn" id="publicarBtn" style="display:none;">
-              <i class="fas fa-newspaper"></i> Publicar
-            </button>
-            <button class="navbar-user-btn" id="supervisorPanelBtn" style="display:none;">
-              <i class="fas fa-chart-line"></i> Panel
-            </button>
-            <button class="navbar-user-btn" id="adminBtn" style="display:none;">
-              <i class="fas fa-users-cog"></i> Admin
-            </button>
-            <button class="navbar-user-btn" id="btn-editar" style="display:none;">
-              <i class="fa-solid fa-user"></i> Perfil
-            </button>
-            <button class="navbar-user-btn navbar-user-btn-danger" id="logoutBtn">
-              <i class="fa-solid fa-right-from-bracket"></i> Salir
-            </button>
+        <div class="navbar-center">
+          <div class="navbar-search">
+            <input type="text" id="searchInput" placeholder="Buscar noticias..." />
+            <button id="searchBtn"><i class="fas fa-search"></i></button>
           </div>
-          <div class="navbar-auth" id="navbarAuth">
-            <a href="../auth/iniciar-sesion/index.html" class="navbar-auth-btn">
-              <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
-            </a>
-            <a href="../auth/registro/index.html" class="navbar-auth-btn navbar-auth-btn-register">
-              <i class="fas fa-user-plus"></i> Registrarse
-            </a>
-          </div>
+          <select class="navbar-categories-dropdown" id="categorySelect" aria-label="Filtrar por categoría">
+            <option value="todas">Todas</option>
+            <option value="deporte">Deportes</option>
+            <option value="politica">Política</option>
+            <option value="tecnologia">Tecnología</option>
+            <option value="entretenimiento">Entretenimiento</option>
+          </select>
+        </div>
+
+        <div class="navbar-right">
+            <div class="navbar-user" id="navbarUser">
+            </div>
+            <div class="navbar-auth" id="navbarAuth">
+            </div>
         </div>
       </div>
     </div>
-  </nav>
+
+      <!-- Drawer Overlay -->
+      <div class="drawer-overlay" id="drawerOverlay"></div>
+
+      <!-- Side Drawer -->
+      <div class="side-drawer" id="sideDrawer">
+        <!-- User info (logged in) -->
+        <div class="drawer-user-info" id="drawerUserInfo" style="display:none;">
+          <i class="fa-solid fa-user"></i>
+          <span id="drawerUsername"></span>
+        </div>
+
+        <!-- Action buttons (logged in users) -->
+        <div class="drawer-user" id="drawerUser">
+          <button class="drawer-btn" id="publicarBtn" style="display:none;">
+            <i class="fas fa-newspaper"></i> Publicar
+          </button>
+          <button class="drawer-btn" id="supervisorPanelBtn" style="display:none;">
+            <i class="fas fa-chart-line"></i> Panel
+          </button>
+          <button class="drawer-btn" id="adminBtn" style="display:none;">
+            <i class="fas fa-users-cog"></i> Admin
+          </button>
+          <button class="drawer-btn" id="btn-editar" style="display:none;">
+            <i class="fa-solid fa-user"></i> Perfil
+          </button>
+        </div>
+
+        <!-- Auth buttons (guest users) -->
+        <div class="drawer-auth" id="drawerAuth">
+          <a href="/auth/iniciar-sesion/" class="drawer-btn">
+            <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+          </a>
+          <a href="/auth/registro/" class="drawer-btn drawer-btn-register">
+            <i class="fas fa-user-plus"></i> Registrarse
+          </a>
+        </div>
+
+        <div class="drawer-spacer"></div>
+        <div class="drawer-divider"></div>
+
+        <!-- Logout at bottom -->
+        <button class="drawer-btn drawer-btn-danger" id="logoutBtn">
+          <i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión
+        </button>
+      </div>
+    </nav>
 
   <!-- Botón de regreso -->
   <div style="margin-bottom: var(--space-lg)">
     <button
       class="volver-btn"
-      onclick="window.location.href='../'"
+      onclick="window.location.href='/'"
       style="background-color: var(--color-text-muted)">
       ← Volver al Panel de Noticias
     </button>
@@ -210,6 +264,17 @@
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
   <script type="module" src="editar_usuario.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+  var hp="/";
+  var cs=document.getElementById("categorySelect");
+  if(cs) cs.addEventListener("change",function(e){localStorage.setItem("selectedCategory",e.target.value);window.location.href=hp;});
+  function ds(){var q=document.getElementById("searchInput");if(q&&q.value.trim()){localStorage.setItem("searchQuery",q.value.trim());window.location.href=hp;}}
+  var sb=document.getElementById("searchBtn");if(sb)sb.addEventListener("click",ds);
+  var si=document.getElementById("searchInput");if(si)si.addEventListener("keyup",function(e){if(e.key==="Enter")ds();});
+  // Drawer toggle handled by setupDrawer() in editar_usuario.js
+});
+</script>
 </body>
 
 </html>

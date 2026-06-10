@@ -1,6 +1,7 @@
 import { API_BASE_URL } from "/config/config.js";
+import { verificarSesion, cerrarSesion, initNavbar, cargarVisitas } from "/js/auth.js";
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   const apiBase = API_BASE_URL;
 
   const form = document.getElementById("formNoticia");
@@ -15,32 +16,24 @@ document.addEventListener("DOMContentLoaded", () => {
   const noticiaId = urlParams.get("id");
   if (!noticiaId) {
     Swal.fire({ icon: "error", title: "Error", text: "ID de noticia no proporcionado." })
-      .then(() => window.location.href = "../administrar-noticia/index.html");
+      .then(() => window.location.href = "/administrar-noticia/");
     return;
   }
 
-  verificarPermiso().then(permitido => {
-    if (!permitido) return;
-    cargarNoticia(noticiaId);
-    agregarEventos();
-  });
-
-  async function verificarPermiso() {
-    try {
-      const res = await fetch(`${apiBase}/usuarios/me`);
-      const data = await res.json();
-      if (!res.ok || !["admin", "editor", "supervisor"].includes(data.rol)) {
-        Swal.fire({ icon: "error", title: "No autorizado", text: "No tienes permiso para editar noticias." })
-          .then(() => window.location.href = "../administrar-noticia/index.html");
-        return false;
-      }
-      document.getElementById("usuario_id").value = data.id;
-      return true;
-    } catch (err) {
-      Swal.fire({ icon: "error", title: "Error", text: "Error verificando sesion." });
-      return false;
-    }
+  const session = await verificarSesion();
+  if (!session || !["admin", "editor", "supervisor"].includes(session.rol)) {
+    Swal.fire({ icon: "error", title: "No autorizado", text: "No tienes permiso para editar noticias." })
+      .then(() => window.location.href = "/administrar-noticia/");
+    return;
   }
+
+  document.getElementById("usuario_id").value = session.id;
+
+  initNavbar(session);
+  cargarVisitas();
+
+  cargarNoticia(noticiaId);
+  agregarEventos();
 
   async function cargarNoticia(id) {
     try {
@@ -48,7 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await res.json();
       if (!res.ok || !data) {
         Swal.fire({ icon: "error", title: "Error", text: data.detail || "No se encontro la noticia." })
-          .then(() => window.location.href = "../administrar-noticia/index.html");
+          .then(() => window.location.href = "/administrar-noticia/");
         return;
       }
       document.getElementById("noticia_id").value = data.id;
@@ -114,7 +107,7 @@ document.addEventListener("DOMContentLoaded", () => {
         icon: res.ok ? "success" : "error",
         title: res.ok ? "Noticia actualizada" : "Error",
         text: data.detail || "Error al actualizar la noticia.",
-      }).then(() => { if (res.ok) window.location.href = "../administrar-noticia/index.html"; });
+      }).then(() => { if (res.ok) window.location.href = "/administrar-noticia/"; });
     } catch (err) {
       Swal.fire({ icon: "error", title: "Error", text: "Error enviando actualizacion." });
     }

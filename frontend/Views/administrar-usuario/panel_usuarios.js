@@ -1,20 +1,20 @@
 import { API_BASE_URL } from "/config/config.js";
+import { verificarSesion, cerrarSesion, initNavbar, cargarVisitas } from "/js/auth.js";
 const apiUrl = `${API_BASE_URL}/usuarios/`;
 let usuariosCargados = [];
 
 async function verificarSesionYPermiso() {
   try {
-    const res = await fetch(`${API_BASE_URL}/usuarios/me`);
-    if (!res.ok) throw new Error("Token invalido o sesion expirada");
-    const data = await res.json();
-    sessionStorage.setItem("usuario_id", data.id);
-    sessionStorage.setItem("rol", data.rol);
-    sessionStorage.setItem("usuario", data.usuario);
-    if (data.rol.toLowerCase() !== "admin") {
+    const session = await verificarSesion();
+    if (!session || session.rol.toLowerCase() !== "admin") {
       Swal.fire({ icon: "error", title: "Acceso denegado", text: "No tienes permisos para acceder a esta seccion." })
-        .then(() => window.location.href = "../index.html");
+        .then(() => window.location.href = "/");
       return;
     }
+
+    initNavbar(session);
+    cargarVisitas();
+
     await cargarUsuarios();
   } catch (error) {
     Swal.fire({ icon: "error", title: "Error", text: error.message || "No se pudo verificar la sesion." });

@@ -31,7 +31,7 @@ document.getElementById("registerForm").addEventListener("submit", async functio
         guardarSesion(data.id, data.usuario, data.rol);
 
         Swal.fire({ icon: "success", title: "Registro exitoso! Bienvenido", timer: 2000, showConfirmButton: false })
-            .then(() => { window.location.href = "../../index.html"; });
+            .then(() => { window.location.href = "/"; });
     } catch (error) {
         Swal.fire({ icon: "error", title: "Error", text: error.message });
     }

@@ -1,27 +1,28 @@
 import { API_BASE_URL } from "/config/config.js";
+import { verificarSesion, cerrarSesion, initNavbar, cargarVisitas } from "/js/auth.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
     try {
-        const res = await fetch(`${API_BASE_URL}/usuarios/me`);
-        if (!res.ok) throw new Error("No autenticado");
-        const data = await res.json();
-
-        if (!["admin","supervisor","editor"].includes(data.rol)) {
+        const session = await verificarSesion();
+        if (!session || !["admin","supervisor","editor"].includes(session.rol)) {
             Swal.fire({
                 icon: "error",
                 title: "Acceso denegado",
                 text: "Solo supervisores, administradores y editores pueden crear noticias.",
-            }).then(() => window.location.href = "../index.html");
+            }).then(() => window.location.href = "/");
             return;
         }
 
-        document.getElementById("usuario_id").value = data.id;
+        document.getElementById("usuario_id").value = session.id;
+
+        initNavbar(session);
+        cargarVisitas();
     } catch (err) {
         Swal.fire({
             icon: "error",
             title: "Acceso denegado",
             text: "Debes iniciar sesion.",
-        }).then(() => window.location.href = "../index.html");
+        }).then(() => window.location.href = "/");
         return;
     }
 
@@ -53,83 +54,30 @@ document.addEventListener("DOMContentLoaded", async () => {
             reader.readAsDataURL(file);
         });
     });
-// Envío del formulario
-form.addEventListener("submit", async (e) => {
-    e.preventDefault();
 
-    if (inputImagen.files.length !== 3) {
-        Swal.fire({
-            icon: "warning",
-            title: "Cantidad de imágenes",
-            text: "Por favor, selecciona exactamente 3 imágenes.",
-        });
-        return;
-    }
-
-    const formData = new FormData();
-
-    formData.append("titulo", document.getElementById("titulo").value);
-    formData.append("contenido", document.getElementById("contenido").value);
-    formData.append("categoria_id", document.getElementById("categoria").value);
-    formData.append("autor", document.getElementById("autor").value);
-
-    Array.from(inputImagen.files).forEach(file => {
-        formData.append("imagenes", file);
-    });
-
-    Swal.fire({
-        title: "Publicando noticia...",
-        text: "Por favor, espera",
-        allowOutsideClick: false,
-        didOpen: () => Swal.showLoading()
-    });
-
-    try {
-        const res = await fetch(`${API_BASE_URL}/noticia/`, {
-            method: "POST",
-            body: formData
-        });
-
-        let data;
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const formData = new FormData(form);
         try {
-            data = await res.json();
-        } catch {
-            data = null;
-        }
-
-        Swal.close();
-
-        if (!res.ok) {
-            let mensaje = "Ocurrió un error al enviar los datos.";
-            if (res.status === 422) {
-                mensaje = "Error en los datos enviados: revisa los campos obligatorios y el formato.";
-            } else if (data && data.detail) {
-                mensaje = data.detail;
-            }
-
-            Swal.fire({
-                icon: "error",
-                title: "Error",
-                text: mensaje,
+            const response = await fetch(`${API_BASE_URL}/noticia/`, {
+                method: "POST",
+                body: formData,
             });
-            return;
+            if (!response.ok) {
+                const errData = await response.json();
+                Swal.fire("Error", errData.detail || "Error al crear noticia", "error");
+                return;
+            }
+            const data = await response.json();
+            Swal.fire({
+                icon: "success",
+                title: "Noticia creada",
+                text: "La noticia se ha creado correctamente.",
+            }).then(() => window.location.href = "/");
+            form.reset();
+            previewContainer.innerHTML = "";
+        } catch (err) {
+            Swal.fire("Error", "Error de conexión", "error");
         }
-
-        Swal.fire({
-            icon: "success",
-            title: "Noticia creada",
-            text: data.detail || "La noticia fue creada correctamente.",
-        }).then(() => window.location.href = "../index.html");
-
-    } catch (error) {
-        Swal.close();
-        console.error("Error al crear noticia:", error);
-        Swal.fire({
-            icon: "error",
-            title: "Error",
-            text: "Ocurrió un error al crear la noticia.",
-        });
-    }
-});
-
+    });
 });

@@ -13,25 +13,10 @@
         <title>NoticiaPTY - Iniciar Sesión</title>
     </head>
     <body>
-        <!-- Unified Navbar -->
+        <!-- Navbar simplificado: solo logo -->
         <nav class="navbar">
-          <div class="navbar-inner">
-            <a class="navbar-brand" href="../../index.html">NoticiaPTY</a>
-            <button class="hamburger" id="hamburgerBtn" aria-label="Menú de navegación">
-              <span></span><span></span><span></span>
-            </button>
-            <div class="navbar-menu" id="navbarMenu">
-              <div class="navbar-actions" style="margin-left:0;width:100%;justify-content:flex-end;">
-                <div class="navbar-auth" id="navbarAuth">
-                  <a href="../../auth/iniciar-sesion/index.html" class="navbar-auth-btn">
-                    <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
-                  </a>
-                  <a href="../../auth/registro/index.html" class="navbar-auth-btn navbar-auth-btn-register">
-                    <i class="fas fa-user-plus"></i> Registrarse
-                  </a>
-                </div>
-              </div>
-            </div>
+          <div class="navbar-inner" style="justify-content: center;">
+            <a class="navbar-brand" href="/">NoticiaPTY</a>
           </div>
         </nav>
         <div class="auth-container">
@@ -60,12 +45,13 @@
                 <div class="auth-links">
                     <p>
                         ¿No tienes una cuenta?
-                        <a href="../registro/index.html">Regístrate aquí</a>
+                        <a href="/auth/registro/">Regístrate aquí</a>
                     </p>
                 </div>
             </form>
         </div>
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
         <script type="module" src="script.js"></script>
-    </body>
+
+</body>
 </html>

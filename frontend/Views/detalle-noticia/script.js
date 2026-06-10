@@ -1,5 +1,5 @@
 import { API_BASE_URL } from "/config/config.js";
-import { verificarSesion, cerrarSesion, mostrarBotonesPorRol } from "/js/auth.js";
+import { verificarSesion, cerrarSesion, initNavbar, cargarVisitas } from "/js/auth.js";
 
 function formatDate(dateStr) {
   if (!dateStr) return '';
@@ -22,60 +22,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     const session = await verificarSesion();
     if (session) {
         usuarioId = String(session.id);
-        document.getElementById("navbarUser").classList.add("show");
-        document.getElementById("navbarAuth").style.display = "none";
-        const usernameDisplay = document.getElementById("usernameDisplay");
-        if (usernameDisplay) usernameDisplay.textContent = `Hola, ${session.usuario}`;
-        mostrarBotonesPorRol(session.rol);
     } else {
-        document.getElementById("navbarUser").classList.remove("show");
-        document.getElementById("navbarAuth").style.display = "flex";
         usuarioId = null;
     }
 
+    initNavbar(session);
+    cargarVisitas();
     cargarComentarios();
-
-    // Hamburger menu toggle
-    const hamburger = document.getElementById('hamburgerBtn');
-    const navbarMenu = document.getElementById('navbarMenu');
-    if (hamburger && navbarMenu) {
-        hamburger.addEventListener('click', () => {
-            hamburger.classList.toggle('active');
-            navbarMenu.classList.toggle('active');
-        });
-    }
-
-    function mostrarBotonesPorRol(rol) {
-        const botones = ["btn-editar", "adminBtn", "supervisorPanelBtn", "publicarBtn"];
-        botones.forEach(id => {
-            const btn = document.getElementById(id);
-            if (btn) { btn.style.display = "none"; btn.replaceWith(btn.cloneNode(true)); }
-        });
-        const perfilBtn = document.getElementById("btn-editar");
-        if (perfilBtn) {
-            perfilBtn.style.display = "inline-block";
-            perfilBtn.addEventListener("click", () => window.location.href = "../editar-usuario/index.html");
-        }
-        if (rol === "admin") {
-            const adminBtn = document.getElementById("adminBtn");
-            if (adminBtn) {
-                adminBtn.style.display = "inline-block";
-                adminBtn.addEventListener("click", () => window.location.href = "../administrar-usuario/index.html");
-            }
-        }
-        if (["admin", "supervisor", "editor"].includes(rol)) {
-            const supervisorBtn = document.getElementById("supervisorPanelBtn");
-            if (supervisorBtn) {
-                supervisorBtn.style.display = "inline-block";
-                supervisorBtn.addEventListener("click", () => window.location.href = "../administrar-noticia/index.html");
-            }
-            const publicarBtn = document.getElementById("publicarBtn");
-            if (publicarBtn) {
-                publicarBtn.style.display = "inline-block";
-                publicarBtn.addEventListener("click", () => window.location.href = "../crear-noticia/index.html");
-            }
-        }
-    }
 
     function cargarComentarios() {
         if (!noticiaId) return;
@@ -228,7 +181,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 icon: "warning", title: "Debes iniciar sesion",
                 text: "Inicia sesion para poder comentar.",
                 confirmButtonColor: "#3085d6", confirmButtonText: "Iniciar sesion",
-            }).then(result => { if (result.isConfirmed) window.location.href = "../auth/iniciar-sesion/index.html"; });
+            }).then(result => { if (result.isConfirmed) window.location.href = "/auth/iniciar-sesion/"; });
             return;
         }
         if (!contenido) { Swal.fire("Advertencia", "El comentario no puede estar vacio.", "warning"); return; }
@@ -300,7 +253,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     icon: "warning", title: "Inicia sesion",
                     text: "Debes estar logueado para dar like.",
                     confirmButtonColor: "#3085d6", confirmButtonText: "Iniciar sesion",
-                }).then(result => { if (result.isConfirmed) window.location.href = "../auth/iniciar-sesion/index.html"; });
+                }).then(result => { if (result.isConfirmed) window.location.href = "/auth/iniciar-sesion/"; });
                 return;
             }
             yaDioLike ? quitarLike() : darLike();
@@ -366,15 +319,28 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 document.addEventListener("DOMContentLoaded", () => {
-    const logoutBtn = document.getElementById("logoutBtn");
-    if (logoutBtn) logoutBtn.addEventListener("click", cerrarSesion);
-
     // Category dropdown navigates to home with filter
     const categorySelect = document.getElementById("categorySelect");
     if (categorySelect) {
         categorySelect.addEventListener("change", (e) => {
             localStorage.setItem("selectedCategory", e.target.value);
-            window.location.href = "../index.html";
+            window.location.href = "/";
         });
     }
+
+    // Search navigates to home with query
+    function doSearch() {
+        const q = document.getElementById("searchInput");
+        if (q && q.value.trim()) {
+            localStorage.setItem("searchQuery", q.value.trim());
+            window.location.href = "/";
+        }
+    }
+    const searchBtn = document.getElementById("searchBtn");
+    if (searchBtn) searchBtn.addEventListener("click", doSearch);
+    const searchInput = document.getElementById("searchInput");
+    if (searchInput) searchInput.addEventListener("keyup", (e) => {
+        if (e.key === "Enter") doSearch();
+    });
+
 });

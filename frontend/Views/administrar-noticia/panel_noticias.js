@@ -1,36 +1,28 @@
 import { API_BASE_URL } from "/config/config.js";
-
-document.addEventListener("DOMContentLoaded", () => {
-  verificarSesion();
-  document.getElementById("btnMostrarTodas").addEventListener("click", () => cargarNoticias(1, "todas"));
-  document.getElementById("btnFiltrarActivas").addEventListener("click", () => cargarNoticias(1, "activa"));
-  document.getElementById("btnFiltrarInactivas").addEventListener("click", () => cargarNoticias(1, "inactiva"));
-});
+import { verificarSesion, cerrarSesion, initNavbar, cargarVisitas } from "/js/auth.js";
 
 let noticiasCargadas = [];
 let rolUsuario = "";
 
-function verificarSesion() {
-  fetch(`${API_BASE_URL}/usuarios/me`)
-    .then(res => {
-      if (!res.ok) throw new Error("No autorizado");
-      return res.json();
-    })
-    .then(data => {
-      if (["supervisor", "admin", "editor"].includes(data.rol)) {
-        rolUsuario = data.rol;
-        cargarNoticias();
-      } else {
-        redirigir("Acceso denegado. Rol insuficiente.");
-      }
-    })
-    .catch(() => redirigir("Error al verificar sesion."));
-}
+document.addEventListener("DOMContentLoaded", async () => {
+  const session = await verificarSesion();
+  if (session && ["supervisor", "admin", "editor"].includes(session.rol)) {
+    rolUsuario = session.rol;
 
-function redirigir(mensaje) {
-  Swal.fire({ icon: "error", title: "Acceso denegado", text: mensaje })
-    .then(() => window.location.href = "../auth/iniciar-sesion/index.html");
-}
+    initNavbar(session);
+    cargarVisitas();
+
+    cargarNoticias();
+  } else {
+    Swal.fire({ icon: "error", title: "Acceso denegado", text: "Acceso denegado. Rol insuficiente." })
+      .then(() => window.location.href = "/auth/iniciar-sesion/");
+    return;
+  }
+
+  document.getElementById("btnMostrarTodas").addEventListener("click", () => cargarNoticias(1, "todas"));
+  document.getElementById("btnFiltrarActivas").addEventListener("click", () => cargarNoticias(1, "activa"));
+  document.getElementById("btnFiltrarInactivas").addEventListener("click", () => cargarNoticias(1, "inactiva"));
+});
 
 function cargarNoticias(pagina = 1, filtro = "todas") {
   const tbody = document.querySelector("#noticiasTable tbody");
@@ -152,7 +144,7 @@ function mostrarNoticias(noticias) {
     btn.addEventListener("click", () => actualizarEstado(btn.dataset.id));
   });
   document.querySelectorAll(".btn-editar").forEach(btn => {
-    btn.addEventListener("click", () => window.location.href = `../editar-noticia/index.html?id=${btn.dataset.id}`);
+    btn.addEventListener("click", () => window.location.href = `/editar-noticia/?id=${btn.dataset.id}`);
   });
   document.querySelectorAll(".btn-eliminar").forEach(btn => {
     btn.addEventListener("click", () => confirmarEliminacion(btn.dataset.id));
