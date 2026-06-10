@@ -120,32 +120,77 @@
         </div>
 
         <form id="formNoticia" enctype="multipart/form-data">
-    <input type="hidden" name="id" value="" />
-    <input type="hidden" id="usuario_id" name="usuario_id" />
+            <!-- === Campos ocultos === -->
+            <input type="hidden" id="usuario_id" name="usuario_id" />
 
-    <label for="titulo">Título:</label>
-    <input type="text" name="titulo" id="titulo" required />
+            <!-- === SECCIÓN 1: Información Principal === -->
+            <div class="form-section">
+                <div class="section-header">
+                    <i class="fas fa-info-circle"></i>
+                    <h3>Información Principal</h3>
+                </div>
 
-    <label for="contenido">Contenido:</label>
-    <textarea name="contenido" id="contenido" rows="10" required></textarea>
+                <div class="form-group">
+                    <label for="titulo">Título de la noticia</label>
+                    <input type="text" name="titulo" id="titulo" required placeholder="Ingresa un título impactante para la noticia" />
+                </div>
 
-    <label for="categoria">Categoría:</label>
-    <select name="categoria_id" id="categoria" required>
-        <option value="">Selecciona una categoría</option>
-        <option value="1">Deportes</option>
-        <option value="2">Política</option>
-        <option value="3">Tecnología</option>
-        <option value="4">Entretenimiento</option>
-    </select>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="categoria">Categoría</label>
+                        <select name="categoria_id" id="categoria" required>
+                            <option value="">Selecciona una categoría</option>
+                            <option value="1">Deportes</option>
+                            <option value="2">Política</option>
+                            <option value="3">Tecnología</option>
+                            <option value="4">Entretenimiento</option>
+                        </select>
+                    </div>
 
-    <label for="imagenes">Imágenes (exactamente 3):</label>
-    <input type="file" name="imagenes" id="imagen" accept="image/*" multiple required />
+                    <div class="form-group">
+                        <label for="autor">Autor</label>
+                        <input type="text" name="autor" id="autor" required placeholder="Nombre y apellido" />
+                    </div>
+                </div>
+            </div>
 
-    <label for="autor">Autor:</label>
-    <input type="text" name="autor" id="autor" required />
+            <!-- === SECCIÓN 2: Contenido === -->
+            <div class="form-section">
+                <div class="section-header">
+                    <i class="fas fa-newspaper"></i>
+                    <h3>Contenido</h3>
+                </div>
 
-    <button type="submit">Guardar Noticia</button>
-</form>
+                <div class="form-group">
+                    <label for="contenido">Cuerpo de la noticia</label>
+                    <textarea name="contenido" id="contenido" rows="12" required placeholder="Escribe aquí el contenido completo de la noticia..."></textarea>
+                </div>
+            </div>
+
+            <!-- === SECCIÓN 3: Imágenes === -->
+            <div class="form-section">
+                <div class="section-header">
+                    <i class="fas fa-images"></i>
+                    <h3>Imágenes</h3>
+                </div>
+
+                <div class="form-group">
+                    <label>Imágenes de la noticia</label>
+                    <div class="file-upload-area">
+                        <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                        <p>Haz clic aquí para seleccionar imágenes</p>
+                        <span class="file-count">0 de 3 imágenes seleccionadas</span>
+                    </div>
+                    <input type="file" id="imagen" accept="image/*" multiple style="display:none" />
+                    <!-- El preview se renderiza aquí dinámicamente desde JS -->
+                </div>
+            </div>
+
+            <!-- === Botón de envío === -->
+            <button type="submit" class="submit-btn">
+                <i class="fas fa-save"></i> Publicar Noticia
+            </button>
+        </form>
 
 
 

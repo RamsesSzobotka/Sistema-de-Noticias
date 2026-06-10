@@ -120,57 +120,88 @@
 
     <!-- FORMULARIO PRINCIPAL -->
     <form id="formNoticia" enctype="multipart/form-data">
-        <!-- Campos ocultos -->
+        <!-- === Campos ocultos === -->
         <input type="hidden" id="noticia_id" name="id" />
         <input type="hidden" id="usuario_id" name="usuario" />
 
-        <!-- Título -->
-        <label for="titulo">Título:</label>
-        <input type="text" name="titulo" id="titulo" required />
+        <!-- === SECCIÓN 1: Información Principal === -->
+        <div class="form-section">
+            <div class="section-header">
+                <i class="fas fa-info-circle"></i>
+                <h3>Información Principal</h3>
+            </div>
 
-        <!-- Contenido -->
-        <label for="contenido">Contenido:</label>
-        <textarea name="contenido" id="contenido" rows="10" required></textarea>
+            <div class="form-group">
+                <label for="titulo">Título de la noticia</label>
+                <input type="text" name="titulo" id="titulo" required placeholder="Ingresa un título impactante para la noticia" />
+            </div>
 
-        <!-- Categoría -->
-        <label for="categoria">Categoría:</label>
-        <select name="categoria_id" id="categoria" required>
-            <option value="">Selecciona una categoría</option>
-            <option value="1">Deportes</option>
-            <option value="2">Política</option>
-            <option value="3">Tecnología</option>
-            <option value="4">Entretenimiento</option>
-        </select>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="categoria">Categoría</label>
+                    <select name="categoria_id" id="categoria" required>
+                        <option value="">Selecciona una categoría</option>
+                        <option value="1">Deportes</option>
+                        <option value="2">Política</option>
+                        <option value="3">Tecnología</option>
+                        <option value="4">Entretenimiento</option>
+                    </select>
+                </div>
 
-        <!-- CONTENEDOR DE IMÁGENES (dinámico desde JS) -->
-        <label>Imágenes actuales:</label>
-        <!-- Aquí se insertan dinámicamente las imágenes desde el JS -->
-        <!-- No poner nada aquí, el script lo rellenará -->
-        <div id="imagenes-actuales"></div>
+                <div class="form-group">
+                    <label for="autor">Autor</label>
+                    <input
+                        type="text"
+                        name="autor"
+                        id="autor"
+                        required
+                        placeholder="Nombre y apellido"
+                        pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñ]+(?:\s[A-Za-zÁÉÍÓÚáéíóúÑñ]+)+$"
+                        title="Debe ingresar nombre y apellido separados por un espacio."
+                    />
+                </div>
+            </div>
+        </div>
 
-        <!-- Subir nuevas imágenes opcionalmente -->
-        <label for="imagen">Agregar nuevas imágenes (opcional):</label>
-        <input
-            type="file"
-            id="imagen"
-            name="imagenes"
-            accept="image/*"
-            multiple
-        />
+        <!-- === SECCIÓN 2: Contenido === -->
+        <div class="form-section">
+            <div class="section-header">
+                <i class="fas fa-newspaper"></i>
+                <h3>Contenido</h3>
+            </div>
 
-        <!-- Autor -->
-        <label for="autor">Autor (nombre apellido):</label>
-        <input
-            type="text"
-            name="autor"
-            id="autor"
-            required
-            pattern="^[A-Za-zÁÉÍÓÚáéíóúÑñ]+(?:\s[A-Za-zÁÉÍÓÚáéíóúÑñ]+)+$"
-            title="Debe ingresar nombre y apellido separados por un espacio."
-        />
+            <div class="form-group">
+                <label for="contenido">Cuerpo de la noticia</label>
+                <textarea name="contenido" id="contenido" rows="12" required placeholder="Escribe aquí el contenido completo de la noticia..."></textarea>
+            </div>
+        </div>
 
-        <!-- Botón guardar -->
-        <button type="submit">Guardar Cambios</button>
+        <!-- === SECCIÓN 3: Imágenes === -->
+        <div class="form-section">
+            <div class="section-header">
+                <i class="fas fa-images"></i>
+                <h3>Imágenes</h3>
+            </div>
+
+            <div class="form-group">
+                <label>Imágenes actuales</label>
+                <div id="existingImages"></div>
+
+                <label for="imagen">Agregar nuevas imágenes (opcional)</label>
+                <div class="file-upload-area">
+                    <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                    <p>Haz clic aquí para seleccionar nuevas imágenes</p>
+                    <span class="file-count">Si subes imágenes, deben ser exactamente 3. Déjalo vacío para mantener las actuales.</span>
+                </div>
+                <input type="file" id="imagen" accept="image/*" multiple style="display:none" />
+                <!-- El preview de nuevas imágenes se renderiza aquí dinámicamente desde JS -->
+            </div>
+        </div>
+
+        <!-- === Botón de envío === -->
+        <button type="submit" class="submit-btn">
+            <i class="fas fa-save"></i> Guardar Cambios
+        </button>
     </form>
 
     <!-- JS -->
