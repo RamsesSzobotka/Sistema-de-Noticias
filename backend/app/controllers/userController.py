@@ -117,6 +117,48 @@ async def updateUser(user: Usuarios, userId: int):
     except Exception:
         raise errorInterno()
 
+# Actualizar usuario por ID (solo administradores)
+async def updateUserById(id: int, user: Usuarios):
+    try:
+        async with db.transaction():
+            existing = await searchUser(id, 1)
+            if not existing:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Usuario inexistente"
+                )
+
+            existingUser = await searchUser(user.usuario, 2)
+            if existingUser and existingUser["id"] != id:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="El nombre de usuario ya está en uso"
+                )
+
+            query = """
+                UPDATE usuarios 
+                SET nombre = :nombre, apellido = :apellido, usuario = :usuario 
+                WHERE id = :id 
+                RETURNING id
+            """
+            values = {
+                "id": id,
+                "nombre": user.nombre,
+                "apellido": user.apellido,
+                "usuario": user.usuario
+            }
+
+            result = await db.fetch_val(query, values)
+
+            if not result:
+                raise errorInterno()
+
+            return {"detail": "Usuario actualizado exitosamente"}
+    except HTTPException:
+        raise
+    except Exception:
+        raise errorInterno()
+
 
 # Activar/Desactivar usuario (admin)
 async def updateActivo(id: int):
