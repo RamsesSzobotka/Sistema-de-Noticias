@@ -69,12 +69,13 @@ async function verificarSesionYCargarDatos() {
 
     return true;
   } catch (error) {
+    console.error("Error en perfil:", error);
     Swal.fire({
       icon: "error",
-      title: "Sesion no valida",
-      text: "Debes iniciar sesion para acceder.",
-      confirmButtonText: "Ir al inicio"
-    }).then(() => window.location.href = "/");
+      title: "Error al cargar perfil",
+      text: error.message || "Ocurrió un error al cargar tus datos. Intenta recargar la página.",
+      confirmButtonText: "Recargar"
+    }).then(() => window.location.reload());
     return false;
   }
 }
