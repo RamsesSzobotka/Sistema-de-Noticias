@@ -12,125 +12,15 @@
     href="../assets/logo.png"/>
   <link rel="stylesheet" href="../../css/design-system.css" />
   <link rel="stylesheet" href="../../css/admin-common.css" />
+  <link rel="stylesheet" href="../../css/profile.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
   <style>
-    html,
     body {
-      height: 100vh;
+      min-height: 100vh;
       margin: 0;
       padding: 0;
       display: flex;
       flex-direction: column;
-    }
-
-    /* Estilo para el contenedor */
-    .container {
-      max-width: 400px;
-      width: 90%;
-      padding: var(--space-xl);
-      background-color: var(--color-bg-card);
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-lg);
-    }
-
-    /* Título de sección */
-    .container h2 {
-      font-size: var(--font-size-xxl);
-      margin-bottom: var(--space-lg);
-      color: var(--color-text-dark);
-      text-align: center;
-    }
-
-    /* Formulario */
-    .form-usuario {
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-lg);
-    }
-
-    .form-group {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .form-group label {
-      font-weight: var(--font-weight-semibold);
-      margin-bottom: var(--space-sm);
-      color: var(--color-text-dark);
-      font-size: var(--font-size-base);
-    }
-
-    .form-group input {
-      padding: var(--space-sm) var(--space-md);
-      font-size: var(--font-size-base);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-md);
-      transition: all 0.25s ease-in-out;
-    }
-
-    .form-group input:focus {
-      border-color: var(--color-primary);
-      box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
-      outline: none;
-    }
-
-    .form-group input[disabled] {
-      background-color: var(--color-bg-dark);
-      color: var(--color-text-muted);
-      cursor: not-allowed;
-    }
-
-    /* Botones */
-    .botones {
-      display: flex;
-      justify-content: flex-end;
-      gap: var(--space-md);
-      margin-top: var(--space-lg);
-    }
-
-    .btn {
-      font-family: inherit;
-      font-size: var(--font-size-base);
-      padding: var(--space-sm) var(--space-md);
-      border-radius: var(--radius-md);
-      border: none;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    /* Botón Editar */
-    .btn-editar {
-      background-color: var(--color-primary);
-      color: var(--color-white);
-      box-shadow: var(--shadow-md);
-    }
-
-    .btn-editar:hover {
-      background-color: var(--color-primary-dark);
-      transform: scale(1.03);
-    }
-
-    .btn-editar:active {
-      background-color: var(--color-primary-darker);
-      transform: scale(0.97);
-    }
-
-    /* Botón Guardar */
-    .btn-guardar {
-      background-color: var(--color-success);
-      color: var(--color-white);
-      box-shadow: var(--shadow-md);
-      display: none;
-    }
-
-    .btn-guardar:hover {
-      background-color: var(--color-success-dark);
-      transform: scale(1.03);
-    }
-
-    .btn-guardar:active {
-      background-color: var(--color-success-dark);
-      transform: scale(0.97);
     }
   </style>
 </head>
@@ -239,26 +129,89 @@
       ← Volver al Panel de Noticias
     </button>
   </div>
-  <div class="container">
-    <h2>Editar mis datos</h2>
-    <form id="formEditarSesion" class="form-usuario">
-      <div class="form-group">
-        <label>Nombre</label>
-        <input type="text" name="nombre" disabled>
+  <div class="profile-page">
+
+    <!-- Profile Card -->
+    <div class="profile-card">
+      <div class="profile-card-body">
+        <div class="profile-avatar-section">
+          <div class="avatar-circle" id="avatarCircle">AB</div>
+          <div class="profile-info">
+            <h3 id="profileDisplayName">Nombre Apellido</h3>
+            <p class="profile-username" id="profileDisplayUser">@usuario</p>
+            <div class="profile-meta">
+              <span class="profile-meta-item">
+                <i class="fas fa-user-tag"></i>
+                <span id="profileDisplayRole" class="profile-role-badge">Rol</span>
+              </span>
+              <span class="profile-meta-item">
+                <i class="fas fa-calendar-alt"></i>
+                Miembro desde <span id="profileDisplayDate">fecha</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <form id="formEditarSesion" class="profile-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="editNombre">Nombre</label>
+              <input type="text" id="editNombre" disabled />
+            </div>
+            <div class="form-group">
+              <label for="editApellido">Apellido</label>
+              <input type="text" id="editApellido" disabled />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="editUsuario">Usuario</label>
+            <input type="text" id="editUsuario" disabled />
+          </div>
+          <div class="profile-actions" id="profileActions">
+            <button type="button" id="btnEditar" class="btn btn-primary">
+              <i class="fas fa-pen"></i> Editar Perfil
+            </button>
+            <button type="submit" id="btnGuardar" class="btn btn-success" style="display:none;">
+              <i class="fas fa-save"></i> Guardar Cambios
+            </button>
+            <button type="button" id="btnCancelar" class="btn btn-secondary" style="display:none;">
+              Cancelar
+            </button>
+          </div>
+        </form>
       </div>
-      <div class="form-group">
-        <label>Apellido</label>
-        <input type="text" name="apellido" disabled>
+    </div>
+
+    <!-- Security Card -->
+    <div class="profile-card">
+      <div class="profile-card-header">
+        <i class="fas fa-lock"></i>
+        <span>Cambiar Contraseña</span>
       </div>
-      <div class="form-group">
-        <label>Usuario</label>
-        <input type="text" name="usuario" disabled>
+      <div class="profile-card-body">
+        <form id="formCambiarPassword" class="password-form">
+          <div class="form-group">
+            <label for="passwordActual">Contraseña actual</label>
+            <input type="password" id="passwordActual" placeholder="Tu contraseña actual" required />
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="passwordNueva">Nueva contraseña</label>
+              <input type="password" id="passwordNueva" placeholder="Mín. 8 caracteres" required />
+            </div>
+            <div class="form-group">
+              <label for="passwordConfirmar">Confirmar</label>
+              <input type="password" id="passwordConfirmar" placeholder="Repite la contraseña" required />
+            </div>
+          </div>
+          <div class="profile-actions">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-key"></i> Actualizar Contraseña
+            </button>
+          </div>
+        </form>
       </div>
-      <div class="botones">
-        <button type="button" id="btnEditar" class="btn btn-editar">Editar</button>
-        <button type="submit" id="btnGuardar" class="btn btn-guardar" style="display: none;">Guardar cambios</button>
-      </div>
-    </form>
+    </div>
 
   </div>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
