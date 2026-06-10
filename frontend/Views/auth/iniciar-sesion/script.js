@@ -1,5 +1,5 @@
 import { API_BASE_URL } from "/config/config.js";
-import { guardarSesion } from "../auth.js";
+import { guardarSesion } from "/js/auth.js";
 
 document.getElementById("loginForm").addEventListener("submit", async function (event) {
     event.preventDefault();
@@ -31,7 +31,7 @@ document.getElementById("loginForm").addEventListener("submit", async function (
         guardarSesion(data.id, data.usuario, data.rol);
 
         Swal.fire({ icon: "success", title: "Bienvenido!", timer: 2000, showConfirmButton: false })
-            .then(() => { window.location.href = "../../index.html"; });
+            .then(() => { window.location.href = "/"; });
     } catch (error) {
         Swal.fire({ icon: "error", title: "Error", text: error.message, confirmButtonText: "Intentar de nuevo" });
     }

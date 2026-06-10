@@ -33,6 +33,11 @@ async def updateUser(user: Usuarios, userId: int = Depends(getTokenId)):
 async def updateActivo(id: int, _: bool = Depends(isAdmin)):
    return await User.updateActivo(id)
 
+# Actualizar datos de un usuario por ID (solo administradores)
+@router.patch("/{id}", status_code=status.HTTP_200_OK)
+async def updateUserById(id: int, user: Usuarios, _: bool = Depends(isAdmin)):
+    return await User.updateUserById(id, user)
+
 # Actualizar contraseña del usuario logueado
 @router.patch("/me/pass", status_code=status.HTTP_200_OK)
 async def updatePassword(password: str, newPassword: str, userId: int = Depends(getTokenId)):

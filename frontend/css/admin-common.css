@@ -1,0 +1,115 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family-body);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  margin: 0;           /* Sin separación externa */
+}
+
+/* Header superior */
+header {
+  background-color: var(--color-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+  width: 100%;
+  padding: var(--space-xxl);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+/* Título a la izquierda */
+h1 {
+  font-size: 2rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-white);
+}
+
+h2 {
+  color: var(--color-text);
+}
+
+.container {
+  margin: var(--space-xl) auto;
+  padding: var(--space-lg);
+  background-color: var(--color-bg-card);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Botón de volver */
+.volver-btn {
+  background-color: var(--color-text-secondary);
+  color: var(--color-white);
+  padding: var(--space-sm) var(--space-md);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-decoration: none;
+  font-size: 0.9rem;
+  margin-left: var(--space-sm);
+  margin-top: var(--space-sm);
+  transition: background-color var(--transition-normal);
+}
+
+.volver-btn:hover {
+  background-color: var(--color-text);
+}
+
+/* Responsive table card layout for mobile */
+@media (max-width: 768px) {
+  table,
+  thead,
+  tbody,
+  th,
+  td,
+  tr {
+    display: block;
+  }
+
+  thead tr {
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+  }
+
+  tr {
+    margin-bottom: var(--space-md);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-sm);
+    background: var(--color-bg-card);
+  }
+
+  td {
+    border: none;
+    position: relative;
+    padding-left: 50%;
+    text-align: right;
+    min-height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+  }
+
+  td::before {
+    content: attr(data-label);
+    position: absolute;
+    left: var(--space-sm);
+    width: 45%;
+    text-align: left;
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text-secondary);
+  }
+
+  td:last-child {
+    border-bottom: none;
+  }
+}

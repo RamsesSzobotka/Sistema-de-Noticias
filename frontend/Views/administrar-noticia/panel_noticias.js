@@ -1,38 +1,50 @@
 import { API_BASE_URL } from "/config/config.js";
-
-document.addEventListener("DOMContentLoaded", () => {
-  verificarSesion();
-  document.getElementById("btnMostrarTodas").addEventListener("click", () => cargarNoticias(1, "todas"));
-  document.getElementById("btnFiltrarActivas").addEventListener("click", () => cargarNoticias(1, "activa"));
-  document.getElementById("btnFiltrarInactivas").addEventListener("click", () => cargarNoticias(1, "inactiva"));
-});
+import { verificarSesion, cerrarSesion, initNavbar, cargarVisitas } from "/js/auth.js";
 
 let noticiasCargadas = [];
 let rolUsuario = "";
 
-function verificarSesion() {
-  fetch(`${API_BASE_URL}/usuarios/me`)
-    .then(res => {
-      if (!res.ok) throw new Error("No autorizado");
-      return res.json();
-    })
-    .then(data => {
-      if (["supervisor", "admin", "editor"].includes(data.rol)) {
-        rolUsuario = data.rol;
-        cargarNoticias();
-      } else {
-        redirigir("Acceso denegado. Rol insuficiente.");
-      }
-    })
-    .catch(() => redirigir("Error al verificar sesion."));
-}
+document.addEventListener("DOMContentLoaded", async () => {
+  const session = await verificarSesion();
+  if (session && ["supervisor", "admin", "editor"].includes(session.rol)) {
+    rolUsuario = session.rol;
 
-function redirigir(mensaje) {
-  Swal.fire({ icon: "error", title: "Acceso denegado", text: mensaje })
-    .then(() => window.location.href = "../auth/iniciar-sesion/index.html");
+    initNavbar(session);
+    cargarVisitas();
+
+    cargarNoticias();
+  } else {
+    Swal.fire({ icon: "error", title: "Acceso denegado", text: "Acceso denegado. Rol insuficiente." })
+      .then(() => window.location.href = "/auth/iniciar-sesion/");
+    return;
+  }
+
+  document.getElementById("btnMostrarTodas").addEventListener("click", () => {
+    activarFiltro("todas");
+    cargarNoticias(1, "todas");
+  });
+  document.getElementById("btnFiltrarActivas").addEventListener("click", () => {
+    activarFiltro("activa");
+    cargarNoticias(1, "activa");
+  });
+  document.getElementById("btnFiltrarInactivas").addEventListener("click", () => {
+    activarFiltro("inactiva");
+    cargarNoticias(1, "inactiva");
+  });
+});
+
+function activarFiltro(filtro) {
+  document.querySelectorAll(".filter-pill").forEach(p => p.classList.remove("active"));
+  if (filtro === "todas") document.getElementById("btnMostrarTodas").classList.add("active");
+  else if (filtro === "activa") document.getElementById("btnFiltrarActivas").classList.add("active");
+  else if (filtro === "inactiva") document.getElementById("btnFiltrarInactivas").classList.add("active");
 }
 
 function cargarNoticias(pagina = 1, filtro = "todas") {
+  const tbody = document.querySelector("#noticiasTable tbody");
+  if (tbody) {
+    tbody.innerHTML = '<tr><td colspan="7"><div class="spinner"></div></td></tr>';
+  }
   const endpoint = `${API_BASE_URL}/noticia/all?filtro=${filtro}&page=${pagina}&size=10`;
   fetch(endpoint)
     .then(res => res.json())
@@ -40,8 +52,22 @@ function cargarNoticias(pagina = 1, filtro = "todas") {
       noticiasCargadas = data.noticias || [];
       mostrarNoticias(noticiasCargadas);
       generarPaginacion(data.total_pages || 1, pagina, filtro);
+      actualizarStats(noticiasCargadas);
+      const tableContainer = document.querySelector(".table-container");
+      if (tableContainer) tableContainer.style.display = "block";
     })
     .catch(() => Swal.fire({ icon: "error", title: "Error", text: "No se pudieron cargar las noticias." }));
+}
+
+function actualizarStats(noticias) {
+  const total = noticias.length;
+  const activas = noticias.filter(n => n.activo).length;
+  const inactivas = total - activas;
+  document.getElementById("totalCount").textContent = total;
+  document.getElementById("activeCount").textContent = activas;
+  document.getElementById("inactiveCount").textContent = inactivas;
+  const header = document.querySelector(".admin-header");
+  if (header) header.style.display = "flex";
 }
 
 function generarPaginacion(totalPaginas, paginaActual, filtro = "todas") {
@@ -64,7 +90,7 @@ function mostrarNoticias(noticias) {
   if (!noticias || noticias.length === 0) {
     const filaVacia = document.createElement("tr");
     const td = document.createElement("td");
-    td.colSpan = 10;
+    td.colSpan = 7;
     td.style.cssText = "text-align:center;font-weight:bold;padding:20px;";
     td.textContent = "No hay noticias disponibles.";
     filaVacia.appendChild(td);
@@ -75,78 +101,113 @@ function mostrarNoticias(noticias) {
   noticias.forEach(noticia => {
     const tr = document.createElement("tr");
 
-    function addCell(text) {
-      const td = document.createElement("td");
-      td.textContent = text;
-      return td;
-    }
+    // --- ID ---
+    const tdId = document.createElement("td");
+    tdId.textContent = noticia.id;
+    tdId.setAttribute("data-label", "ID");
+    tr.appendChild(tdId);
 
-    tr.appendChild(addCell(noticia.id));
-
+    // --- Título (bold title + clickable preview) ---
     const tdTitulo = document.createElement("td");
-    tdTitulo.textContent = noticia.titulo;
+    tdTitulo.setAttribute("data-label", "Título");
+    const tituloStrong = document.createElement("strong");
+    tituloStrong.textContent = noticia.titulo;
+    tdTitulo.appendChild(tituloStrong);
+    const preview = document.createElement("div");
+    preview.className = "content-cell";
+    preview.textContent = (noticia.contenido || "").slice(0, 80) + (noticia.contenido && noticia.contenido.length > 80 ? "..." : "");
+    preview.dataset.contenido = noticia.contenido;
+    preview.addEventListener("click", (e) => {
+      e.stopPropagation();
+      mostrarContenidoModal(noticia.contenido);
+    });
+    tdTitulo.appendChild(preview);
     tr.appendChild(tdTitulo);
 
-    const tdContenido = document.createElement("td");
-    tdContenido.className = "contenido-celda";
-    tdContenido.dataset.contenido = noticia.contenido;
-    tdContenido.textContent = (noticia.contenido || "").slice(0, 100) + "...";
-    tr.appendChild(tdContenido);
+    // --- Categoría (badge) ---
+    const tdCategoria = document.createElement("td");
+    tdCategoria.setAttribute("data-label", "Categoría");
+    const catBadge = document.createElement("span");
+    catBadge.className = "category-badge-inline";
+    catBadge.textContent = noticia.categoria?.nombre || "Sin categoría";
+    tdCategoria.appendChild(catBadge);
+    tr.appendChild(tdCategoria);
 
-    tr.appendChild(addCell(noticia.categoria?.nombre || "Sin categoria"));
-    tr.appendChild(addCell(noticia.autor));
+    // --- Autor ---
+    const tdAutor = document.createElement("td");
+    tdAutor.textContent = noticia.autor;
+    tdAutor.setAttribute("data-label", "Autor");
+    tr.appendChild(tdAutor);
 
-    const tdImg = document.createElement("td");
-    tdImg.className = "imagenes-container";
-    if (noticia.imagenes) {
-      noticia.imagenes.forEach(obj => {
-        const img = document.createElement("img");
-        img.className = "imagen-noticia";
-        img.src = `${API_BASE_URL}/${obj.imagen}`;
-        img.alt = "Imagen noticia";
-        img.style.cursor = "pointer";
-        img.onerror = function () { this.src = "/static/imagenesdb/default.png"; };
-        img.addEventListener("click", () => mostrarImagenModal(img.src));
-        tdImg.appendChild(img);
-      });
-    }
-    tr.appendChild(tdImg);
+    // --- Estado (status-badge with dot) ---
+    const tdEstado = document.createElement("td");
+    tdEstado.setAttribute("data-label", "Estado");
+    const badge = document.createElement("span");
+    badge.className = `status-badge ${noticia.activo ? "active" : "inactive"}`;
+    badge.innerHTML = `<i class="fas fa-circle"></i> ${noticia.activo ? "Activa" : "Inactiva"}`;
+    tdEstado.appendChild(badge);
+    tr.appendChild(tdEstado);
 
-    tr.appendChild(addCell(noticia.fecha_creacion));
-    tr.appendChild(addCell(noticia.activo ? "Activa" : "Inactiva"));
+    // --- Fecha ---
+    const tdFecha = document.createElement("td");
+    tdFecha.textContent = noticia.fecha_creacion;
+    tdFecha.setAttribute("data-label", "Fecha");
+    tr.appendChild(tdFecha);
 
+    // --- Acciones (action-buttons with btn-icon) ---
     const tdAcciones = document.createElement("td");
+    tdAcciones.setAttribute("data-label", "Acciones");
+    const btnGroup = document.createElement("div");
+    btnGroup.className = "action-buttons";
 
-    const btnEstado = document.createElement("button");
-    btnEstado.className = "btn-estado";
-    btnEstado.dataset.id = noticia.id;
-    btnEstado.textContent = noticia.activo ? "Desactivar" : "Activar";
-    tdAcciones.appendChild(btnEstado);
+    // Toggle button
+    const btnToggle = document.createElement("button");
+    btnToggle.className = "btn-icon btn-toggle";
+    btnToggle.innerHTML = noticia.activo
+      ? '<i class="fas fa-toggle-on"></i> Desactivar'
+      : '<i class="fas fa-toggle-off"></i> Activar';
+    btnToggle.title = noticia.activo ? "Desactivar noticia" : "Activar noticia";
+    btnToggle.addEventListener("click", () => actualizarEstado(noticia.id));
+    btnGroup.appendChild(btnToggle);
 
+    // Edit button
     const btnEditar = document.createElement("button");
-    btnEditar.className = "btn-editar";
-    btnEditar.dataset.id = noticia.id;
-    btnEditar.textContent = "Editar";
-    tdAcciones.appendChild(btnEditar);
+    btnEditar.className = "btn-icon btn-edit";
+    btnEditar.innerHTML = '<i class="fas fa-edit"></i> Editar';
+    btnEditar.title = "Editar noticia";
+    btnEditar.addEventListener("click", () => window.location.href = `/editar-noticia/?id=${noticia.id}`);
+    btnGroup.appendChild(btnEditar);
 
+    // Delete button
     const btnEliminar = document.createElement("button");
-    btnEliminar.className = "btn-eliminar";
-    btnEliminar.dataset.id = noticia.id;
-    btnEliminar.textContent = "Eliminar";
-    tdAcciones.appendChild(btnEliminar);
+    btnEliminar.className = "btn-icon btn-delete";
+    btnEliminar.innerHTML = '<i class="fas fa-trash"></i> Eliminar';
+    btnEliminar.title = "Eliminar noticia";
+    btnEliminar.addEventListener("click", () => confirmarEliminacion(noticia.id));
+    btnGroup.appendChild(btnEliminar);
 
+    // Image button
+    const btnImg = document.createElement("button");
+    btnImg.className = "btn-icon btn-image";
+    btnImg.innerHTML = '<i class="fas fa-image"></i>';
+    btnImg.title = "Ver imagen";
+    const placeholderSVG = 'data:image/svg+xml,' + encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">' +
+      '<rect fill="#F3F4F6" width="800" height="450"/>' +
+      '<text fill="#9CA3AF" font-family="Arial,sans-serif" font-size="18" text-anchor="middle" x="400" y="210">Sin imagen disponible</text>' +
+      '<text fill="#D1D5DB" font-family="Arial,sans-serif" font-size="13" text-anchor="middle" x="400" y="240">La imagen no pudo cargarse</text>' +
+      '</svg>'
+    );
+    const imgSrc = noticia.imagenes?.[0]?.imagen
+      ? `${API_BASE_URL}/${noticia.imagenes[0].imagen}`
+      : placeholderSVG;
+    btnImg.addEventListener("click", () => mostrarImagenModal(imgSrc));
+    btnGroup.appendChild(btnImg);
+
+    tdAcciones.appendChild(btnGroup);
     tr.appendChild(tdAcciones);
-    tbody.appendChild(tr);
-  });
 
-  document.querySelectorAll(".btn-estado").forEach(btn => {
-    btn.addEventListener("click", () => actualizarEstado(btn.dataset.id));
-  });
-  document.querySelectorAll(".btn-editar").forEach(btn => {
-    btn.addEventListener("click", () => window.location.href = `../editar-noticia/index.html?id=${btn.dataset.id}`);
-  });
-  document.querySelectorAll(".btn-eliminar").forEach(btn => {
-    btn.addEventListener("click", () => confirmarEliminacion(btn.dataset.id));
+    tbody.appendChild(tr);
   });
 }
 
@@ -175,37 +236,42 @@ function actualizarEstado(id) {
     .catch(() => Swal.fire({ icon: "error", title: "Error", text: "No se pudo actualizar el estado." }));
 }
 
+/* ---- Modal functions (overlay pattern) ---- */
+
 function mostrarImagenModal(src) {
-  document.getElementById("imagenGrande").src = src;
-  document.getElementById("modalImagen").style.display = "flex";
+  const img = document.getElementById("imagenGrande");
+  const placeholderSVG = 'data:image/svg+xml,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450">' +
+    '<rect fill="#F3F4F6" width="800" height="450"/>' +
+    '<text fill="#9CA3AF" font-family="Arial,sans-serif" font-size="18" text-anchor="middle" x="400" y="210">Sin imagen disponible</text>' +
+    '<text fill="#D1D5DB" font-family="Arial,sans-serif" font-size="13" text-anchor="middle" x="400" y="240">La imagen no pudo cargarse</text>' +
+    '</svg>'
+  );
+  img.src = src;
+  img.onerror = function () { this.src = placeholderSVG; };
+  document.getElementById("modalImagen").classList.add("open");
 }
-
-document.getElementById("cerrarModal").addEventListener("click", () => {
-  document.getElementById("modalImagen").style.display = "none";
-});
-
-document.getElementById("modalImagen").addEventListener("click", e => {
-  if (e.target.id === "modalImagen") e.currentTarget.style.display = "none";
-});
 
 function mostrarContenidoModal(contenido) {
   document.getElementById("textoCompleto").textContent = contenido;
-  document.getElementById("modalContenido").style.display = "flex";
+  document.getElementById("modalContenido").classList.add("open");
 }
 
+document.getElementById("cerrarModal").addEventListener("click", () => {
+  document.getElementById("modalImagen").classList.remove("open");
+});
+document.getElementById("modalImagen").addEventListener("click", e => {
+  if (e.target.id === "modalImagen") e.currentTarget.classList.remove("open");
+});
+
 document.getElementById("cerrarModalContenido").addEventListener("click", () => {
-  document.getElementById("modalContenido").style.display = "none";
+  document.getElementById("modalContenido").classList.remove("open");
 });
-
 document.getElementById("modalContenido").addEventListener("click", e => {
-  if (e.target.id === "modalContenido") e.currentTarget.style.display = "none";
+  if (e.target.id === "modalContenido") e.currentTarget.classList.remove("open");
 });
 
-document.addEventListener("click", e => {
-  if (e.target.classList.contains("contenido-celda")) {
-    mostrarContenidoModal(e.target.dataset.contenido);
-  }
-});
+/* ---- Search ---- */
 
 const buscador = document.getElementById("buscadorNoticias");
 let temporizadorBusqueda = null;

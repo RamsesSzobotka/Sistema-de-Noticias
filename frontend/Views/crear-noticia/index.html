@@ -2,25 +2,117 @@
 <html lang="es">
     <head>
         <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>NoticiaPTY - Publicar Noticia</title>
-        <link rel="stylesheet" href="../css/paneles-comunes.css" />
-        <link rel="stylesheet" href="../css/formulario_noticias.css" />
+        <link rel="stylesheet" href="../../css/design-system.css" />
+        <link rel="stylesheet" href="../../css/admin-common.css" />
+        <link rel="stylesheet" href="../../css/form-news.css" />
         <link
         rel="icon"
         type="image/png"
         sizes="16x16"
         href="../../assets/logo.png" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     </head>
-    <header>
-        <h1>Publicar Noticia</h1>
-    </header>
     <body>
+        <!-- Unified Navbar -->
+        <nav class="navbar">
+          <div class="navbar-inner">
+            <!-- LEFT: brand + visits + greeting -->
+            <div class="navbar-left">
+              <a class="navbar-brand" href="/">NoticiaPTY</a>
+              <span class="visitor-count">
+                <i class="fas fa-users"></i>
+                <span id="visitorCount">0 visitas</span>
+              </span>
+              <span class="navbar-greeting" id="navbarGreeting" style="display:none;">
+                <i class="fa-solid fa-user"></i>
+                Hola, <span id="usernameDisplay"></span>
+              </span>
+            </div>
+
+            <!-- HAMBURGER (mobile only) -->
+            <button class="hamburger" id="hamburgerBtn" aria-label="Menú de navegación">
+              <span></span><span></span><span></span>
+            </button>
+
+            <!-- COLLAPSIBLE MENU (center + right) -->
+            <div class="navbar-menu" id="navbarMenu">
+              <div class="navbar-center">
+                <div class="navbar-search">
+                  <input type="text" id="searchInput" placeholder="Buscar noticias..." />
+                  <button id="searchBtn"><i class="fas fa-search"></i></button>
+                </div>
+                <select class="navbar-categories-dropdown" id="categorySelect" aria-label="Filtrar por categoría">
+                  <option value="todas">Todas</option>
+                  <option value="deporte">Deportes</option>
+                  <option value="politica">Política</option>
+                  <option value="tecnologia">Tecnología</option>
+                  <option value="entretenimiento">Entretenimiento</option>
+                </select>
+              </div>
+
+              <div class="navbar-right">
+            <div class="navbar-user" id="navbarUser">
+            </div>
+            <div class="navbar-auth" id="navbarAuth">
+            </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Drawer Overlay -->
+          <div class="drawer-overlay" id="drawerOverlay"></div>
+
+          <!-- Side Drawer -->
+          <div class="side-drawer" id="sideDrawer">
+            <!-- User info (logged in) -->
+            <div class="drawer-user-info" id="drawerUserInfo" style="display:none;">
+              <i class="fa-solid fa-user"></i>
+              <span id="drawerUsername"></span>
+            </div>
+
+            <!-- Action buttons (logged in users) -->
+            <div class="drawer-user" id="drawerUser">
+              <button class="drawer-btn" id="publicarBtn" style="display:none;">
+                <i class="fas fa-newspaper"></i> Publicar
+              </button>
+              <button class="drawer-btn" id="supervisorPanelBtn" style="display:none;">
+                <i class="fas fa-chart-line"></i> Panel
+              </button>
+              <button class="drawer-btn" id="adminBtn" style="display:none;">
+                <i class="fas fa-users-cog"></i> Admin
+              </button>
+              <button class="drawer-btn" id="btn-editar" style="display:none;">
+                <i class="fa-solid fa-user"></i> Perfil
+              </button>
+            </div>
+
+            <!-- Auth buttons (guest users) -->
+            <div class="drawer-auth" id="drawerAuth">
+              <a href="/auth/iniciar-sesion/" class="drawer-btn">
+                <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+              </a>
+              <a href="/auth/registro/" class="drawer-btn drawer-btn-register">
+                <i class="fas fa-user-plus"></i> Registrarse
+              </a>
+            </div>
+
+            <div class="drawer-spacer"></div>
+            <div class="drawer-divider"></div>
+
+            <!-- Logout at bottom -->
+            <button class="drawer-btn drawer-btn-danger" id="logoutBtn">
+              <i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión
+            </button>
+          </div>
+        </nav>
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
         <!-- Botón de regreso -->
         <div style="margin-bottom: 20px">
             <button
                 class="volver-btn"
-                onclick="window.location.href='../index.html'"
+                onclick="window.location.href='/'"
                 style="background-color: #6c757d"
             >
                 ← Volver al Inicio
@@ -28,35 +120,91 @@
         </div>
 
         <form id="formNoticia" enctype="multipart/form-data">
-    <input type="hidden" name="id" value="" />
-    <input type="hidden" id="usuario_id" name="usuario_id" />
+            <!-- === Campos ocultos === -->
+            <input type="hidden" id="usuario_id" name="usuario_id" />
 
-    <label for="titulo">Título:</label>
-    <input type="text" name="titulo" id="titulo" required />
+            <!-- === SECCIÓN 1: Información Principal === -->
+            <div class="form-section">
+                <div class="section-header">
+                    <i class="fas fa-info-circle"></i>
+                    <h3>Información Principal</h3>
+                </div>
 
-    <label for="contenido">Contenido:</label>
-    <textarea name="contenido" id="contenido" rows="10" required></textarea>
+                <div class="form-group">
+                    <label for="titulo">Título de la noticia</label>
+                    <input type="text" name="titulo" id="titulo" required placeholder="Ingresa un título impactante para la noticia" />
+                </div>
 
-    <label for="categoria">Categoría:</label>
-    <select name="categoria_id" id="categoria" required>
-        <option value="">Selecciona una categoría</option>
-        <option value="1">Deportes</option>
-        <option value="2">Política</option>
-        <option value="3">Tecnología</option>
-        <option value="4">Entretenimiento</option>
-    </select>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="categoria">Categoría</label>
+                        <select name="categoria_id" id="categoria" required>
+                            <option value="">Selecciona una categoría</option>
+                            <option value="1">Deportes</option>
+                            <option value="2">Política</option>
+                            <option value="3">Tecnología</option>
+                            <option value="4">Entretenimiento</option>
+                        </select>
+                    </div>
 
-    <label for="imagenes">Imágenes (exactamente 3):</label>
-    <input type="file" name="imagenes" id="imagen" accept="image/*" multiple required />
+                    <div class="form-group">
+                        <label for="autor">Autor</label>
+                        <input type="text" name="autor" id="autor" required placeholder="Nombre y apellido" />
+                    </div>
+                </div>
+            </div>
 
-    <label for="autor">Autor:</label>
-    <input type="text" name="autor" id="autor" required />
+            <!-- === SECCIÓN 2: Contenido === -->
+            <div class="form-section">
+                <div class="section-header">
+                    <i class="fas fa-newspaper"></i>
+                    <h3>Contenido</h3>
+                </div>
 
-    <button type="submit">Guardar Noticia</button>
-</form>
+                <div class="form-group">
+                    <label for="contenido">Cuerpo de la noticia</label>
+                    <textarea name="contenido" id="contenido" rows="12" required placeholder="Escribe aquí el contenido completo de la noticia..."></textarea>
+                </div>
+            </div>
+
+            <!-- === SECCIÓN 3: Imágenes === -->
+            <div class="form-section">
+                <div class="section-header">
+                    <i class="fas fa-images"></i>
+                    <h3>Imágenes</h3>
+                </div>
+
+                <div class="form-group">
+                    <label>Imágenes de la noticia</label>
+                    <div class="file-upload-area">
+                        <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                        <p>Haz clic aquí para seleccionar imágenes</p>
+                        <span class="file-count">0 de 3 imágenes seleccionadas</span>
+                    </div>
+                    <input type="file" id="imagen" accept="image/*" multiple style="display:none" />
+                    <!-- El preview se renderiza aquí dinámicamente desde JS -->
+                </div>
+            </div>
+
+            <!-- === Botón de envío === -->
+            <button type="submit" class="submit-btn">
+                <i class="fas fa-save"></i> Publicar Noticia
+            </button>
+        </form>
 
 
 
         <script type="module" src="formulario-noticia.js"></script>
-    </body>
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+  var hp="/";
+  var cs=document.getElementById("categorySelect");
+  if(cs) cs.addEventListener("change",function(e){localStorage.setItem("selectedCategory",e.target.value);window.location.href=hp;});
+  function ds(){var q=document.getElementById("searchInput");if(q&&q.value.trim()){localStorage.setItem("searchQuery",q.value.trim());window.location.href=hp;}}
+  var sb=document.getElementById("searchBtn");if(sb)sb.addEventListener("click",ds);
+  var si=document.getElementById("searchInput");if(si)si.addEventListener("keyup",function(e){if(e.key==="Enter")ds();});
+  // Drawer toggle handled by setupDrawer() in formulario-noticia.js
+});
+</script>
+</body>
 </html>

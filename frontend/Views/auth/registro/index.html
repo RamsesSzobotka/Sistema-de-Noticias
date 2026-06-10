@@ -3,7 +3,8 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link rel="stylesheet" href="../auth.css" />
+        <link rel="stylesheet" href="../../css/design-system.css" />
+        <link rel="stylesheet" href="../../css/auth.css" />
         <link
             rel="stylesheet"
             href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
@@ -17,13 +18,13 @@
         <title>NoticiaPTY - Registro</title>
     </head>
     <body>
-        <!-- Menú horizontal superior -->
-        <nav class="top-nav">
-            <div class="nav-brand">
-                <a href="../../index.php">NoticiaPTY</a>
-            </div>
+        <!-- Navbar simplificado: solo logo -->
+        <nav class="navbar">
+          <div class="navbar-inner" style="justify-content: center;">
+            <a class="navbar-brand" href="/">NoticiaPTY</a>
+          </div>
         </nav>
-        <div class="auth-container" style="margin-top: 4rem">
+        <div class="auth-container">
             <form id="registerForm" class="auth-form">
                 <h2><i class="fas fa-user-plus"></i> Registro</h2>
 
@@ -52,9 +53,9 @@
                     />
                     <small
                         style="
-                            color: #555;
+                            color: var(--color-text-light);
                             font-size: 0.9rem;
-                            margin-top: 4px;
+                            margin-top: var(--space-xs);
                             display: block;
                         "
                     >
@@ -69,7 +70,7 @@
                 <div class="auth-links">
                     <p>
                         ¿Ya tienes una cuenta?
-                        <a href="../iniciar-sesion/index.html"
+                        <a href="/auth/iniciar-sesion/"
                             >Inicia sesión aquí</a
                         >
                     </p>
@@ -78,5 +79,6 @@
         </div>
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
         <script type="module" src="script.js"></script>
-    </body>
+
+</body>
 </html>

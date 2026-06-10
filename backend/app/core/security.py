@@ -5,14 +5,16 @@ from datetime import datetime, timezone, timedelta
 from utils.infoVerify import searchUser
 from utils.HttpError import errorInterno
 from typing import cast, Dict
+from passlib.context import CryptContext
 import jwt
 from jwt import PyJWTError, ExpiredSignatureError, InvalidTokenError
 from core.ConnectDB import db
 import os
 
 oauth2 = OAuth2PasswordBearer(tokenUrl="auth/login")
-
 load_dotenv()
+pwd_context = CryptContext(schemes=["bcrypt"])
+
 try:
     SECRET_KEY = os.getenv("SECRET_KEY")
     ACCESS_TOKEN_EXPIRED_MINUTES = int(cast(str, os.getenv("ACCESS_TOKEN_EXPIRED_MINUTES")))
@@ -69,14 +71,12 @@ async def authToken(request: Request) -> Dict:
             headers={"WWW-Authenticate": "Bearer"}
         )
 
-
 def generateJWT(id: int, days: int = 7) -> str:
     playload = {
         "sub": str(id),
         "exp": datetime.now(timezone.utc) + timedelta(days=days)
     }
     return jwt.encode(playload, SECRET_KEY, algorithm=ALGORITHM)
-
 
 async def isAdmin(token: Dict = Depends(authToken)) -> bool:
     """
@@ -241,8 +241,3 @@ def getTokenId(token: Dict = Depends(authToken)):
             detail="Token inválido: no contiene ID de usuario"
         )
     return user_id
-
-
-from passlib.context import CryptContext
-
-pwd_context = CryptContext(schemes=["bcrypt"])

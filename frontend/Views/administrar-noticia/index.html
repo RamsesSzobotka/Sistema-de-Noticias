@@ -3,9 +3,11 @@
 
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NoticiaPTY - Administrar Noticias</title>
-  <link rel="stylesheet" href="../css/paneles-comunes.css" />
-  <link rel="stylesheet" href="../css/panel_aprobacion.css" />
+  <link rel="stylesheet" href="../../css/design-system.css" />
+  <link rel="stylesheet" href="../../css/admin-common.css" />
+  <link rel="stylesheet" href="../../css/admin-news.css" />
   <link
     rel="icon"
     type="image/png"
@@ -18,83 +20,220 @@
 </head>
 
 <body>
-  <header>
-    <h1>Administrar Noticias</h1>
-  </header>
+  <!-- Unified Navbar -->
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <!-- LEFT: brand + visits + greeting -->
+      <div class="navbar-left">
+        <a class="navbar-brand" href="/">NoticiaPTY</a>
+        <span class="visitor-count">
+          <i class="fas fa-users"></i>
+          <span id="visitorCount">0 visitas</span>
+        </span>
+        <span class="navbar-greeting" id="navbarGreeting" style="display:none;">
+          <i class="fa-solid fa-user"></i>
+          Hola, <span id="usernameDisplay"></span>
+        </span>
+      </div>
+
+      <!-- HAMBURGER (mobile only) -->
+      <button class="hamburger" id="hamburgerBtn" aria-label="Menú de navegación">
+        <span></span><span></span><span></span>
+      </button>
+
+      <!-- COLLAPSIBLE MENU (center + right) -->
+      <div class="navbar-menu" id="navbarMenu">
+        <div class="navbar-center">
+          <div class="navbar-search">
+            <input type="text" id="searchInput" placeholder="Buscar noticias..." />
+            <button id="searchBtn"><i class="fas fa-search"></i></button>
+          </div>
+          <select class="navbar-categories-dropdown" id="categorySelect" aria-label="Filtrar por categoría">
+            <option value="todas">Todas</option>
+            <option value="deporte">Deportes</option>
+            <option value="politica">Política</option>
+            <option value="tecnologia">Tecnología</option>
+            <option value="entretenimiento">Entretenimiento</option>
+          </select>
+        </div>
+
+        <div class="navbar-right">
+            <div class="navbar-user" id="navbarUser">
+            </div>
+            <div class="navbar-auth" id="navbarAuth">
+            </div>
+        </div>
+      </div>
+    </div>
+
+      <!-- Drawer Overlay -->
+      <div class="drawer-overlay" id="drawerOverlay"></div>
+
+      <!-- Side Drawer -->
+      <div class="side-drawer" id="sideDrawer">
+        <!-- User info (logged in) -->
+        <div class="drawer-user-info" id="drawerUserInfo" style="display:none;">
+          <i class="fa-solid fa-user"></i>
+          <span id="drawerUsername"></span>
+        </div>
+
+        <!-- Action buttons (logged in users) -->
+        <div class="drawer-user" id="drawerUser">
+          <button class="drawer-btn" id="publicarBtn" style="display:none;">
+            <i class="fas fa-newspaper"></i> Publicar
+          </button>
+          <button class="drawer-btn" id="supervisorPanelBtn" style="display:none;">
+            <i class="fas fa-chart-line"></i> Panel
+          </button>
+          <button class="drawer-btn" id="adminBtn" style="display:none;">
+            <i class="fas fa-users-cog"></i> Admin
+          </button>
+          <button class="drawer-btn" id="btn-editar" style="display:none;">
+            <i class="fa-solid fa-user"></i> Perfil
+          </button>
+        </div>
+
+        <!-- Auth buttons (guest users) -->
+        <div class="drawer-auth" id="drawerAuth">
+          <a href="/auth/iniciar-sesion/" class="drawer-btn">
+            <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+          </a>
+          <a href="/auth/registro/" class="drawer-btn drawer-btn-register">
+            <i class="fas fa-user-plus"></i> Registrarse
+          </a>
+        </div>
+
+        <div class="drawer-spacer"></div>
+        <div class="drawer-divider"></div>
+
+        <!-- Logout at bottom -->
+        <button class="drawer-btn drawer-btn-danger" id="logoutBtn">
+          <i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión
+        </button>
+      </div>
+    </nav>
 
   <!-- Botón de regreso -->
   <div style="margin-bottom: 20px;">
-    <button class="volver-btn" onclick="window.location.href='../index.html'">
+    <button class="volver-btn" onclick="window.location.href='/'">
       ← Volver al Inicio
     </button>
   </div>
 
   <div class="container">
-    <input
-      type="text"
-      id="buscadorNoticias"
-      placeholder="Buscar noticias..."
-      style="margin-bottom: 20px; padding: 8px; width: 300px;" />
-    <div class="filtros-noticias">
-      <button id="btnMostrarTodas" class="btn-filtro">
-        <i class="fas fa-list"></i>Todas
-      </button>
-      <button id="btnFiltrarActivas" class="btn-filtro">
-        <i class="fas fa-check-circle"></i>Activas
-      </button>
-      <button id="btnFiltrarInactivas" class="btn-filtro">
-        <i class="fas fa-times-circle"></i>Inactivas
-      </button>
+    <!-- Admin Header + Stats -->
+    <div class="admin-header" style="display: none;">
+      <div>
+        <h2>Lista de Noticias</h2>
+        <p>Gestiona las noticias del sistema</p>
+      </div>
+      <div class="stat-cards">
+        <div class="stat-card" id="statTotal">
+          <i class="fas fa-newspaper"></i>
+          <div>
+            <div class="stat-number" id="totalCount">0</div>
+            <div class="stat-label">Totales</div>
+          </div>
+        </div>
+        <div class="stat-card active" id="statActive">
+          <i class="fas fa-check-circle"></i>
+          <div>
+            <div class="stat-number" id="activeCount">0</div>
+            <div class="stat-label">Activas</div>
+          </div>
+        </div>
+        <div class="stat-card inactive" id="statInactive">
+          <i class="fas fa-times-circle"></i>
+          <div>
+            <div class="stat-number" id="inactiveCount">0</div>
+            <div class="stat-label">Inactivas</div>
+          </div>
+        </div>
+      </div>
     </div>
 
+    <!-- Search & Filters -->
+    <div class="search-filters-bar">
+      <div class="search-wrapper">
+        <i class="fas fa-search search-icon"></i>
+        <input type="text" id="buscadorNoticias" placeholder="Buscar noticias..." />
+      </div>
+      <div class="filter-pills">
+        <button class="filter-pill active" id="btnMostrarTodas">
+          <i class="fas fa-list"></i> Todas
+        </button>
+        <button class="filter-pill" id="btnFiltrarActivas">
+          <i class="fas fa-check-circle"></i> Activas
+        </button>
+        <button class="filter-pill" id="btnFiltrarInactivas">
+          <i class="fas fa-times-circle"></i> Inactivas
+        </button>
+      </div>
+    </div>
 
-    <!-- Tabla con noticias -->
-    <h2>Lista de Noticias</h2>
-    <table id="noticiasTable">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Título</th>
-          <th>Contenido</th>
-          <th>Categoría</th>
-          <th>Autor</th>
-          <th>Imagen</th>
-          <th>Fecha de Creación</th>
-          <th>Estado</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- Se cargan filas aquí -->
-      </tbody>
-    </table>
+    <!-- Table -->
+    <div class="table-container" style="display: none;">
+      <table id="noticiasTable">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Título</th>
+            <th>Categoría</th>
+            <th>Autor</th>
+            <th>Estado</th>
+            <th>Fecha</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Se cargan filas aquí -->
+        </tbody>
+      </table>
+    </div>
 
+    <!-- Pagination -->
     <div id="paginacion" class="paginacion-container"></div>
 
-    <!-- Modal para imagen -->
-    <div id="modalImagen" class="modal-imagen" style="display: none;">
-      <span id="cerrarModal" class="cerrar-modal">&times;</span>
-      <img class="contenido-modal" id="imagenGrande" src="" alt="Imagen ampliada">
+    <!-- Modal: Imagen -->
+    <div class="modal-overlay" id="modalImagen">
+      <div class="modal modal-sm">
+        <div class="modal-header">
+          <h3>Imagen de noticia</h3>
+          <button class="modal-close" id="cerrarModal">&times;</button>
+        </div>
+        <div class="modal-body" style="text-align: center;">
+          <img id="imagenGrande" src="" alt="Imagen ampliada" style="max-width: 100%; max-height: 70vh; border-radius: 4px;" />
+        </div>
+      </div>
     </div>
-    <!-- Modal de imagen (ya tienes este, déjalo igual) -->
-<div id="modalImagen" class="modal-imagen" style="display: none;">
-  <span id="cerrarModal" class="cerrar-modal">&times;</span>
-  <img class="contenido-modal" id="imagenGrande" src="" alt="Imagen ampliada">
-</div>
 
-<!-- 🧾 Modal para contenido de noticia -->
-<div id="modalContenido" class="modal-contenido" style="display: none;">
-  <div class="contenido-modal-texto">
-    <span id="cerrarModalContenido" class="cerrar-modal">&times;</span>
-    <h3>Contenido completo</h3>
-    <p id="textoCompleto" style="white-space: pre-line;"></p>
-  </div>
-</div>
-
+    <!-- Modal: Contenido -->
+    <div class="modal-overlay" id="modalContenido">
+      <div class="modal">
+        <div class="modal-header">
+          <h3>Contenido completo</h3>
+          <button class="modal-close" id="cerrarModalContenido">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p id="textoCompleto" style="white-space: pre-line; line-height: 1.8;"></p>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script type="module" src="panel_noticias.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+  var hp="/";
+  var cs=document.getElementById("categorySelect");
+  if(cs) cs.addEventListener("change",function(e){localStorage.setItem("selectedCategory",e.target.value);window.location.href=hp;});
+  function ds(){var q=document.getElementById("searchInput");if(q&&q.value.trim()){localStorage.setItem("searchQuery",q.value.trim());window.location.href=hp;}}
+  var sb=document.getElementById("searchBtn");if(sb)sb.addEventListener("click",ds);
+  var si=document.getElementById("searchInput");if(si)si.addEventListener("keyup",function(e){if(e.key==="Enter")ds();});
+  // Drawer toggle handled by setupDrawer() in panel_noticias.js
+});
+</script>
 </body>
 
 </html>
