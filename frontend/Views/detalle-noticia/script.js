@@ -147,12 +147,13 @@ function renderNoticia() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  COMENTARIOS
+//  COMENTARIOS — YouTube-style
 // ═══════════════════════════════════════════════════════════════
 
 function cargarComentarios() {
     if (!noticiaId) return;
     const commentsContainer = document.getElementById("commentsContainer");
+    const countHeader = document.getElementById("commentCountHeader");
     if (commentsContainer) {
         commentsContainer.innerHTML = '<div class="spinner"></div>';
     }
@@ -160,11 +161,13 @@ function cargarComentarios() {
         .then(res => res.json())
         .then(data => {
             const comentarios = data.usuarios || [];
-            commentCount.textContent = data.total || 0;
+            const total = data.total || 0;
+            commentCount.textContent = total;
+            if (countHeader) countHeader.textContent = total;
             if (commentsContainer) commentsContainer.innerHTML = "";
             if (comentarios.length === 0) {
                 if (commentsContainer) {
-                    commentsContainer.innerHTML = '<p class="text-muted text-center">No hay comentarios aún. ¡Sé el primero en comentar!</p>';
+                    commentsContainer.innerHTML = '<p class="empty-comments">No hay comentarios aún. ¡Sé el primero en comentar!</p>';
                 }
                 return;
             }
@@ -178,75 +181,99 @@ function cargarComentarios() {
                     comentariosRaiz.push(c);
                 }
             });
-            comentariosRaiz.forEach(comentario => commentsContainer.appendChild(renderComentario(comentario)));
+            comentariosRaiz.forEach(comentario => commentsContainer.appendChild(renderComentario(comentario, 0)));
         })
         .catch(err => console.error("Error cargando comentarios:", err));
 }
 
-function renderComentario(comentario) {
-    const div = document.createElement("div");
-    div.className = "comment";
+function renderComentario(comentario, depth) {
+    // Wrapper (block normal, no flex) — contiene todo: la fila + respuestas
+    const wrapper = document.createElement("div");
+    wrapper.className = "yt-comment-wrapper";
+
+    // Fila flex: avatar + cuerpo del comentario
+    const row = document.createElement("div");
+    row.className = "yt-comment";
 
     const initial = (comentario.usuario?.username || comentario.usuario || 'A')[0].toUpperCase();
-    
+
+    // Avatar
     const avatar = document.createElement("div");
-    avatar.className = "comment-avatar";
+    avatar.className = "yt-comment-avatar";
     avatar.textContent = initial;
-    div.appendChild(avatar);
+    row.appendChild(avatar);
 
+    // Body
     const body = document.createElement("div");
-    body.className = "comment-body";
+    body.className = "yt-comment-body";
 
+    // Header: author + date
     const header = document.createElement("div");
-    header.className = "comment-header";
-
+    header.className = "yt-comment-header";
     const author = document.createElement("span");
-    author.className = "comment-author";
+    author.className = "yt-comment-author";
     author.textContent = comentario.usuario?.username || comentario.usuario || "Anónimo";
     header.appendChild(author);
-
     const dateSpan = document.createElement("span");
-    dateSpan.className = "comment-date";
+    dateSpan.className = "yt-comment-date";
     dateSpan.textContent = formatDate(comentario.fecha_creacion);
     header.appendChild(dateSpan);
-
     body.appendChild(header);
 
-    const texto = document.createElement("p");
-    texto.className = "comment-text";
+    // Text
+    const texto = document.createElement("div");
+    texto.className = "yt-comment-text";
     texto.textContent = comentario.contenido || comentario.texto;
     body.appendChild(texto);
 
+    // Action buttons
     const actions = document.createElement("div");
-    actions.className = "comment-actions";
+    actions.className = "yt-comment-actions";
 
+    const likeAction = document.createElement("button");
+    likeAction.className = "yt-comment-action-btn";
+    likeAction.innerHTML = '<i class="far fa-thumbs-up"></i>';
+    likeAction.title = "Me gusta";
+    actions.appendChild(likeAction);
+
+    const dislikeAction = document.createElement("button");
+    dislikeAction.className = "yt-comment-action-btn";
+    dislikeAction.innerHTML = '<i class="far fa-thumbs-down"></i>';
+    dislikeAction.title = "No me gusta";
+    actions.appendChild(dislikeAction);
+
+    // Reply button
     const responderBtn = document.createElement("button");
-    responderBtn.className = "comment-action-btn";
-    responderBtn.dataset.id = comentario.id;
+    responderBtn.className = "yt-comment-action-btn";
     responderBtn.textContent = "Responder";
     responderBtn.addEventListener("click", () => {
-        const contenedorRespuestas = div.querySelector(".respuestas");
-        if (contenedorRespuestas) {
-            contenedorRespuestas.innerHTML = "";
-            contenedorRespuestas.appendChild(crearFormularioRespuesta(comentario.id));
+        const existing = wrapper.nextElementSibling?.classList?.contains("yt-reply-form") ? wrapper.nextElementSibling : null;
+        if (existing) {
+            existing.remove();
+            return;
         }
+        const replyForm = crearFormularioRespuesta(comentario.id);
+        wrapper.parentNode.insertBefore(replyForm, wrapper.nextSibling);
+        const ta = replyForm.querySelector("textarea");
+        if (ta) { ta.focus(); autoResizeTextarea(ta); }
     });
     actions.appendChild(responderBtn);
 
+    // Delete button (admin or owner)
     const rol = sessionStorage.getItem("rol");
     if (rol === "admin" || String(comentario.usuario?.id || comentario.usuario_id) === String(usuarioId)) {
         const btnEliminar = document.createElement("button");
         btnEliminar.textContent = "Eliminar";
-        btnEliminar.className = "comment-action-btn danger";
+        btnEliminar.className = "yt-comment-action-btn danger";
         btnEliminar.addEventListener("click", () => {
             Swal.fire({
                 title: "Eliminar comentario?",
-                text: "Esta accion no se puede deshacer.",
+                text: "Esta acción no se puede deshacer.",
                 icon: "warning",
                 showCancelButton: true,
                 confirmButtonColor: "#d33",
                 cancelButtonColor: "#3085d6",
-                confirmButtonText: "Si, eliminar",
+                confirmButtonText: "Sí, eliminar",
                 cancelButtonText: "Cancelar",
             }).then(result => { if (result.isConfirmed) eliminarComentario(comentario.id); });
         });
@@ -254,56 +281,119 @@ function renderComentario(comentario) {
     }
 
     body.appendChild(actions);
-    div.appendChild(body);
+    row.appendChild(body);
+    wrapper.appendChild(row);
 
-    const contenedorRespuestas = document.createElement("div");
-    contenedorRespuestas.className = "comment-nested respuestas";
-    div.appendChild(contenedorRespuestas);
+    // ── Replies ──
+    const hijos = comentario.children || [];
+    if (hijos.length > 0) {
+        const repliesContainer = document.createElement("div");
+        repliesContainer.className = "yt-comment-replies";
+        repliesContainer.style.display = "none"; // collapsed by default
 
-    if (comentario.children) {
-        comentario.children.forEach(child => contenedorRespuestas.appendChild(renderComentario(child)));
+        hijos.forEach(child => repliesContainer.appendChild(renderComentario(child, depth + 1)));
+
+        const totalHijos = hijos.length;
+        const toggleBtn = document.createElement("button");
+        toggleBtn.className = "yt-replies-toggle";
+        toggleBtn.innerHTML = `<i class="fas fa-chevron-down"></i> ${totalHijos} ${totalHijos === 1 ? 'respuesta' : 'respuestas'}`;
+        toggleBtn.addEventListener("click", () => {
+            const isHidden = repliesContainer.style.display === "none";
+            repliesContainer.style.display = isHidden ? "" : "none";
+            toggleBtn.classList.toggle("expanded", isHidden);
+            toggleBtn.innerHTML = isHidden
+                ? `<i class="fas fa-chevron-down"></i> Ocultar ${totalHijos} ${totalHijos === 1 ? 'respuesta' : 'respuestas'}`
+                : `<i class="fas fa-chevron-down"></i> ${totalHijos} ${totalHijos === 1 ? 'respuesta' : 'respuestas'}`;
+        });
+
+        wrapper.appendChild(toggleBtn);
+        wrapper.appendChild(repliesContainer);
     }
 
-    return div;
+    return wrapper;
 }
 
 function crearFormularioRespuesta(comentarioPadreId) {
     const form = document.createElement("form");
-    form.className = "form-respuesta";
-    const textarea = document.createElement("textarea");
-    textarea.placeholder = "Escribe una respuesta...";
-    textarea.required = true;
-    const botones = document.createElement("div");
-    botones.style.cssText = "display:flex;gap:10px;margin-top:10px;";
-    const btnEnviar = document.createElement("button");
-    btnEnviar.type = "submit";
-    btnEnviar.textContent = "Enviar respuesta";
-    btnEnviar.className = "comment-submit-btn";
-    const btnCancelar = document.createElement("button");
-    btnCancelar.type = "button";
-    btnCancelar.textContent = "Cancelar";
-    btnCancelar.className = "comment-submit-btn";
-    btnCancelar.addEventListener("click", () => form.remove());
-    botones.appendChild(btnEnviar);
-    botones.appendChild(btnCancelar);
-    form.appendChild(textarea);
-    form.appendChild(botones);
-    form.addEventListener("submit", e => { e.preventDefault(); publicarComentario(textarea.value.trim(), comentarioPadreId); });
+    form.className = "yt-reply-form";
+    form.innerHTML = `
+        <div class="yt-reply-form-avatar"><i class="fas fa-user-circle"></i></div>
+        <div class="yt-reply-form-input">
+            <textarea placeholder="Añade una respuesta..." rows="1"></textarea>
+            <div class="yt-reply-form-actions">
+                <button type="button" class="yt-btn-cancel">Cancelar</button>
+                <button type="submit" class="yt-btn-submit">Responder</button>
+            </div>
+        </div>
+    `;
+
+    const textarea = form.querySelector("textarea");
+    const actionsDiv = form.querySelector(".yt-reply-form-actions");
+    const cancelBtn = form.querySelector(".yt-btn-cancel");
+
+    // Show actions on focus
+    textarea.addEventListener("focus", () => { actionsDiv.style.display = "flex"; });
+    // Auto-resize
+    textarea.addEventListener("input", () => autoResizeTextarea(textarea));
+
+    cancelBtn.addEventListener("click", () => form.remove());
+
+    form.addEventListener("submit", e => {
+        e.preventDefault();
+        const texto = textarea.value.trim();
+        if (!texto) return;
+        publicarComentario(texto, comentarioPadreId);
+        form.remove();
+    });
+
     return form;
 }
 
-commentForm.addEventListener("submit", e => { e.preventDefault(); publicarComentario(commentText.value.trim(), null); });
+// ── Comment form: top-level (YouTube-style) ──
+const commentFormActions = document.getElementById("commentFormActions");
+const cancelCommentBtn = document.getElementById("cancelCommentBtn");
+const submitCommentBtn = document.getElementById("submitCommentBtn");
+submitCommentBtn.disabled = true;
+
+// Show actions on focus
+commentText.addEventListener("focus", () => {
+    commentFormActions.style.display = "flex";
+    commentText.rows = 3;
+    autoResizeTextarea(commentText);
+});
+
+// Cancel hides actions
+cancelCommentBtn.addEventListener("click", () => {
+    commentText.value = "";
+    commentText.rows = 1;
+    commentFormActions.style.display = "none";
+});
+
+// Auto-resize on input
+commentText.addEventListener("input", () => autoResizeTextarea(commentText));
+
+// Enable/disable submit based on content
+commentText.addEventListener("input", () => {
+    submitCommentBtn.disabled = !commentText.value.trim();
+});
+
+commentForm.addEventListener("submit", e => {
+    e.preventDefault();
+    const texto = commentText.value.trim();
+    if (!texto) return;
+    publicarComentario(texto, null);
+});
 
 async function publicarComentario(contenido, comentarioPadreId) {
     if (!usuarioId) {
         Swal.fire({
-            icon: "warning", title: "Debes iniciar sesion",
-            text: "Inicia sesion para poder comentar.",
-            confirmButtonColor: "#3085d6", confirmButtonText: "Iniciar sesion",
+            icon: "warning", title: "Debes iniciar sesión",
+            text: "Inicia sesión para poder comentar.",
+            confirmButtonColor: "#3085d6", confirmButtonText: "Iniciar sesión",
         }).then(result => { if (result.isConfirmed) window.location.href = "/auth/iniciar-sesion/"; });
         return;
     }
-    if (!contenido) { Swal.fire("Advertencia", "El comentario no puede estar vacio.", "warning"); return; }
+    if (!contenido) { Swal.fire("Advertencia", "El comentario no puede estar vacío.", "warning"); return; }
 
     const res = await fetch(`${API_BASE_URL}/comentarios/`, {
         method: "POST",
@@ -312,8 +402,9 @@ async function publicarComentario(contenido, comentarioPadreId) {
     });
     const data = await res.json();
     if (res.ok) {
-        Swal.fire("Exito", data.detail, "success");
         commentText.value = "";
+        commentText.rows = 1;
+        commentFormActions.style.display = "none";
         cargarComentarios();
     } else {
         Swal.fire("Error", data.detail || "No se pudo publicar el comentario.", "error");
@@ -323,8 +414,14 @@ async function publicarComentario(contenido, comentarioPadreId) {
 async function eliminarComentario(id) {
     const res = await fetch(`${API_BASE_URL}/comentarios/?id=${id}`, { method: "DELETE" });
     const data = await res.json();
-    if (res.ok) { Swal.fire("Eliminado", data.detail, "success"); cargarComentarios(); }
+    if (res.ok) { cargarComentarios(); }
     else { Swal.fire("Error", data.detail || "No se pudo eliminar.", "error"); }
+}
+
+// Helper: auto-resize textarea
+function autoResizeTextarea(el) {
+    el.style.height = "auto";
+    el.style.height = el.scrollHeight + "px";
 }
 
 // ═══════════════════════════════════════════════════════════════

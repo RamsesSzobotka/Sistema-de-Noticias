@@ -141,15 +141,26 @@
       </div>
       
       <div class="comments-section">
-        <h2>Comentarios</h2>
-        <div id="commentsContainer" class="comments-list"></div>
-        
-        <form id="commentForm" class="comment-form">
-          <textarea id="commentText" placeholder="Escribe tu comentario..." required></textarea>
-          <button class="comment-submit-btn" type="submit">
-            <i class="fas fa-paper-plane"></i> Enviar comentario
-          </button>
+        <div class="comments-header">
+          <h2 class="comments-title">Comentarios</h2>
+          <span class="comments-count" id="commentCountHeader">0</span>
+        </div>
+
+        <!-- Comment form (top, like YouTube) -->
+        <form id="commentForm" class="yt-comment-form">
+          <div class="yt-comment-form-avatar">
+            <i class="fas fa-user-circle"></i>
+          </div>
+          <div class="yt-comment-form-input">
+            <textarea id="commentText" placeholder="Añade un comentario..." rows="1"></textarea>
+            <div class="yt-comment-form-actions" id="commentFormActions" style="display:none;">
+              <button type="button" class="yt-btn-cancel" id="cancelCommentBtn">Cancelar</button>
+              <button type="submit" class="yt-btn-submit" id="submitCommentBtn">Comentar</button>
+            </div>
+          </div>
         </form>
+        
+        <div id="commentsContainer" class="comments-list"></div>
       </div>
     </article>
 
