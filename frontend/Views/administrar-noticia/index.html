@@ -7,7 +7,7 @@
   <title>NoticiaPTY - Administrar Noticias</title>
   <link rel="stylesheet" href="../../css/design-system.css" />
   <link rel="stylesheet" href="../../css/admin-common.css" />
-  <link rel="stylesheet" href="../../css/admin-approval.css" />
+  <link rel="stylesheet" href="../../css/admin-news.css" />
   <link
     rel="icon"
     type="image/png"
@@ -121,61 +121,104 @@
   </div>
 
   <div class="container">
-    <input
-      type="text"
-      id="buscadorNoticias"
-      placeholder="Buscar noticias..."
-      style="margin-bottom: 20px; padding: 8px; width: 300px;" />
-    <div class="filtros-noticias">
-      <button id="btnMostrarTodas" class="btn-filtro">
-        <i class="fas fa-list"></i>Todas
-      </button>
-      <button id="btnFiltrarActivas" class="btn-filtro">
-        <i class="fas fa-check-circle"></i>Activas
-      </button>
-      <button id="btnFiltrarInactivas" class="btn-filtro">
-        <i class="fas fa-times-circle"></i>Inactivas
-      </button>
+    <!-- Admin Header + Stats -->
+    <div class="admin-header" style="display: none;">
+      <div>
+        <h2>Lista de Noticias</h2>
+        <p>Gestiona las noticias del sistema</p>
+      </div>
+      <div class="stat-cards">
+        <div class="stat-card" id="statTotal">
+          <i class="fas fa-newspaper"></i>
+          <div>
+            <div class="stat-number" id="totalCount">0</div>
+            <div class="stat-label">Totales</div>
+          </div>
+        </div>
+        <div class="stat-card active" id="statActive">
+          <i class="fas fa-check-circle"></i>
+          <div>
+            <div class="stat-number" id="activeCount">0</div>
+            <div class="stat-label">Activas</div>
+          </div>
+        </div>
+        <div class="stat-card inactive" id="statInactive">
+          <i class="fas fa-times-circle"></i>
+          <div>
+            <div class="stat-number" id="inactiveCount">0</div>
+            <div class="stat-label">Inactivas</div>
+          </div>
+        </div>
+      </div>
     </div>
 
+    <!-- Search & Filters -->
+    <div class="search-filters-bar">
+      <div class="search-wrapper">
+        <i class="fas fa-search search-icon"></i>
+        <input type="text" id="buscadorNoticias" placeholder="Buscar noticias..." />
+      </div>
+      <div class="filter-pills">
+        <button class="filter-pill active" id="btnMostrarTodas">
+          <i class="fas fa-list"></i> Todas
+        </button>
+        <button class="filter-pill" id="btnFiltrarActivas">
+          <i class="fas fa-check-circle"></i> Activas
+        </button>
+        <button class="filter-pill" id="btnFiltrarInactivas">
+          <i class="fas fa-times-circle"></i> Inactivas
+        </button>
+      </div>
+    </div>
 
-    <!-- Tabla con noticias -->
-    <h2>Lista de Noticias</h2>
-    <table id="noticiasTable">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Título</th>
-          <th>Contenido</th>
-          <th>Categoría</th>
-          <th>Autor</th>
-          <th>Imagen</th>
-          <th>Fecha de Creación</th>
-          <th>Estado</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        <!-- Se cargan filas aquí -->
-      </tbody>
-    </table>
+    <!-- Table -->
+    <div class="table-container" style="display: none;">
+      <table id="noticiasTable">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Título</th>
+            <th>Categoría</th>
+            <th>Autor</th>
+            <th>Estado</th>
+            <th>Fecha</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Se cargan filas aquí -->
+        </tbody>
+      </table>
+    </div>
 
+    <!-- Pagination -->
     <div id="paginacion" class="paginacion-container"></div>
 
-    <!-- Modal para imagen -->
-    <div id="modalImagen" class="modal-imagen" style="display: none;">
-      <span id="cerrarModal" class="cerrar-modal">&times;</span>
-      <img class="contenido-modal" id="imagenGrande" src="" alt="Imagen ampliada">
+    <!-- Modal: Imagen -->
+    <div class="modal-overlay" id="modalImagen">
+      <div class="modal modal-sm">
+        <div class="modal-header">
+          <h3>Imagen de noticia</h3>
+          <button class="modal-close" id="cerrarModal">&times;</button>
+        </div>
+        <div class="modal-body" style="text-align: center;">
+          <img id="imagenGrande" src="" alt="Imagen ampliada" style="max-width: 100%; max-height: 70vh; border-radius: 4px;" />
+        </div>
+      </div>
     </div>
-<!-- 🧾 Modal para contenido de noticia -->
-<div id="modalContenido" class="modal-contenido" style="display: none;">
-  <div class="contenido-modal-texto">
-    <span id="cerrarModalContenido" class="cerrar-modal">&times;</span>
-    <h3>Contenido completo</h3>
-    <p id="textoCompleto" style="white-space: pre-line;"></p>
-  </div>
-</div>
 
+    <!-- Modal: Contenido -->
+    <div class="modal-overlay" id="modalContenido">
+      <div class="modal">
+        <div class="modal-header">
+          <h3>Contenido completo</h3>
+          <button class="modal-close" id="cerrarModalContenido">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p id="textoCompleto" style="white-space: pre-line; line-height: 1.8;"></p>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
