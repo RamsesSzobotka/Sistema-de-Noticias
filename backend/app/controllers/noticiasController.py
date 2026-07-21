@@ -4,7 +4,7 @@ import os
 from schemas.noticiasSchema import noticia_schema
 from utils.infoVerify import searchNoticia, validImagenes, validCategoria, validUser
 from utils.DbHelper import paginar, totalPages
-from utils.imagen import insert_img, deleteImgsNoticia
+from utils.imagen import insert_img, deleteImgsNoticia, deleteImgsByIds
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -360,7 +360,7 @@ async def updateNoticiaController(noticia, imagenes, rol, tokenId):
             RETURNING id
             """
 
-            values = noticia.model_dump()
+            values = noticia.model_dump(exclude={"imagenes_eliminar"})
             values["activo"] = False
 
             noticia_id = await db.fetch_val(queryUpdate, values)
@@ -370,14 +370,13 @@ async def updateNoticiaController(noticia, imagenes, rol, tokenId):
                     detail="Error al actualizar"
                 )
 
-            if imagenes is not None and len(imagenes) > 0:
-                if len(imagenes) in (1, 2):
+            if noticia.imagenes_eliminar:
+                if imagenes is None or len(imagenes) != len(noticia.imagenes_eliminar):
                     raise HTTPException(
                         status_code=status.HTTP_406_NOT_ACCEPTABLE,
-                        detail="Mínimo 3 imágenes"
+                        detail=f"Debes subir exactamente {len(noticia.imagenes_eliminar)} imagen(es) de reemplazo"
                     )
-
-                await deleteImgsNoticia(noticia.id)
+                await deleteImgsByIds(noticia.imagenes_eliminar)
                 await insert_img(imagenes, noticia.id)
 
             return {"detail": "Noticia actualizada correctamente"}

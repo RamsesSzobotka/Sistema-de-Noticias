@@ -11,6 +11,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const MAX_IMAGES = 3;
   let selectedFiles = [];
+  const markedForReplace = new Set(); // image IDs to replace
 
   // ── Contenedor de preview ──
   const previewContainer = document.createElement("div");
@@ -38,6 +39,44 @@ document.addEventListener("DOMContentLoaded", async () => {
   initNavbar(session);
   cargarVisitas();
 
+  // ── Toggle marca de reemplazo en imagen existente ──
+  function toggleReplace(imgId, btnEl, wrapperEl) {
+    if (markedForReplace.has(imgId)) {
+      markedForReplace.delete(imgId);
+      wrapperEl.classList.remove("to-replace");
+      btnEl.classList.remove("undo");
+      btnEl.innerHTML = '<i class="fas fa-times"></i>';
+      btnEl.title = "Marcar para reemplazar";
+    } else {
+      markedForReplace.add(imgId);
+      wrapperEl.classList.add("to-replace");
+      btnEl.classList.add("undo");
+      btnEl.innerHTML = '<i class="fas fa-undo"></i>';
+      btnEl.title = "No reemplazar";
+    }
+    actualizarEstadoUpload();
+  }
+
+  // ── Actualizar estado del área de upload ──
+  function actualizarEstadoUpload() {
+    const marcadas = markedForReplace.size;
+    const nuevas = selectedFiles.length;
+
+    if (marcadas === 0 && nuevas === 0) {
+      fileCountEl.textContent = "Haz clic en × sobre una imagen para marcarla como reemplazar, luego sube su reemplazo.";
+      uploadArea.style.display = "block";
+    } else if (nuevas < marcadas) {
+      fileCountEl.textContent = `Subí ${marcadas - nuevas} imagen(es) más para completar los reemplazos.`;
+      uploadArea.style.display = "block";
+    } else if (nuevas === marcadas && marcadas > 0) {
+      fileCountEl.textContent = `${nuevas} de ${marcadas} imagen(es) de reemplazo lista(s).`;
+      uploadArea.style.display = "none";
+    } else if (nuevas > 0 && marcadas === 0) {
+      fileCountEl.textContent = `Agregaste ${nuevas} imagen(es). Marcá las actuales que querés reemplazar con ×.`;
+      uploadArea.style.display = nuevas >= MAX_IMAGES ? "none" : "block";
+    }
+  }
+
   // ── Renderizar archivos nuevos seleccionados ──
   function renderFileList() {
     previewContainer.innerHTML = "";
@@ -61,6 +100,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         URL.revokeObjectURL(img.src);
         selectedFiles.splice(index, 1);
         renderFileList();
+        actualizarEstadoUpload();
       });
 
       item.appendChild(img);
@@ -68,12 +108,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       item.appendChild(removeBtn);
       previewContainer.appendChild(item);
     });
-
-    const count = selectedFiles.length;
-    fileCountEl.textContent = count > 0
-      ? `${count} de ${MAX_IMAGES} imágenes nuevas seleccionadas`
-      : "Si subes imágenes, deben ser exactamente 3. Déjalo vacío para mantener las actuales.";
-    uploadArea.style.display = count >= MAX_IMAGES ? "none" : "block";
+    actualizarEstadoUpload();
   }
 
   // ── Click en uploadArea → abrir selector ──
@@ -81,6 +116,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // ── Manejar selección de archivos ──
   inputFile.addEventListener("change", () => {
+    const marcadas = markedForReplace.size;
+    const maxNuevas = marcadas > 0 ? marcadas : MAX_IMAGES;
+
     const newFiles = Array.from(inputFile.files).filter(
       f => !selectedFiles.some(s => s.name === f.name && s.size === f.size)
     );
@@ -90,12 +128,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
-    if (selectedFiles.length + newFiles.length > MAX_IMAGES) {
-      const permitidas = MAX_IMAGES - selectedFiles.length;
+    if (selectedFiles.length + newFiles.length > maxNuevas) {
+      const permitidas = maxNuevas - selectedFiles.length;
       Swal.fire({
         icon: "warning",
         title: "Límite de imágenes",
-        text: `Máximo ${MAX_IMAGES} imágenes nuevas. Puedes agregar ${permitidas} más.`,
+        text: marcadas > 0
+          ? `Marcaste ${marcadas} para reemplazar. Podés subir ${permitidas} más.`
+          : `Máximo ${MAX_IMAGES} imágenes. Podés agregar ${permitidas} más.`,
       });
       inputFile.value = "";
       return;
@@ -123,14 +163,35 @@ document.addEventListener("DOMContentLoaded", async () => {
       document.getElementById("categoria").value = data.categoria.id;
       document.getElementById("autor").value = data.autor;
 
-      // Mostrar imágenes existentes
+      // Mostrar imágenes existentes con botón de reemplazo
       existingContainer.innerHTML = "";
       if (data.imagenes && data.imagenes.length > 0) {
         data.imagenes.forEach(imgObj => {
+          const wrapper = document.createElement("div");
+          wrapper.className = "img-wrapper";
+
           const img = document.createElement("img");
           img.src = `${apiBase}/${imgObj.imagen}`;
           img.alt = "Imagen actual de la noticia";
-          existingContainer.appendChild(img);
+
+          const overlay = document.createElement("div");
+          overlay.className = "replace-overlay";
+          overlay.innerHTML = '<i class="fas fa-exchange-alt"></i> Reemplazar';
+
+          const replaceBtn = document.createElement("button");
+          replaceBtn.type = "button";
+          replaceBtn.className = "replace-btn";
+          replaceBtn.innerHTML = '<i class="fas fa-times"></i>';
+          replaceBtn.title = "Marcar para reemplazar";
+          replaceBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            toggleReplace(imgObj.id, replaceBtn, wrapper);
+          });
+
+          wrapper.appendChild(img);
+          wrapper.appendChild(overlay);
+          wrapper.appendChild(replaceBtn);
+          existingContainer.appendChild(wrapper);
         });
       } else {
         existingContainer.style.display = "none";
@@ -144,11 +205,16 @@ document.addEventListener("DOMContentLoaded", async () => {
   form.addEventListener("submit", e => {
     e.preventDefault();
 
-    if (selectedFiles.length > 0 && selectedFiles.length !== MAX_IMAGES) {
+    const marcadas = markedForReplace.size;
+    const nuevas = selectedFiles.length;
+
+    if (marcadas > 0 && nuevas !== marcadas) {
       Swal.fire({
         icon: "warning",
-        title: "Cantidad invalida",
-        text: `Si subes imágenes nuevas, deben ser exactamente ${MAX_IMAGES}.`,
+        title: "Reemplazo incompleto",
+        text: marcadas === 1
+          ? `Marcaste 1 imagen para reemplazar. Subí 1 imagen nueva.`
+          : `Marcaste ${marcadas} imágenes para reemplazar. Subí ${marcadas} imágenes nuevas.`,
       });
       return;
     }
@@ -169,6 +235,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     const formData = new FormData(form);
     formData.delete("imagenes");
     selectedFiles.forEach(f => formData.append("imagenes", f));
+
+    // Enviar IDs de imágenes a reemplazar como string separado por comas
+    if (markedForReplace.size > 0) {
+      formData.set("imagenes_eliminar", [...markedForReplace].join(","));
+    }
 
     try {
       const res = await fetch(`${apiBase}/noticia/`, {

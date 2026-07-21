@@ -79,6 +79,33 @@ async def insert_img(imagenes, noticiaId: int):
                     detail="Error al guardar imágenes de noticia"
                 )
 
+async def deleteImgsByIds(imagen_ids: list[int]):
+    """
+    Elimina imágenes específicas por sus IDs, tanto de la BD como del disco.
+
+    Parámetros:
+        imagen_ids (list[int]): Lista de IDs de imágenes a eliminar.
+    """
+    try:
+        for img_id in imagen_ids:
+            path = await db.fetch_val(
+                "SELECT imagen FROM imagenes WHERE id = :id", {"id": img_id}
+            )
+            if path and os.path.exists(path):
+                try:
+                    os.remove(path)
+                except Exception as e:
+                    raise HTTPException(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail=f"Error al eliminar archivo físico: {path} ({e})"
+                    )
+            await db.execute("DELETE FROM imagenes WHERE id = :id", {"id": img_id})
+    except HTTPException:
+        raise
+    except Exception:
+        raise errorInterno("Error al eliminar imágenes seleccionadas")
+
+
 async def deleteImgsNoticia(noticia_id: int):
     """
     Elimina las imágenes asociadas a una noticia tanto de la base de datos

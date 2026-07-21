@@ -8,6 +8,7 @@ class Noticias(BaseModel):
     contenido: str = Field(min_length=1)
     categoria_id: int
     autor: str = Field(min_length=1, max_length=100)
+    imagenes_eliminar: list[int] = []
 
     @staticmethod
     def from_form(
@@ -15,12 +16,17 @@ class Noticias(BaseModel):
         titulo: str = Form(...),
         contenido: str = Form(...),
         categoria_id: int = Form(...),
-        autor: str = Form(...)
+        autor: str = Form(...),
+        imagenes_eliminar: str = Form("")
     ):
+        ids = []
+        if imagenes_eliminar:
+            ids = [int(x) for x in imagenes_eliminar.split(",") if x.strip()]
         return Noticias(
             id=id,
             titulo=titulo,
             contenido=contenido,
             categoria_id=categoria_id,
-            autor=autor
+            autor=autor,
+            imagenes_eliminar=ids
         )
